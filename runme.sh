@@ -123,8 +123,8 @@ mkdir -p $BASE_DIR/images
 PLAT=k3
 
 cd  $BASE_DIR/build/arm-trusted-firmware
-make -j32 CROSS_COMPILE=aarch64-linux-gnu- ARCH=aarch64 PLAT=$PLAT TARGET_BOARD=generic SPD=opteed
-cp build/k3/generic/release/bl31.bin $BASE_DIR/images/bl31.bin
+make -j32 CROSS_COMPILE=aarch64-linux-gnu- ARCH=aarch64 PLAT=$PLAT TARGET_BOARD=lite SPD=opteed
+cp build/k3/lite/release/bl31.bin $BASE_DIR/images/bl31.bin
 
 ###################################################################################################################################
 
@@ -157,7 +157,6 @@ cd $BASE_DIR/build/ti-u-boot
 
 make -j32 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- $U_BOOT_R5_DEFCONFIG
 make -j32 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
-cp spl/u-boot-spl.bin $BASE_DIR/images/u-boot-spl.bin
 cp tiboot3.bin $BASE_DIR/images/tiboot3.bin
 
 
@@ -166,6 +165,7 @@ cp tiboot3.bin $BASE_DIR/images/tiboot3.bin
 
 make -j32 ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- $U_BOOT_A53_DEFCONFIG
 make -j32 ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- ATF=$BASE_DIR/images/bl31.bin TEE=$BASE_DIR/images/tee-pager_v2.bin
+
 
 cp tispl.bin $BASE_DIR/images/tispl.bin
 cp u-boot.img $BASE_DIR/images/u-boot.img
@@ -180,10 +180,8 @@ cp u-boot.img $BASE_DIR/images/u-boot.img
 SOC=am64x
 
 cd $BASE_DIR/build/k3-image-gen
-#make -j32 SOC=$SOC SBL=$BASE_DIR/images/u-boot-spl.bin
 make CROSS_COMPILE=arm-linux-gnueabihf- SOC=$SOC
 cp sysfw-${SOC}-evm.itb  $BASE_DIR/images/sysfw.itb
-#cp tiboot3.bin  $BASE_DIR/images/tiboot3.bin
 
 ###################################################################################################################################
 
