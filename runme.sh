@@ -245,6 +245,12 @@ mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/u-boot.img ::u-boot.img
 
 mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/sysfw.itb ::sysfw.itb
 
+mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/Image ::Image
+
+mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/k3-am642-evm.dtb ::k3-am642-evm.dtb
+
+mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/rootfs.cpio ::rootfs.cpio
+
 printf "\n\nImage file: $BASE_DIR/output/$IMAGE_NAME\n\n"
 
 ###################################################################################################################################
