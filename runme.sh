@@ -77,6 +77,8 @@ U_BOOT_TAG=08.00.00.004
 if [[ ! -d $BASE_DIR/build/ti-u-boot ]]; then
 	cd $BASE_DIR/build
 	git clone git://git.ti.com/ti-u-boot/ti-u-boot.git -b $U_BOOT_TAG --depth=1
+	cd ti-u-boot
+	git am $BASE_DIR/patches/uboot/*.patch
 	
 fi
 
@@ -148,8 +150,8 @@ cp out/arm-plat-k3/core/tee-pager_v2.bin $BASE_DIR/tmp/tee-pager_v2.bin
 #							BUILD U-boot
 
 
-U_BOOT_R5_DEFCONFIG=am64x_evm_r5_defconfig
-U_BOOT_A53_DEFCONFIG=am64x_evm_a53_defconfig
+U_BOOT_R5_DEFCONFIG=am64x_r5_solidrun_defconfig
+U_BOOT_A53_DEFCONFIG=am64x_a53_solidrun_defconfig
 cd $BASE_DIR/build/ti-u-boot
 
 
