@@ -113,7 +113,7 @@ fi
 ###################################################################################################################################
 
 
-mkdir -p $BASE_DIR/images
+mkdir -p $BASE_DIR/tmp
 
 
 
@@ -124,7 +124,7 @@ PLAT=k3
 
 cd  $BASE_DIR/build/arm-trusted-firmware
 make -j32 CROSS_COMPILE=aarch64-linux-gnu- ARCH=aarch64 PLAT=$PLAT TARGET_BOARD=lite SPD=opteed
-cp build/k3/lite/release/bl31.bin $BASE_DIR/images/bl31.bin
+cp build/k3/lite/release/bl31.bin $BASE_DIR/tmp/bl31.bin
 
 ###################################################################################################################################
 
@@ -137,7 +137,7 @@ PLATFORM=k3-am64x
 
 cd  $BASE_DIR/build/optee_os
 make -j32  ARCH=arm PLATFORM=$PLATFORM CROSS_COMPILE32=arm-linux-gnueabihf- CFG_ARM64_core=y
-cp out/arm-plat-k3/core/tee-pager_v2.bin $BASE_DIR/images/tee-pager_v2.bin 
+cp out/arm-plat-k3/core/tee-pager_v2.bin $BASE_DIR/tmp/tee-pager_v2.bin 
 
 ###################################################################################################################################
 
@@ -157,18 +157,18 @@ cd $BASE_DIR/build/ti-u-boot
 
 make -j32 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- $U_BOOT_R5_DEFCONFIG
 make -j32 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
-cp tiboot3.bin $BASE_DIR/images/tiboot3.bin
+cp tiboot3.bin $BASE_DIR/tmp/tiboot3.bin
 
 
 
 # 	A53
 
 make -j32 ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- $U_BOOT_A53_DEFCONFIG
-make -j32 ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- ATF=$BASE_DIR/images/bl31.bin TEE=$BASE_DIR/images/tee-pager_v2.bin
+make -j32 ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- ATF=$BASE_DIR/tmp/bl31.bin TEE=$BASE_DIR/tmp/tee-pager_v2.bin
 
 
-cp tispl.bin $BASE_DIR/images/tispl.bin
-cp u-boot.img $BASE_DIR/images/u-boot.img
+cp tispl.bin $BASE_DIR/tmp/tispl.bin
+cp u-boot.img $BASE_DIR/tmp/u-boot.img
 
 ###################################################################################################################################
 
@@ -181,7 +181,7 @@ SOC=am64x
 
 cd $BASE_DIR/build/k3-image-gen
 make CROSS_COMPILE=arm-linux-gnueabihf- SOC=$SOC
-cp sysfw-${SOC}-evm.itb  $BASE_DIR/images/sysfw.itb
+cp sysfw-${SOC}-evm.itb  $BASE_DIR/tmp/sysfw.itb
 
 ###################################################################################################################################
 
@@ -195,8 +195,8 @@ LINUX_DEFCONFIG=tisdk_am64xx-evm_defconfig
 cd $BASE_DIR/build/ti-linux-kernel
 make -j32 $LINUX_DEFCONFIG
 make  -j32 Image dtbs
-cp arch/arm64/boot/Image $BASE_DIR/images/Image
-cp arch/arm64/boot/dts/ti/k3-am642-evm.dtb $BASE_DIR/images/k3-am642-evm.dtb
+cp arch/arm64/boot/Image $BASE_DIR/tmp/Image
+cp arch/arm64/boot/dts/ti/k3-am642-evm.dtb $BASE_DIR/tmp/k3-am642-evm.dtb
 
 ###################################################################################################################################
 
@@ -212,6 +212,39 @@ cp $BASE_DIR/configs/buildroot_defconfig configs/am64x_solidrun_defconfig
 make -j32 am64x_solidrun_defconfig
 make -j32
 
-cp $BASE_DIR/build/buildroot/output/images/rootfs.cpio.uboot $BASE_DIR/images/rootfs.cpio
+cp $BASE_DIR/build/buildroot/output/images/rootfs.cpio.uboot $BASE_DIR/tmp/rootfs.cpio
 
 ###################################################################################################################################
+
+
+mkdir -p $BASE_DIR/output
+
+
+
+
+###################################################################################################################################
+#							Create Image file
+
+#Image name should include the commit hash
+cd $BASE_DIR
+COMMIT_HASH=`git log -1 --pretty=format:%h`
+IMAGE_NAME=microsd-${COMMIT_HASH}.img
+
+
+dd if=/dev/zero of=$BASE_DIR/output/$IMAGE_NAME bs=1M count=300
+
+mformat -F -i $BASE_DIR/output/$IMAGE_NAME ::
+
+mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/tiboot3.bin ::tiboot3.bin
+
+mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/tispl.bin ::tispl.bin
+
+mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/u-boot.img ::u-boot.img
+
+mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/sysfw.itb ::sysfw.itb
+
+printf "\n\nImage file: $BASE_DIR/output/$IMAGE_NAME\n\n"
+
+###################################################################################################################################
+
+

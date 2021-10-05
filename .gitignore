@@ -1,3 +1,4 @@
 build/*
-images/*
+tmp/*
+output/*
 *.swp
