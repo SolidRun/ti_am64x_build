@@ -1,0 +1,25 @@
+From 7b59c3a044f59a4e36e540c02cadd0108fe6dc71 Mon Sep 17 00:00:00 2001
+From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+Date: Tue, 5 Oct 2021 15:49:37 +0300
+Subject: [PATCH] Use SolidRun's devicetree in boot command
+
+---
+ configs/am64x_a53_solidrun_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configs/am64x_a53_solidrun_defconfig b/configs/am64x_a53_solidrun_defconfig
+index 04792c3d..8618bf65 100644
+--- a/configs/am64x_a53_solidrun_defconfig
++++ b/configs/am64x_a53_solidrun_defconfig
+@@ -26,7 +26,7 @@ CONFIG_DISTRO_DEFAULTS=y
+ # CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
+ CONFIG_SPL_LOAD_FIT=y
+ CONFIG_SPL_LOAD_FIT_ADDRESS=0x81000000
+-CONFIG_BOOTCOMMAND="mmc dev 1;  load mmc 1:1 0x80480000 Image; load mmc 1:1 0x83000000 k3-am642-evm.dtb; load mmc 1:1 0x83800000 rootfs.cpio;  booti 0x80480000 0x83800000 0x83000000;"
++CONFIG_BOOTCOMMAND="mmc dev 1;  load mmc 1:1 0x80480000 Image; load mmc 1:1 0x83000000 am642-solidrun.dtb; load mmc 1:1 0x83800000 rootfs.cpio;  booti 0x80480000 0x83800000 0x83000000;"
+ CONFIG_BOARD_LATE_INIT=y
+ CONFIG_SPL_SYS_MALLOC_SIMPLE=y
+ CONFIG_SPL_STACK_R=y
+-- 
+2.25.1
+

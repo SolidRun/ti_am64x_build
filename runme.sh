@@ -192,13 +192,13 @@ cp sysfw-${SOC}-evm.itb  $BASE_DIR/tmp/sysfw.itb
 
 ###################################################################################################################################
 #							BUILD Linux
-LINUX_DEFCONFIG=tisdk_am64xx-evm_defconfig
+LINUX_DEFCONFIG=am64xx-solidrun_defconfig
 
 cd $BASE_DIR/build/ti-linux-kernel
 make -j32 $LINUX_DEFCONFIG
 make  -j32 Image dtbs
 cp arch/arm64/boot/Image $BASE_DIR/tmp/Image
-cp arch/arm64/boot/dts/ti/k3-am642-evm.dtb $BASE_DIR/tmp/k3-am642-evm.dtb
+cp arch/arm64/boot/dts/ti/am642-solidrun.dtb $BASE_DIR/tmp/am642-solidrun.dtb
 
 ###################################################################################################################################
 
@@ -247,7 +247,7 @@ mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/sysfw.itb ::sysfw.itb
 
 mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/Image ::Image
 
-mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/k3-am642-evm.dtb ::k3-am642-evm.dtb
+mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/am642-solidrun.dtb ::am642-solidrun.dtb
 
 mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/rootfs.cpio ::rootfs.cpio
 
