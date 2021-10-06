@@ -110,6 +110,8 @@ BUILDROOT_VERSION=2020.02
 if [[ ! -d $BASE_DIR/build/buildroot ]]; then
 	cd $BASE_DIR/build
 	git clone https://github.com/buildroot/buildroot -b $BUILDROOT_VERSION --depth=1
+	cd buildroot
+	git am $BASE_DIR/patches/buildroot/*.patch
 fi
 
 ###################################################################################################################################
@@ -207,11 +209,10 @@ cp arch/arm64/boot/dts/ti/am642-solidrun.dtb $BASE_DIR/tmp/am642-solidrun.dtb
 
 ##################################################################################################################################
 #							BUILD Buildroot
+BUILDROOT_DEFCONFIG=am64x_solidrun_defconfig
 
 cd $BASE_DIR/build/buildroot
-cp $BASE_DIR/configs/buildroot_defconfig configs/am64x_solidrun_defconfig
-
-make -j32 am64x_solidrun_defconfig
+make -j32 $BUILDROOT_DEFCONFIG
 make -j32
 
 cp $BASE_DIR/build/buildroot/output/images/rootfs.cpio.uboot $BASE_DIR/tmp/rootfs.cpio
