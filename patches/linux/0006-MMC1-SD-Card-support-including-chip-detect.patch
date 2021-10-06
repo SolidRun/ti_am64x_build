@@ -1,0 +1,36 @@
+From f40d5a88eb84d87ce38a91c074f1e52d751ccb39 Mon Sep 17 00:00:00 2001
+From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+Date: Wed, 6 Oct 2021 14:55:19 +0300
+Subject: [PATCH] MMC1 (SD Card) support, including chip detect
+
+---
+ arch/arm64/boot/dts/ti/am642-solidrun.dts | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/am642-solidrun.dts b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+index f31b6354d..e8dcc6453 100644
+--- a/arch/arm64/boot/dts/ti/am642-solidrun.dts
++++ b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+@@ -322,7 +322,6 @@ AM64X_IOPAD(0x0288, PIN_INPUT_PULLUP, 0) /* (K21) MMC1_DAT0 */
+ 			AM64X_IOPAD(0x0284, PIN_INPUT_PULLUP, 0) /* (L21) MMC1_DAT1 */
+ 			AM64X_IOPAD(0x0280, PIN_INPUT_PULLUP, 0) /* (K19) MMC1_DAT2 */
+ 			AM64X_IOPAD(0x027c, PIN_INPUT_PULLUP, 0) /* (K18) MMC1_DAT3 */
+-			AM64X_IOPAD(0x0298, PIN_INPUT_PULLUP, 0) /* (D19) MMC1_SDCD */
+ 			AM64X_IOPAD(0x029c, PIN_INPUT, 0) /* (C20) MMC1_SDWP */
+ 			AM64X_IOPAD(0x0290, PIN_INPUT, 0) /* MMC1_CLKLB */
+ 		>;
+@@ -592,10 +591,10 @@ &sdhci0 {
+ 
+ &sdhci1 {
+ 	/* SD/MMC */
+-	vmmc-supply = <&vdd_mmc1>;
+ 	pinctrl-names = "default";
+ 	bus-width = <4>;
+ 	pinctrl-0 = <&main_mmc1_pins_default>;
++	cd-gpios = <&main_gpio1 77 1>;
+ 	ti,driver-strength-ohm = <50>;
+ 	disable-wp;
+ };
+-- 
+2.25.1
+
