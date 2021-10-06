@@ -1,0 +1,24 @@
+From 039f3e2b1d0d5e0a5b4f44ef4c948546c479ddce Mon Sep 17 00:00:00 2001
+From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+Date: Wed, 6 Oct 2021 12:52:56 +0300
+Subject: [PATCH] eMMC support - Fix eMMC errors
+
+---
+ arch/arm64/boot/dts/ti/am642-solidrun.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/ti/am642-solidrun.dts b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+index 4a131cc4b..f31b6354d 100644
+--- a/arch/arm64/boot/dts/ti/am642-solidrun.dts
++++ b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+@@ -587,6 +587,7 @@ &sdhci0 {
+ 	non-removable;
+ 	ti,driver-strength-ohm = <50>;
+ 	disable-wp;
++	no-1-8-v;
+ };
+ 
+ &sdhci1 {
+-- 
+2.25.1
+
