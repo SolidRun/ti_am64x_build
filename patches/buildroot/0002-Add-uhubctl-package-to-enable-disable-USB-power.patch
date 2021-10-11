@@ -1,0 +1,23 @@
+From 24607040079ffa756bd7ff55ce3a711952a12fb4 Mon Sep 17 00:00:00 2001
+From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+Date: Mon, 11 Oct 2021 16:41:17 +0300
+Subject: [PATCH] Add uhubctl package to enable/disable USB power
+
+---
+ configs/am64x_solidrun_defconfig | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/configs/am64x_solidrun_defconfig b/configs/am64x_solidrun_defconfig
+index ec1c078..d67df3c 100644
+--- a/configs/am64x_solidrun_defconfig
++++ b/configs/am64x_solidrun_defconfig
+@@ -52,3 +52,6 @@ BR2_PACKAGE_UTIL_LINUX_MOUNT=y
+ BR2_TARGET_ROOTFS_CPIO=y
+ BR2_TARGET_ROOTFS_CPIO_UIMAGE=y
+ BR2_TARGET_ROOTFS_EXT2=y
++
++BR2_PACKAGE_LIBUSB=y
++BR2_PACKAGE_UHUBCTL=y
+-- 
+2.25.1
+
