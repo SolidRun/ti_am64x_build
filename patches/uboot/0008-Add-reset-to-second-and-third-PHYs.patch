@@ -1,0 +1,588 @@
+From 17f92eacdb74cbc63551c4aeb751e420aa8bede7 Mon Sep 17 00:00:00 2001
+From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+Date: Thu, 4 Nov 2021 15:16:19 +0200
+Subject: [PATCH] Add reset to second and third PHYs.
+
+---
+ .../solidrun/am64x_solidrun/am64x_solidrun.c  | 314 ++++++++++++++----
+ .../solidrun/am64x_solidrun/am64x_solidrun.h  | 132 ++++++++
+ configs/am64x_a53_solidrun_defconfig          |   1 -
+ 3 files changed, 373 insertions(+), 74 deletions(-)
+ create mode 100644 board/solidrun/am64x_solidrun/am64x_solidrun.h
+
+diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
+index 8bfe1762..e69fab81 100644
+--- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
++++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
+@@ -1,11 +1,11 @@
+ // SPDX-License-Identifier: GPL-2.0+
+ /*
+- * Board specific initialization for AM64X Based SolidRun board
+- *
+- * Copyright (C) 2021 SolidRun
+- *	Alvaro Karsz <alvaro.karsz@solid-run.com>
+- *
+- */
++* Board specific initialization for AM64X Based SolidRun board
++*
++* Copyright (C) 2021 SolidRun
++*	Alvaro Karsz <alvaro.karsz@solid-run.com>
++*
++*/
+ 
+ #include <common.h>
+ #include <asm/io.h>
+@@ -13,6 +13,11 @@
+ #include <spl.h>
+ #include <asm/arch/hardware.h>
+ #include <asm/arch/sys_proto.h>
++#include <linux/delay.h>
++#include <miiphy.h>
++#include <netdev.h>
++
++#include "am64x_solidrun.h"
+ 
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+@@ -22,12 +27,14 @@ int board_init(void)
+ 	return 0;
+ }
+ 
++
+ int dram_init(void)
+ {
+ 	gd->ram_size = 0x40000000;
+ 	return 0;
+ }
+ 
++
+ int dram_init_banksize(void)
+ {
+ 	/* Bank 0 declares the memory available in the DDR low region */
+@@ -38,145 +45,306 @@ int dram_init_banksize(void)
+ 	return 0;
+ }
+ 
++
+ #ifdef CONFIG_SPL_LOAD_FIT
++
+ int board_fit_config_name_match(const char *name)
+ {
+ 	return 0;
+ }
+-#endif
++
++#endif //CONFIG_SPL_LOAD_FIT
+ 
+ 
+ #ifdef CONFIG_BOARD_LATE_INIT
+ 
+ 
+-#define PHY1_RESET_GPIO_NUM   84
+-#define PHY1_RESET_MUX_ADDR   0x000F4154
+-#define PHY1_RESET_DIR_ADDR   0x00600060
+-#define PHY1_RESET_SET_ADDR   0x00600068
+-#define PHY1_RESET_DATA_ADDR  0x00600064
++/*fill am64x_solidrun_gpio_t struct, receives the GPIO details and MUX address for this IO*/
++int8_t buildAm64xSolidRunGpio(uint8_t gpioBase, uint8_t gpioNum, u32 muxAddress, am64x_solidrun_gpio_t *gpio)
++{
++	u32 gpioBaseAddr;
++
++	/*This SOC has 2 GPIO bases, so it can be 0 or 1*/
++	if(gpioBase > 1 || gpioBase < 0)
++	{
++		return -1;
++	}
++
++
++	/*save the GPIO number in struct*/
++	gpio->gpioNum = gpioNum;
++
++	/*save the MUX address*/
++	gpio->muxRegAddr = muxAddress;
++
++	/*save bit number*/
++	gpio->bitNum = getBitNumberFromGPIO(gpioNum);
++
++
++	/*Calculate register addresses based on GPIO number and base*/
++
++	gpioBaseAddr = gpioBase ? AM64X_SR_GPIO1_BASE_ADDR_PREFIX : AM64X_SR_GPIO0_BASE_ADDR_PREFIX;
++
++	/*get GPIO addresses by the register number, 32 bits per register*/
++	switch (gpioNum / 32)
++	{
++		case 0:
++
++		gpio->dirRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_DIR01_OFFSET);
++		gpio->outDataRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_OUT_DATA01_OFFSET);
++		gpio->setDataRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_SET_DATA01_OFFSET);
++
++		break;
++
++		case 1:
++
++		gpio->dirRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_DIR23_OFFSET);
++		gpio->outDataRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_OUT_DATA23_OFFSET);
++		gpio->setDataRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_SET_DATA23_OFFSET);
++
++		break;
++
++
++		case 2:
+ 
+-#define PHY2_RESET_GPIO_NUM   20
+-#define PHY2_RESET_MUX_ADDR   0x000F4150
+-#define PHY2_RESET_DIR_ADDR   0x00600010
+-#define PHY2_RESET_SET_ADDR   0x00600018
+-#define PHY2_RESET_DATA_ADDR  0x00600014
++		gpio->dirRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_DIR45_OFFSET);
++		gpio->outDataRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_OUT_DATA45_OFFSET);
++		gpio->setDataRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_SET_DATA45_OFFSET);
+ 
+-#define PHY3_RESET_GPIO_NUM   52
+-#define PHY3_RESET_MUX_ADDR   0x000F40D4
+-#define PHY3_RESET_DIR_ADDR   0x00600038
+-#define PHY3_RESET_SET_ADDR   0x00600040
+-#define PHY3_RESET_DATA_ADDR  0x0060003C
++		break;
+ 
+-#define PHY_CLK_MUX_ADDR      0x000F4274
+-#define CTRLMMR_LOCK2_KICK0   0x43009008
+-#define CTRLMMR_LOCK2_KICK1   0x4300900C
+-#define CTRLMMR_LOCK_KEY0     0x68EF3490
+-#define CTRLMMR_LOCK_KEY1     0xD172BC5A
+-#define CTRLMMR_CLKOUT_CTRL   0x43008010
+ 
++		case 3:
+ 
++		gpio->dirRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_DIR67_OFFSET);
++		gpio->outDataRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_OUT_DATA67_OFFSET);
++		gpio->setDataRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_SET_DATA67_OFFSET);
+ 
+-/*release reset signal -  phy chip*/
+-void releaseResetPhy(int gpioNum, u32 muxAddr, u32 dirAddr, u32 setAddr, u32 dataAddr)
++		break;
++
++
++		case 4:
++
++		gpio->dirRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_DIR8_OFFSET);
++		gpio->outDataRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_OUT_DATA8_OFFSET);
++		gpio->setDataRegAddr = addressFromPrefixAndOffset(gpioBaseAddr, AM64X_SR_GPIO_SET_DATA8_OFFSET);
++
++		break;
++
++
++		default:
++
++
++		return -1; /* invalid gpio number!! */
++
++
++		break;
++	}
++
++	return 0;
++}
++
++
++/*select GPIO in MUX*/
++void am64xSolidrunSelectGPIO_Function(am64x_solidrun_gpio_t *gpio)
+ {
+-	u32 muxGpioVal = 0x00050007,
+-	    val = 0;
++	/*set IO as output GPIO by writing to MUX register*/
++	writel(AM64X_SR_GPIO_OUTPUT_MUX_VAL, gpio->muxRegAddr);
++}
++
++
++/*set GPIO value as '1'*/
++void am64xSolidRunGpioSet(am64x_solidrun_gpio_t *gpio)
++{
++	u32 val;
++	/*write to set data register*/
++	writel( (1 << gpio->bitNum), gpio->setDataRegAddr); //set the gpio bit value as '1'
++
++	/*write to direction register, '0' -> OUTPUT*/
++	writel(0, gpio->dirRegAddr);
++
++	/*read current output value*/
++	val = readl(gpio->outDataRegAddr);
+ 
+-	/* Since a gpio register is 32 bit long, get the relevant bit in register from gpio number */
+-	gpioNum %= 32;
++	/*set relevant bit as '1'*/
++	val |= (1 << gpio->bitNum);
+ 
+-	/*select GPIO function in MUX register*/
+-	writel(muxGpioVal, muxAddr);
++	/*write new value*/
++	writel(val, gpio->outDataRegAddr);
++}
+ 
+ 
++/*set GPIO value as '0'*/
++void am64xSolidRunGpioClear(am64x_solidrun_gpio_t *gpio)
++{
++	u32 val;
+ 	/*write to set data register*/
+-	writel( (1 << gpioNum), setAddr); //set the gpio bit value as '1'
+ 
++	writel( (1 << gpio->bitNum), gpio->setDataRegAddr); //set the gpio bit value as '1'
++
++	/*read current output value*/
++	val = readl(gpio->outDataRegAddr);
++
++	/*set relevant bit as '0'*/
++	val &= (u32)~(u32)(1 << gpio->bitNum);
++
++	/*write new value*/
++	writel(val, gpio->outDataRegAddr);
+ 
++	/*write to direction register, '0' -> OUTPUT*/
++        writel(0, gpio->dirRegAddr);
++
++}
+ 
+-	/*write to dir register*/
+-	writel(0, dirAddr); //'0' - output
+ 
++/*builds address from prefix and address*/
++u32 addressFromPrefixAndOffset(u32 prefix, u32 offset)
++{
+ 
++	/*
++	Prefix size is 20 bits and offset size is 12 bits, u32 size is 32 bits
+ 
+-	/*read data register, set relevant bit as '1' to release from reset*/
+-	val = readl(dataAddr);
++	What should be done:
++	* Move prefix 20 bits to MSB, location 0->19
++	* OR it with the offset
+ 
+-	val |= (1 << gpioNum);
++	*/
+ 
+-	writel(val, dataAddr);
++	return ( (prefix << 12 ) | offset);
+ }
+ 
+-/*set PHY clock frequency and select clkout function in MUX*/
+-void setClockPhy(void)
++
++/*calculates the bit location in relevant register from a GPIO number*/
++uint8_t getBitNumberFromGPIO(uint8_t gpioNum)
+ {
+-	u32 muxClkoutValue = 0x00010005,
+-	    val = 0;
++	/*since register has 32 bits, just return the 32 modulo*/
++	return gpioNum % 32;
++}
+ 
+ 
++/*set PHY clock frequency and select clkout function in MUX*/
++void setAm64XSolidRunPhyClock(void)
++{
++	u32 val = 0;
++
+ 	/*release the write lock on partition 2 registers*/
+-	writel(CTRLMMR_LOCK_KEY0, CTRLMMR_LOCK2_KICK0);
+-        writel(CTRLMMR_LOCK_KEY1, CTRLMMR_LOCK2_KICK1);
++	writel(AM64X_SR_CTRLMMR_LOCK_KEY0, AM64X_SR_CTRLMMR_LOCK2_KICK0);
++	writel(AM64X_SR_CTRLMMR_LOCK_KEY1, AM64X_SR_CTRLMMR_LOCK2_KICK1);
+ 
+ 
+ 	/*calculate value to write into the control register*/
+ 
+ 	/* CTRLMMR_CLKOUT_CTRL register layout:
+-	 *
+-	 * 0     CLK_SEL (0 - 50MHz, 1 - 25MHz)
+-	 * 1-3   RESERVED
+-	 * 4     CLK_EN
+-	 * 5-31  RESERVED
+-	 * */
++	*
++	* 0     CLK_SEL (0 - 50MHz, 1 - 25MHz)
++	* 1-3   RESERVED
++	* 4     CLK_EN
++	* 5-31  RESERVED
++	* */
+ 
+ 	val |= 1;//set CLK_SEL bit
+ 
+ 	val |= (1 << 4); //set CLK_EN bit
+ 
+ 	/*write the value into the control register*/
+-	writel(val, CTRLMMR_CLKOUT_CTRL);
++	writel(val, AM64X_SR_CTRLMMR_CLKOUT_CTRL);
+ 
+ 
+ 	/*select CLKOUT0 function in mux*/
+-	writel(muxClkoutValue, PHY_CLK_MUX_ADDR);
++	writel(AM64X_SR_CLOKOUT0_MUX_VAL, AM64X_SR_PHY_CLK_MUX_ADDR);
++}
++
++
++/*reset the PHY with received reset GPIO*/
++void am64xSolidRunResetPhy(am64x_solidrun_gpio_t *reset)
++{
++	/* set GPIO value as '0' */
++	am64xSolidRunGpioClear(reset);
++	/* select MUX in GPIO */
++	am64xSolidrunSelectGPIO_Function(reset);
++	/* wait 10ms */	
++	mdelay(10);
++	/* set GPIO value as '1' */
++	am64xSolidRunGpioSet(reset);
++	mdelay(10);
+ }
+ 
+ 
+-void initPhy(void)
++
++int board_phy_config(struct phy_device *phydev)
+ {
++	return 0;
++}
++
++
++
++
++int8_t initPhys(void)
++{
++	am64x_solidrun_gpio_t reset1, reset2, reset3, powerDown;
++
++	/*build reset gpio structs*/
++
++
++	if( buildAm64xSolidRunGpio(0, 84, 0x000F4154, &reset1) != 0 )
++	{
++
++		return -1; /*error bulding sturct from reset1*/
++	}
++
++	if( buildAm64xSolidRunGpio(0, 20, 0x000F4150, &reset2) != 0 )
++	{
++
++		return -1; /*error bulding sturct from reset3*/
++	}
++
++	if( buildAm64xSolidRunGpio(0, 52, 0x000F40D4, &reset3) != 0 )
++	{
++
++		return -1; /*error bulding sturct from reset2*/
++	}
++
+ 
+ 	/*init PHY clock*/
+-	setClockPhy();
++	setAm64XSolidRunPhyClock();
+ 
+-	/*release the reset line for the first PHY*/
+-	releaseResetPhy(PHY1_RESET_GPIO_NUM, PHY1_RESET_MUX_ADDR, PHY1_RESET_DIR_ADDR, PHY1_RESET_SET_ADDR, PHY1_RESET_DATA_ADDR);
+ 
+-	/*release the reset line for the second PHY*/
+-	releaseResetPhy(PHY2_RESET_GPIO_NUM, PHY2_RESET_MUX_ADDR, PHY2_RESET_DIR_ADDR, PHY2_RESET_SET_ADDR, PHY2_RESET_DATA_ADDR);
++	/*add a small delay after setting the clock and before reseting the PHYs*/
++	mdelay(10);
+ 
+-	/*release the reset line for the third PHY*/
+-	releaseResetPhy(PHY3_RESET_GPIO_NUM, PHY3_RESET_MUX_ADDR, PHY3_RESET_DIR_ADDR, PHY3_RESET_SET_ADDR, PHY3_RESET_DATA_ADDR);
++	/*now reset all 3 phys, No need to add delay between resets, am64xSolidRunResetPhy is already doing it*/
++	am64xSolidRunResetPhy(&reset1);
++
++
++	am64xSolidRunResetPhy(&reset2);
++
++
++	am64xSolidRunResetPhy(&reset3);
++
++	return 0;
+ }
+ 
++#ifndef	CONFIG_SPL_BUILD
++
+ int board_late_init(void)
+ {
+ 	/*init PHY*/
+-	initPhy();
++	return initPhys();
+ 
+-	return 0;
+ }
+-#endif
+ 
+-#define CTRLMMR_USB0_PHY_CTRL	0x43004008
+-#define CORE_VOLTAGE		0x80000000
++#endif //CONFIG_SPL_BUILD
++
++#endif //CONFIG_BOARD_LATE_INIT
++
+ 
+ #ifdef CONFIG_SPL_BOARD_INIT
+ void spl_board_init(void)
+ {
+ 	u32 val;
+ 	/* Set USB PHY core voltage to 0.85V */
+-	val = readl(CTRLMMR_USB0_PHY_CTRL);
+-	val &= ~(CORE_VOLTAGE);
+-	writel(val, CTRLMMR_USB0_PHY_CTRL);
++	val = readl(AM64X_SR_CTRLMMR_USB0_PHY_CTRL);
++	val &= ~(AM64X_SR_CORE_VOLTAGE);
++	writel(val, AM64X_SR_CTRLMMR_USB0_PHY_CTRL);
+ }
+ #endif
+diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.h b/board/solidrun/am64x_solidrun/am64x_solidrun.h
+new file mode 100644
+index 00000000..9428bcdc
+--- /dev/null
++++ b/board/solidrun/am64x_solidrun/am64x_solidrun.h
+@@ -0,0 +1,132 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Board specific initialization for AM64X Based SolidRun board
++ *
++ * Copyright (C) 2021 SolidRun
++ *	Alvaro Karsz <alvaro.karsz@solid-run.com>
++ *
++ */
++
++#ifndef __AM64X_SOLIDRUN_BOARD_H__
++#define  __AM64X_SOLIDRUN_BOARD_H__ 1
++
++
++/*AM64X Addresses*/
++
++/*GPIO BASE PREFIX ADDRESS - 20 bits*/
++#define AM64X_SR_GPIO0_BASE_ADDR_PREFIX    0x00600
++#define AM64X_SR_GPIO1_BASE_ADDR_PREFIX    0x00601
++
++/*GPIO registers offsets - 12 bits*/
++#define AM64X_SR_GPIO_DIR01_OFFSET         0x010
++#define AM64X_SR_GPIO_DIR23_OFFSET         0x038
++#define AM64X_SR_GPIO_DIR45_OFFSET         0x060
++#define AM64X_SR_GPIO_DIR67_OFFSET         0x088
++#define AM64X_SR_GPIO_DIR8_OFFSET          0x0B0
++#define AM64X_SR_GPIO_OUT_DATA01_OFFSET    0x014
++#define AM64X_SR_GPIO_OUT_DATA23_OFFSET    0x03C
++#define AM64X_SR_GPIO_OUT_DATA45_OFFSET    0x064
++#define AM64X_SR_GPIO_OUT_DATA67_OFFSET    0x08C
++#define AM64X_SR_GPIO_OUT_DATA8_OFFSET     0x0B4
++#define AM64X_SR_GPIO_SET_DATA01_OFFSET    0x018
++#define AM64X_SR_GPIO_SET_DATA23_OFFSET    0x040
++#define AM64X_SR_GPIO_SET_DATA45_OFFSET    0x068
++#define AM64X_SR_GPIO_SET_DATA67_OFFSET    0x090
++#define AM64X_SR_GPIO_SET_DATA8_OFFSET     0x0B8
++
++/*Const values*/
++#define AM64X_SR_GPIO_OUTPUT_MUX_VAL       0x00050007 /*value to define a IO as a OUTPUT GPIO in MUX register*/
++#define AM64X_SR_CLOKOUT0_MUX_VAL          0x00010005 /*value to define a IO as a CLKOUT in MUX register*/
++
++
++/*Clock Addresses*/
++#define AM64X_SR_PHY_CLK_MUX_ADDR          0x000F4274  /*CLKOUT - MUX address (CLKOUT is used as PHY1 Clock input)*/
++#define AM64X_SR_CTRLMMR_LOCK2_KICK0       0x43009008  /*Partition 2 LOCK register address (0)*/
++#define AM64X_SR_CTRLMMR_LOCK2_KICK1       0x4300900C  /*Partition 2 LOCK register address (1)*/
++#define AM64X_SR_CTRLMMR_LOCK_KEY0         0x68EF3490  /*Partition 2 Lock key value (0)*/
++#define AM64X_SR_CTRLMMR_LOCK_KEY1         0xD172BC5A  /*Partition 2 Lock key value (1)*/
++#define AM64X_SR_CTRLMMR_CLKOUT_CTRL       0x43008010  /*CLKOUT - configuration register address*/
++
++
++#define AM64X_SR_CTRLMMR_USB0_PHY_CTRL	   0x43004008
++#define AM64X_SR_CORE_VOLTAGE		           0x80000000
++
++
++#ifdef CONFIG_BOARD_LATE_INIT
++
++
++typedef struct am64x_solidrun_gpio {
++  uint8_t gpioNum;      /*GPIO number*/
++  uint8_t bitNum;       /*bit number in relevant register*/
++  u32 dirRegAddr;       /*GPIO direction register address*/
++  u32 setDataRegAddr;   /*GPIO set data register address*/
++  u32 outDataRegAddr;   /*GPIO out data register address*/
++  u32 muxRegAddr;       /*MUX address for relevant IO*/
++} am64x_solidrun_gpio_t;
++
++
++/*fill am64x_solidrun_gpio_t struct, receives the GPIO details and MUX address for this IO*/
++int8_t buildAm64xSolidRunGpio(uint8_t gpioBase, uint8_t gpioNum, u32 muxAddress, am64x_solidrun_gpio_t *gpio);
++
++/*calculates the bit location in relevant register from a GPIO number*/
++uint8_t getBitNumberFromGPIO(uint8_t gpioNum);
++
++/*select GPIO in MUX*/
++void am64xSolidrunSelectGPIO_Function(am64x_solidrun_gpio_t *gpio);
++
++/*builds address from prefix and address*/
++u32 addressFromPrefixAndOffset(u32 prefix, u32 offset);
++
++/*set GPIO value as '0'*/
++void am64xSolidRunGpioClear(am64x_solidrun_gpio_t *gpio);
++
++/*set GPIO value as '1'*/
++void am64xSolidRunGpioSet(am64x_solidrun_gpio_t *gpio);
++
++/*start PHY clock*/
++void setAm64XSolidRunPhyClock(void);
++
++/*reset the PHY with received reset GPIO*/
++void am64xSolidRunResetPhy(am64x_solidrun_gpio_t *reset);
++
++/*init all board PHYs*/
++int8_t initPhys(void);
++
++
++int board_phy_config(struct phy_device *phydev);
++
++
++#ifndef	CONFIG_SPL_BUILD
++
++int board_late_init(void);
++
++#endif //CONFIG_SPL_BUILD
++
++
++
++#endif //CONFIG_BOARD_LATE_INIT
++
++
++/*early init function*/
++int board_init(void);
++
++/*sets DDR size*/
++int dram_init(void);
++
++/*sets DDR details, including size and base address*/
++int dram_init_banksize(void);
++
++
++
++#ifdef CONFIG_SPL_LOAD_FIT
++int board_fit_config_name_match(const char *name);
++#endif //CONFIG_SPL_LOAD_FIT
++
++
++
++#ifdef CONFIG_SPL_BOARD_INIT
++void spl_board_init(void);
++#endif //CONFIG_SPL_BOARD_INIT
++
++
++#endif //__AM64X_SOLIDRUN_BOARD_H__
+diff --git a/configs/am64x_a53_solidrun_defconfig b/configs/am64x_a53_solidrun_defconfig
+index 296dca24..6acc0e18 100644
+--- a/configs/am64x_a53_solidrun_defconfig
++++ b/configs/am64x_a53_solidrun_defconfig
+@@ -119,7 +119,6 @@ CONFIG_SPI_FLASH_MT35XU=y
+ CONFIG_SPI_FLASH_MTD=y
+ CONFIG_MULTIPLEXER=y
+ CONFIG_MUX_MMIO=y
+-CONFIG_PHY_TI_DP83867=y
+ CONFIG_PHY_FIXED=y
+ CONFIG_DM_ETH=y
+ CONFIG_TI_AM65_CPSW_NUSS=y
+-- 
+2.25.1
+

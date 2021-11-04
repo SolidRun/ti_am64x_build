@@ -1,0 +1,207 @@
+From 22a7fc47410ea9037ce18705735d39b458ac1823 Mon Sep 17 00:00:00 2001
+From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+Date: Thu, 4 Nov 2021 15:02:06 +0200
+Subject: [PATCH] Add support for second and third PHYs.
+
+Both are using icssg-prueth MAC, and are on the same MDIO bus.
+
+They are detected in the MDIO bus after this patch, but the MAC<->PHY communication was not tested yet (need another carrier board).
+---
+ arch/arm64/boot/dts/ti/am642-solidrun.dts    | 70 +++++++-------------
+ arch/arm64/configs/am64xx-solidrun_defconfig | 18 ++---
+ 2 files changed, 32 insertions(+), 56 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/am642-solidrun.dts b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+index be598259c..debe5d519 100644
+--- a/arch/arm64/boot/dts/ti/am642-solidrun.dts
++++ b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+@@ -9,7 +9,6 @@
+ #include <dt-bindings/mux/ti-serdes.h>
+ #include <dt-bindings/leds/common.h>
+ #include <dt-bindings/gpio/gpio.h>
+-#include <dt-bindings/net/ti-dp83867.h>
+ #include <dt-bindings/net/ti-dp83869.h>
+ #include "k3-am642.dtsi"
+ 
+@@ -166,31 +165,6 @@ led-0 {
+ 		};
+ 	};
+ 
+-	mdio_mux: mux-controller {
+-		compatible = "gpio-mux";
+-		#mux-control-cells = <0>;
+-
+-		mux-gpios = <&exp1 12 GPIO_ACTIVE_HIGH>;
+-	};
+-
+-	mdio_mux_1: mdio-mux-1 {
+-		compatible = "mdio-mux-multiplexer";
+-		mux-controls = <&mdio_mux>;
+-		mdio-parent-bus = <&cpsw3g_mdio>;
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-
+-		mdio@1 {
+-			reg = <0x1>;
+-			#address-cells = <1>;
+-			#size-cells = <0>;
+-
+-			cpsw3g_phy3: ethernet-phy@3 {
+-				reg = <3>;
+-			};
+-		};
+-	};
+-
+ 	transceiver1: can-phy0 {
+ 		compatible = "ti,tcan1042";
+ 		#phy-cells = <0>;
+@@ -208,7 +182,8 @@ transceiver2: can-phy1 {
+ 	icssg1_eth: icssg1-eth {
+ 		compatible = "ti,am642-icssg-prueth";
+ 		pinctrl-names = "default";
+-		pinctrl-0 = <&icssg1_rgmii1_pins_default>;
++		pinctrl-0 = <&icssg1_rgmii1_pins_default
++			     &rgmii2_pins_default>;
+ 
+ 		sram = <&oc_sram>;
+ 		ti,prus = <&pru1_0>, <&rtu1_0>, <&tx_pru1_0>, <&pru1_1>, <&rtu1_1>, <&tx_pru1_1>;
+@@ -260,12 +235,14 @@ icssg1_emac0: ethernet-mii0 {
+ 		};
+ 
+ 		icssg1_emac1: ethernet-mii1 {
++			phy-handle = <&icssg1_phy2>;		
++			phy-mode = "rgmii-rxid";
+ 			syscon-rgmii-delay = <&main_conf 0x4114>;
+ 			/* Filled in by bootloader */
+ 			local-mac-address = [00 00 00 00 00 00];
+-			status = "disabled";
+ 		};
+ 	};
++
+ };
+ 
+ &oc_sram {
+@@ -380,7 +357,6 @@ AM64X_IOPAD(0x0130, PIN_OUTPUT, 4) /* (W14) PRG1_PRU1_GPO10.RGMII1_TD2 */
+ 			AM64X_IOPAD(0x014c, PIN_OUTPUT, 4) /* (AA14) PRG1_PRU1_GPO17.RGMII1_TD3 */
+ 			AM64X_IOPAD(0x00e0, PIN_OUTPUT, 4) /* (U14) PRG1_PRU0_GPO10.RGMII1_TXC */
+ 			AM64X_IOPAD(0x00dc, PIN_OUTPUT, 4) /* (U15) PRG1_PRU0_GPO9.RGMII1_TX_CTL */
+-			AM64X_IOPAD(0x0154, PIN_OUTPUT | PIN_INPUT, 7)/*  (V12) - PHY RESET*/
+ 		>;
+ 	};
+ 
+@@ -616,8 +592,7 @@ &usb0 {
+ &cpsw3g {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&mdio1_pins_default
+-		     &rgmii1_pins_default
+-		     &rgmii2_pins_default>;
++		     &rgmii1_pins_default>;
+ 
+ 	cpts@3d000 {
+ 		ti,pps = <7 1>;
+@@ -630,19 +605,29 @@ &cpsw_port1 {
+ };
+ 
+ &cpsw_port2 {
+-	phy-mode = "rgmii-rxid";
+-	phy-handle = <&cpsw3g_phy3>;
++	status = "disabled";
+ };
+ 
+ &cpsw3g_mdio {
+-	reset-gpios =  <&main_gpio0 84 GPIO_ACTIVE_LOW>;
+-	reset-delay-us = <2>;
+-
+ 	cpsw3g_phy0: ethernet-phy@0 {
+ 		reg = <0>;
+-	        tx-internal-delay-ps = <2000>;
+ 		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
+-		ti,fifo-depth = <DP83869_PHYCR_FIFO_DEPTH_4_B_NIB>;
++	};
++};
++
++&icssg1_mdio {
++	pinctrl-names = "default";
++	status = "okay";
++	pinctrl-0 = <&icssg1_mdio1_pins_default>;
++
++	icssg1_phy1: ethernet-phy@f {
++		reg = <0xf>;
++		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
++	};
++	
++	icssg1_phy2: ethernet-phy@3 {
++		reg = <3>;
++		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
+ 	};
+ };
+ 
+@@ -776,15 +761,6 @@ &icssg0_mdio {
+ 	status = "disabled";
+ };
+ 
+-&icssg1_mdio {
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&icssg1_mdio1_pins_default>;
+-
+-	icssg1_phy1: ethernet-phy@f {
+-		reg = <0xf>;
+-	};
+-};
+-
+ &ecap0 {
+ 	/* PWM is available on Pin 1 of header J12 */
+ 	pinctrl-names = "default";
+diff --git a/arch/arm64/configs/am64xx-solidrun_defconfig b/arch/arm64/configs/am64xx-solidrun_defconfig
+index 125e5c335..690377bd7 100644
+--- a/arch/arm64/configs/am64xx-solidrun_defconfig
++++ b/arch/arm64/configs/am64xx-solidrun_defconfig
+@@ -1267,7 +1267,7 @@ CONFIG_DNS_RESOLVER=y
+ # CONFIG_NETLINK_DIAG is not set
+ # CONFIG_MPLS is not set
+ # CONFIG_NET_NSH is not set
+-CONFIG_HSR=m
++CONFIG_HSR=y
+ CONFIG_NET_SWITCHDEV=y
+ # CONFIG_NET_L3_MASTER_DEV is not set
+ CONFIG_QRTR=m
+@@ -2298,10 +2298,10 @@ CONFIG_TI_K3_AM65_CPSW_SWITCHDEV=y
+ CONFIG_TI_K3_AM65_CPTS=y
+ CONFIG_TI_AM65_CPSW_TAS=y
+ # CONFIG_TLAN is not set
+-CONFIG_TI_RDEV_ETH_SWITCH_VIRT_EMAC=m
+-CONFIG_TI_PRUETH=m
+-CONFIG_TI_ICSS_IEP=m
+-CONFIG_TI_ICSSG_PRUETH=m
++CONFIG_TI_RDEV_ETH_SWITCH_VIRT_EMAC=y
++CONFIG_TI_PRUETH=y
++CONFIG_TI_ICSS_IEP=y
++CONFIG_TI_ICSSG_PRUETH=y
+ # CONFIG_NET_VENDOR_VIA is not set
+ # CONFIG_NET_VENDOR_WIZNET is not set
+ CONFIG_NET_VENDOR_XILINX=y
+@@ -5829,9 +5829,9 @@ CONFIG_ARM_SMMU_V3=y
+ #
+ CONFIG_REMOTEPROC=y
+ # CONFIG_REMOTEPROC_CDEV is not set
+-CONFIG_PRU_REMOTEPROC=m
+-CONFIG_TI_K3_DSP_REMOTEPROC=m
+-CONFIG_TI_K3_R5_REMOTEPROC=m
++CONFIG_PRU_REMOTEPROC=y
++CONFIG_TI_K3_DSP_REMOTEPROC=y
++CONFIG_TI_K3_R5_REMOTEPROC=y
+ # end of Remoteproc drivers
+ 
+ #
+@@ -5901,7 +5901,7 @@ CONFIG_SOC_TI=y
+ CONFIG_TI_SCI_PM_DOMAINS=y
+ CONFIG_TI_K3_RINGACC=y
+ CONFIG_TI_K3_SOCINFO=y
+-CONFIG_TI_PRUSS=m
++CONFIG_TI_PRUSS=y
+ CONFIG_TI_SCI_INTA_MSI_DOMAIN=y
+ 
+ #
+-- 
+2.25.1
+
