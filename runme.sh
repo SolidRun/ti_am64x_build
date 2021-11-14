@@ -11,6 +11,62 @@ export PATH=$BASE_DIR/build/toolchain/gcc-arm-9.2-2019.12-x86_64-aarch64-none-li
 
 mkdir -p $BASE_DIR/build
 
+
+###################################################################################################################################
+#                                                       INSTALL Packages
+
+PACKAGES_LIST="sudo git make mtools coreutils u-boot-tools gcc-arm-linux-gnueabihf gcc-arm-linux-gnueabi gcc-aarch64-linux-gnu python3 python3-pyelftools libssl-dev build-essential device-tree-compiler bc unzip tar util-linux binutils e2fsprogs gawk wget diffstat texinfo chrpath sed g++ bash patch cpio python2 rsync file python3-pip"
+
+set +e
+for i in $PACKAGES_LIST; do
+	
+	#Check if package is installed
+	dpkg -s $i > /dev/null  2>&1
+	
+	#If exit code is not 0 - package is not installed
+	if [ $? -ne 0 ]; then
+
+
+		echo "Package $i is not installed"
+		echo "If using apt package manager, you can install this tool using:"
+		echo "	sudo apt install $i"
+		echo "You can install all needed packages using:"
+		echo "	sudo apt install $PACKAGES_LIST"
+
+		exit -1
+	fi
+
+done
+
+# Check if needed Python modules are installed
+
+PYTHON_MODULES="pycryptodome"
+
+for i in $PYTHON_MODULES; do
+
+        #Check if module is installed
+        pip3 list | grep $i > /dev/null 2>&1
+
+        #If exit code is not 0 - module is not installed
+        if [ $? -ne 0 ]; then
+
+
+                echo "Python module $i is not installed"
+                echo "Please install it using:"
+                echo "  pip3 install $i"
+
+                exit -1
+        fi
+
+done
+
+set -e
+
+###################################################################################################################################
+
+
+
+
 ###################################################################################################################################
 #							DOWNLOAD Toolchain
 
