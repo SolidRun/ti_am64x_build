@@ -1,0 +1,41 @@
+From a446bd39ae98d0ca7d2b2c02441b9bdd2527f4e8 Mon Sep 17 00:00:00 2001
+From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+Date: Tue, 16 Nov 2021 14:06:48 +0200
+Subject: [PATCH] Unlock MCU MMR region
+
+---
+ arch/arm/mach-k3/am642_init.c                 | 4 ++++
+ arch/arm/mach-k3/include/mach/am64_hardware.h | 2 ++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/arch/arm/mach-k3/am642_init.c b/arch/arm/mach-k3/am642_init.c
+index 3871fe00..ccab0a0a 100644
+--- a/arch/arm/mach-k3/am642_init.c
++++ b/arch/arm/mach-k3/am642_init.c
+@@ -30,6 +30,10 @@ static void ctrl_mmr_unlock(void)
+ 	/* Unlock all PADCFG_MMR1 module registers */
+ 	mmr_unlock(PADCFG_MMR1_BASE, 1);
+ 
++	/* Unlock MCU_PADCFG_MMR1 module registers */
++	mmr_unlock(MCU_PADCFG_MMR1_BASE, 1);
++
++
+ 	/* Unlock all CTRL_MMR0 module registers */
+ 	mmr_unlock(CTRL_MMR0_BASE, 0);
+ 	mmr_unlock(CTRL_MMR0_BASE, 1);
+diff --git a/arch/arm/mach-k3/include/mach/am64_hardware.h b/arch/arm/mach-k3/include/mach/am64_hardware.h
+index b261871d..315c9a8c 100644
+--- a/arch/arm/mach-k3/include/mach/am64_hardware.h
++++ b/arch/arm/mach-k3/include/mach/am64_hardware.h
+@@ -12,6 +12,8 @@
+ 
+ #define PADCFG_MMR1_BASE				0xf0000
+ 
++#define MCU_PADCFG_MMR1_BASE				0x4080000
++
+ #define MAIN_DEVSTAT_PRIMARY_BOOTMODE_MASK		0x00000078
+ #define MAIN_DEVSTAT_PRIMARY_BOOTMODE_SHIFT		3
+ 
+-- 
+2.25.1
+

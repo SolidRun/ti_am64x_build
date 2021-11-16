@@ -1,0 +1,76 @@
+From e29acff2e43252b3192c32f85dd45d196b1be5a5 Mon Sep 17 00:00:00 2001
+From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+Date: Tue, 16 Nov 2021 14:05:10 +0200
+Subject: [PATCH] Add MCU UART 1 in device tree
+
+---
+ arch/arm64/boot/dts/ti/am642-solidrun.dts | 12 +++++++++++-
+ arch/arm64/boot/dts/ti/k3-am64-mcu.dtsi   | 10 ++++++++--
+ 2 files changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/am642-solidrun.dts b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+index 162df0e3e..2119a0118 100644
+--- a/arch/arm64/boot/dts/ti/am642-solidrun.dts
++++ b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+@@ -444,6 +444,15 @@ AM64X_IOPAD(0x0270, PIN_INPUT, 0) /* (D18) ECAP0_IN_APWM_OUT */
+ 	};
+ };
+ 
++&wkup_pmx0 {
++	mcu_uart1_pins_default: mcu-uart1-pins-default {
++		pinctrl-single,pins = <
++			AM64X_MCU_IOPAD(0x0038, PIN_INPUT, 0) /* (C9) MCU_UART1_RXD */
++			AM64X_MCU_IOPAD(0x003c, PIN_OUTPUT, 0) /* (D9) MCU_UART1_TXD */
++		>;
++	};
++};
++
+ &main_uart0 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&main_uart0_pins_default>;
+@@ -479,7 +488,8 @@ &mcu_uart0 {
+ };
+ 
+ &mcu_uart1 {
+-	status = "disabled";
++	pinctrl-names = "default";
++	pinctrl-0 = <&mcu_uart1_pins_default>;
+ };
+ 
+ 
+diff --git a/arch/arm64/boot/dts/ti/k3-am64-mcu.dtsi b/arch/arm64/boot/dts/ti/k3-am64-mcu.dtsi
+index 99e94dee1..1b6859758 100644
+--- a/arch/arm64/boot/dts/ti/k3-am64-mcu.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-am64-mcu.dtsi
+@@ -12,7 +12,6 @@ mcu_uart0: serial@4a00000 {
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		interrupts = <GIC_SPI 185 IRQ_TYPE_LEVEL_HIGH>;
+-		clock-frequency = <48000000>;
+ 		current-speed = <115200>;
+ 		power-domains = <&k3_pds 149 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 149 0>;
+@@ -25,7 +24,6 @@ mcu_uart1: serial@4a10000 {
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		interrupts = <GIC_SPI 186 IRQ_TYPE_LEVEL_HIGH>;
+-		clock-frequency = <48000000>;
+ 		current-speed = <115200>;
+ 		power-domains = <&k3_pds 160 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 160 0>;
+@@ -100,4 +98,12 @@ mcu_gpio0: gpio@4201000 {
+ 		clocks = <&k3_clks 79 0>;
+ 		clock-names = "gpio";
+ 	};
++
++	wkup_pmx0: pinctrl@4084000 {
++		compatible = "pinctrl-single";
++		reg = <0x00 0x04084000 0x00 0x80>;
++		#pinctrl-cells = <1>;
++		pinctrl-single,register-width = <32>;
++		pinctrl-single,function-mask = <0xffffffff>;
++	};
+ };
+-- 
+2.25.1
+
