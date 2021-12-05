@@ -1,0 +1,190 @@
+From f57867bade4bad70a691344f5b22042dfe96b303 Mon Sep 17 00:00:00 2001
+From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+Date: Sun, 5 Dec 2021 12:46:34 +0200
+Subject: [PATCH] Add SimpleLink MCU reset during boot.
+
+Signed-off-by: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+---
+ .../solidrun/am64x_solidrun/am64x_solidrun.c  | 52 ++++++++++++++--
+ .../solidrun/am64x_solidrun/am64x_solidrun.h  | 61 ++++++++++---------
+ 2 files changed, 79 insertions(+), 34 deletions(-)
+
+diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
+index 3ac64fa8..d8924a95 100644
+--- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
++++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
+@@ -64,8 +64,13 @@ int8_t buildAm64xSolidRunGpio(uint8_t gpioBase, uint8_t gpioNum, u32 muxAddress,
+ {
+ 	u32 gpioBaseAddr;
+ 
+-	/*This SOC has 2 GPIO bases, so it can be 0 or 1*/
+-	if(gpioBase > 1 || gpioBase < 0)
++	/*
++	This SOC has 3 GPIO bases
++	0 -> GPIO0
++	1 -> GPIO1
++	2 -> MCU_GPIO0
++	*/
++	if(gpioBase > 2 || gpioBase < 0)
+ 	{
+ 		return -1;
+ 	}
+@@ -83,7 +88,9 @@ int8_t buildAm64xSolidRunGpio(uint8_t gpioBase, uint8_t gpioNum, u32 muxAddress,
+ 
+ 	/*Calculate register addresses based on GPIO number and base*/
+ 
+-	gpioBaseAddr = gpioBase ? AM64X_SR_GPIO1_BASE_ADDR_PREFIX : AM64X_SR_GPIO0_BASE_ADDR_PREFIX;
++	gpioBaseAddr = gpioBase == 2 ? AM64X_SR_MCU0_GPIO_BASE_ADDR_PREFIX :
++								 gpioBase == 1 ? AM64X_SR_GPIO1_BASE_ADDR_PREFIX :
++								 AM64X_SR_GPIO0_BASE_ADDR_PREFIX;
+ 
+ 	/*get GPIO addresses by the register number, 32 bits per register*/
+ 	switch (gpioNum / 32)
+@@ -508,16 +515,51 @@ int8_t initPhys(void)
+ 	return 0;
+ }
+ 
++
++int8_t resetSimpleLink(void)
++{
++
++	am64x_solidrun_gpio_t rst;
++
++	/*build gpio sturct for the reset pin*/
++	if( buildAm64xSolidRunGpio(2, 17, 0x04084044, &rst) != 0 )
++	{
++		/*error*/
++		return -1;
++	}
++
++	/*drive GPIO low, select GPIO function and sleep for 10ms*/
++
++	am64xSolidRunGpioClear(&rst);
++	am64xSolidrunSelectGPIO_Function(&rst);
++	mdelay(10);
++
++	/*drive GPIO high*/
++	am64xSolidRunGpioSet(&rst);
++
++	return 0;
++}
++
+ #ifndef	CONFIG_SPL_BUILD
+ 
+ int board_late_init(void)
+ {
++	int ret;
++
+ 	/*read Mac Addresses and save in environment*/
+ 	am64xSolidrunSetMacAddresses();
+ 
+-	/*init PHY*/
+-	return initPhys();
+ 
++	/*reset SimpleLink MCU*/
++	ret = resetSimpleLink();
++
++	/*error reseting SimpleLink MCU*/
++	if(ret < 0)
++		return ret;
++
++
++	/*init all PHYs*/
++	return initPhys();
+ }
+ 
+ #endif //CONFIG_SPL_BUILD
+diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.h b/board/solidrun/am64x_solidrun/am64x_solidrun.h
+index 2306270a..a5a7df8a 100644
+--- a/board/solidrun/am64x_solidrun/am64x_solidrun.h
++++ b/board/solidrun/am64x_solidrun/am64x_solidrun.h
+@@ -14,47 +14,49 @@
+ /*AM64X Addresses*/
+ 
+ /*GPIO BASE PREFIX ADDRESS - 20 bits*/
+-#define AM64X_SR_GPIO0_BASE_ADDR_PREFIX    0x00600
+-#define AM64X_SR_GPIO1_BASE_ADDR_PREFIX    0x00601
++#define AM64X_SR_GPIO0_BASE_ADDR_PREFIX       0x00600
++#define AM64X_SR_GPIO1_BASE_ADDR_PREFIX       0x00601
++#define AM64X_SR_MCU0_GPIO_BASE_ADDR_PREFIX   0x04201
++
+ 
+ /*GPIO registers offsets - 12 bits*/
+-#define AM64X_SR_GPIO_DIR01_OFFSET         0x010
+-#define AM64X_SR_GPIO_DIR23_OFFSET         0x038
+-#define AM64X_SR_GPIO_DIR45_OFFSET         0x060
+-#define AM64X_SR_GPIO_DIR67_OFFSET         0x088
+-#define AM64X_SR_GPIO_DIR8_OFFSET          0x0B0
+-#define AM64X_SR_GPIO_OUT_DATA01_OFFSET    0x014
+-#define AM64X_SR_GPIO_OUT_DATA23_OFFSET    0x03C
+-#define AM64X_SR_GPIO_OUT_DATA45_OFFSET    0x064
+-#define AM64X_SR_GPIO_OUT_DATA67_OFFSET    0x08C
+-#define AM64X_SR_GPIO_OUT_DATA8_OFFSET     0x0B4
+-#define AM64X_SR_GPIO_SET_DATA01_OFFSET    0x018
+-#define AM64X_SR_GPIO_SET_DATA23_OFFSET    0x040
+-#define AM64X_SR_GPIO_SET_DATA45_OFFSET    0x068
+-#define AM64X_SR_GPIO_SET_DATA67_OFFSET    0x090
+-#define AM64X_SR_GPIO_SET_DATA8_OFFSET     0x0B8
++#define AM64X_SR_GPIO_DIR01_OFFSET            0x010
++#define AM64X_SR_GPIO_DIR23_OFFSET            0x038
++#define AM64X_SR_GPIO_DIR45_OFFSET            0x060
++#define AM64X_SR_GPIO_DIR67_OFFSET            0x088
++#define AM64X_SR_GPIO_DIR8_OFFSET             0x0B0
++#define AM64X_SR_GPIO_OUT_DATA01_OFFSET       0x014
++#define AM64X_SR_GPIO_OUT_DATA23_OFFSET       0x03C
++#define AM64X_SR_GPIO_OUT_DATA45_OFFSET       0x064
++#define AM64X_SR_GPIO_OUT_DATA67_OFFSET       0x08C
++#define AM64X_SR_GPIO_OUT_DATA8_OFFSET        0x0B4
++#define AM64X_SR_GPIO_SET_DATA01_OFFSET       0x018
++#define AM64X_SR_GPIO_SET_DATA23_OFFSET       0x040
++#define AM64X_SR_GPIO_SET_DATA45_OFFSET       0x068
++#define AM64X_SR_GPIO_SET_DATA67_OFFSET       0x090
++#define AM64X_SR_GPIO_SET_DATA8_OFFSET        0x0B8
+ 
+ /*Const values*/
+-#define AM64X_SR_GPIO_OUTPUT_MUX_VAL       0x00050007 /*value to define a IO as a OUTPUT GPIO in MUX register*/
+-#define AM64X_SR_CLOKOUT0_MUX_VAL          0x00010005 /*value to define a IO as a CLKOUT in MUX register*/
++#define AM64X_SR_GPIO_OUTPUT_MUX_VAL          0x00050007 /*value to define a IO as a OUTPUT GPIO in MUX register*/
++#define AM64X_SR_CLOKOUT0_MUX_VAL             0x00010005 /*value to define a IO as a CLKOUT in MUX register*/
+ 
+ 
+ /*Clock Addresses*/
+-#define AM64X_SR_PHY_CLK_MUX_ADDR          0x000F4274  /*CLKOUT - MUX address (CLKOUT is used as PHY1 Clock input)*/
+-#define AM64X_SR_CTRLMMR_LOCK2_KICK0       0x43009008  /*Partition 2 LOCK register address (0)*/
+-#define AM64X_SR_CTRLMMR_LOCK2_KICK1       0x4300900C  /*Partition 2 LOCK register address (1)*/
+-#define AM64X_SR_CTRLMMR_LOCK_KEY0         0x68EF3490  /*Partition 2 Lock key value (0)*/
+-#define AM64X_SR_CTRLMMR_LOCK_KEY1         0xD172BC5A  /*Partition 2 Lock key value (1)*/
+-#define AM64X_SR_CTRLMMR_CLKOUT_CTRL       0x43008010  /*CLKOUT - configuration register address*/
++#define AM64X_SR_PHY_CLK_MUX_ADDR             0x000F4274  /*CLKOUT - MUX address (CLKOUT is used as PHY1 Clock input)*/
++#define AM64X_SR_CTRLMMR_LOCK2_KICK0          0x43009008  /*Partition 2 LOCK register address (0)*/
++#define AM64X_SR_CTRLMMR_LOCK2_KICK1          0x4300900C  /*Partition 2 LOCK register address (1)*/
++#define AM64X_SR_CTRLMMR_LOCK_KEY0            0x68EF3490  /*Partition 2 Lock key value (0)*/
++#define AM64X_SR_CTRLMMR_LOCK_KEY1            0xD172BC5A  /*Partition 2 Lock key value (1)*/
++#define AM64X_SR_CTRLMMR_CLKOUT_CTRL          0x43008010  /*CLKOUT - configuration register address*/
+ 
+ 
+-#define AM64X_SR_CTRLMMR_USB0_PHY_CTRL	   0x43004008
+-#define AM64X_SR_CORE_VOLTAGE		           0x80000000
++#define AM64X_SR_CTRLMMR_USB0_PHY_CTRL	      0x43004008
++#define AM64X_SR_CORE_VOLTAGE		              0x80000000
+ 
+ 
+ /*eFuse Addresses*/
+-#define AM64X_SR_MAC_ADDR_0                0x43000204
+-#define AM64X_SR_MAC_ADDR_1                0x43000200
++#define AM64X_SR_MAC_ADDR_0                   0x43000204
++#define AM64X_SR_MAC_ADDR_1                   0x43000200
+ 
+ 
+ 
+@@ -101,6 +103,7 @@ void am64xSolidRunResetPhy(am64x_solidrun_gpio_t *reset);
+ /*init all board PHYs*/
+ int8_t initPhys(void);
+ 
++int8_t resetSimpleLink(void);
+ 
+ int board_phy_config(struct phy_device *phydev);
+ 
+-- 
+2.25.1
+
