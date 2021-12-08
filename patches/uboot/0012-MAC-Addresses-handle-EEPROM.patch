@@ -1,0 +1,231 @@
+From 6c39ff8f3a665778654fbe1938848773a9335edf Mon Sep 17 00:00:00 2001
+From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+Date: Thu, 9 Dec 2021 10:08:40 +0200
+Subject: [PATCH] MAC Addresses handle - EEPROM.
+
+Since the EFUSE region is not available for Software, the MAC addresses
+should be stored in a different non volatile memory.
+
+This commit adds this functionality.
+Check for MAC addresses in EEPROM, at I2C bus 0, slave address 0x50.
+
+Since AM64X can have up to 3 ethernet interfaces, we should store 1 MAC
+address for every interface.
+
+6 EEPROM Bytes are allocated for every interface.
+
+U-boot reads the bytes, and if the MAC address is valid and within
+SolidRun's prefix, it will use it.
+
+Storing 3 MAC addresses instead of storing just one and the number of
+MAC addresses gives us more flexibility in cases when the assembled
+interfaces are not continuous.
+
+For example: if interfaces 2 and 3 are assembled (ICSSGs), and interface 1 is not (CPSW),
+we can't just write the first MAC address, and the number 2 (2 MAC
+addresses), because, in this case, CPSW will get the first MAC address.
+
+Signed-off-by: Alvaro-Karsz <alvaro.karsz@solid-run.com>
+---
+ .../solidrun/am64x_solidrun/am64x_solidrun.c  | 116 +++++++++++-------
+ .../solidrun/am64x_solidrun/am64x_solidrun.h  |  17 ++-
+ 2 files changed, 78 insertions(+), 55 deletions(-)
+
+diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
+index d8924a95..46974442 100644
+--- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
++++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
+@@ -16,6 +16,7 @@
+ #include <linux/delay.h>
+ #include <miiphy.h>
+ #include <netdev.h>
++#include <i2c.h>
+ 
+ #include "am64x_solidrun.h"
+ 
+@@ -59,6 +60,7 @@ int board_fit_config_name_match(const char *name)
+ #ifdef CONFIG_BOARD_LATE_INIT
+ 
+ 
++
+ /*fill am64x_solidrun_gpio_t struct, receives the GPIO details and MUX address for this IO*/
+ int8_t buildAm64xSolidRunGpio(uint8_t gpioBase, uint8_t gpioNum, u32 muxAddress, am64x_solidrun_gpio_t *gpio)
+ {
+@@ -284,24 +286,44 @@ int board_phy_config(struct phy_device *phydev)
+ }
+ 
+ /*
+-reads MAC address from addr1 and addr2, saves mac in output
+-output should be an 6 elements array. (caller must check!)
++reads MAC address from EEPROM, saves mac in output buffer
++Returns 0 if case of success, -1 in case of error.
++output buffer should be an 6 elements array. (caller must check!)
+ */
+-void am64xSolidrunReadMacFromFuse(u32 addr1, u32 addr2, u8 *output)
++int8_t am64xSolidrunReadMacFromEEPROM(u8 addr, u8 *output)
+ {
+-	u32 val;
++  struct udevice *bus, *i2c_dev = NULL;
++	int ret;
++	int mac_bytes = 6; /*6 bytes*/
++
++	/*get I2C bus*/
++	ret = uclass_get_device_by_seq(UCLASS_I2C, AM64X_SR_MAC_ADDR_I2C_BUS, &bus);
++
++	/*could not get BUS*/
++	if(ret)
++	{
++		return -1;
++	}
++
++	/*probe bus and check if EEPROM is detected*/
++	ret = dm_i2c_probe(bus, AM64X_SR_MAC_ADDR_I2C_SLAVE, 0, &i2c_dev);
+ 
+-	/*read MAC address first register  -  first 4 digits (first 2 Bytes)*/
+-	val = readl(addr1);
+-	output[0] = (val >> 8) & 0xFF;
+-	output[1] = val & 0xFF;
+-
+-	/*read MAC address second register  -  last 8 digits (last 4 Bytes)*/
+-	val = readl(addr2);
+-	output[2] = (val >> 24) & 0xFF;
+-	output[3] = (val >> 16) & 0xFF;
+-	output[4] = (val >> 8) & 0xFF;
+-	output[5] = val & 0xFF;
++	/*no EEPROM*/
++	if(ret)
++	{
++		return -1;
++	}
++
++	/*read EEPROM*/
++	ret = dm_i2c_read(i2c_dev, addr , output, mac_bytes);
++
++	/*could not read eeprom*/
++	if(ret)
++	{
++		return -1;
++	}
++
++	return 0;
+ }
+ 
+ /*
+@@ -426,46 +448,48 @@ void am64xSolidrunSaveMacAddress(u8 *mac, u8 macNum)
+ 	env_set(envName, macName);
+ }
+ 
+-/*function to read MAC addresses from eFuse and save in environment*/
++/*function to read MAC addresses from EEPROM and save in environment*/
+ void am64xSolidrunSetMacAddresses(void)
+ {
+-	u8 mac[6], i;
+-
+-	/*read MAC address from eFuse*/
+-	am64xSolidrunReadMacFromFuse(AM64X_SR_MAC_ADDR_0, AM64X_SR_MAC_ADDR_1, mac);
+-
+-	/*if MAC address read from eFuse is not valid, don't set any environment parameters, net drivers will generate random MAC addresses*/
+-	if(!is_valid_ethaddr(mac))
+-	{
+-		printf("Invalid MAC address read from eFuses, using random MAC address.\n");
+-		return;
+-	}
++	u8 mac[6],
++	mac_base_addresses[] = {AM64X_SR_MAC_ADDR1_BASE_ADDR, AM64X_SR_MAC_ADDR2_BASE_ADDR, AM64X_SR_MAC_ADDR3_BASE_ADDR},
++	max_interfaces = 3,
++	i;
+ 
+ 	/*
+-	This board has 3 Ethernet interfaces, hence, needs 3 MAC addresses
+-	The first MAC address is read from eFuses.
+-	The second MAC address is equal to first MAC Address + 1
+-	The third MAC address is equal to first MAC Address + 2
++	AM64X can have up to 3 Ethernet interfaces.
++	If an Ethernet interface is assembled, it should have a MAC address in EEPROM.
+ 	*/
+ 
++	for(i = 0 ; i < max_interfaces ; i ++)
++	{
+ 
+-	/*save first MAC address in environment and print it*/
+-	am64xSolidrunSaveMacAddress(mac, 0);
+-	am64xSolidrunPrintMacAddress("First MAC Address: ", mac);
+-
+-	/*increase MAC address by 1*/
+-	am64xSolidrunIncrementMacAddress(mac);
+-
+-	/*save second MAC address in environment and print it*/
+-	am64xSolidrunSaveMacAddress(mac, 2);
+-	am64xSolidrunPrintMacAddress("Second MAC Address: ", mac);
++		/*read MAC address from EEPROM*/
++		if(am64xSolidrunReadMacFromEEPROM(mac_base_addresses[i], mac) < 0)
++		{
++			/*could not read MAC address*/
++			printf("No MAC address %u in EEPROM, using random MAC address.\n", i+1);
++			continue;
++		}
+ 
+-	/*increase MAC address by 1*/
+-	am64xSolidrunIncrementMacAddress(mac);
++		/*Check if the read MAC address is a valid one*/
++		if(!is_valid_ethaddr(mac))
++		{
++			printf("No MAC address %u in EEPROM, using random MAC address.\n", i+1);
++			continue;
++		}
+ 
+-	/*save third MAC address in environment and print it*/
+-	am64xSolidrunSaveMacAddress(mac, 3);
+-	am64xSolidrunPrintMacAddress("Third MAC Address: ", mac);
++		/*
++		Save MAC address
++		The environment variables go as follow:	ethaddr, ethaddr2, ethaddr3, ...
++		The first one has no number, and all others have indexes from, not counting from 0,
++		So we should increate index by 1 if this is not the first MAC address.
++		For the first MAC address, we can send 0, so no number will be added to the environment variable name
++		*/
++		am64xSolidrunSaveMacAddress(mac, i == 0 ? i : i+1);
++		/*print value*/
++		am64xSolidrunPrintMacAddress("MAC Address: ", mac);
++	}
+ }
+ 
+ 
+diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.h b/board/solidrun/am64x_solidrun/am64x_solidrun.h
+index a5a7df8a..9b6e3e5c 100644
+--- a/board/solidrun/am64x_solidrun/am64x_solidrun.h
++++ b/board/solidrun/am64x_solidrun/am64x_solidrun.h
+@@ -54,13 +54,12 @@
+ #define AM64X_SR_CORE_VOLTAGE		              0x80000000
+ 
+ 
+-/*eFuse Addresses*/
+-#define AM64X_SR_MAC_ADDR_0                   0x43000204
+-#define AM64X_SR_MAC_ADDR_1                   0x43000200
+-
+-
+-
+-
++/*MAC Addresses info*/
++#define AM64X_SR_MAC_ADDR_I2C_BUS             0     /*EEPROM's I2C BUS*/
++#define AM64X_SR_MAC_ADDR_I2C_SLAVE           0x50  /*EEPROM ADDRESS*/
++#define AM64X_SR_MAC_ADDR1_BASE_ADDR          0     /*MAC ADDRESS 1 base address*/
++#define AM64X_SR_MAC_ADDR2_BASE_ADDR          0x6   /*MAC ADDRESS 2 base address*/
++#define AM64X_SR_MAC_ADDR3_BASE_ADDR          0xc   /*MAC ADDRESS 3 base address*/
+ 
+ 
+ #ifdef CONFIG_BOARD_LATE_INIT
+@@ -110,8 +109,8 @@ int board_phy_config(struct phy_device *phydev);
+ /*function to read MAC addresses from eFuse and save in environment*/
+ void am64xSolidrunSetMacAddresses(void);
+ 
+-/*reads mac address from eFuse*/
+-void am64xSolidrunReadMacFromFuse(u32 addr1, u32 addr2, u8 *output);
++/*reads mac address from EEPROM*/
++int8_t am64xSolidrunReadMacFromEEPROM(u8 addr, u8 *output);
+ 
+ /*save MAC address in environment, macNum is the interface number*/
+ void am64xSolidrunSaveMacAddress(u8 *mac, u8 macNum);
+-- 
+2.25.1
+
