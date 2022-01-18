@@ -1,19 +1,20 @@
-From 18b6d004e87b723d288a993fed54a80ccd3309c3 Mon Sep 17 00:00:00 2001
-From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
-Date: Wed, 6 Oct 2021 12:55:53 +0300
+From a5b7a069af2bf8521edf559807f5329b6e46f0de Mon Sep 17 00:00:00 2001
+From: Alvaro Karsz <alvaro.karsz@solid-run.com>
+Date: Tue, 18 Jan 2022 14:03:32 +0200
 Subject: [PATCH] Add SoldiRun's AM64X based board defconfig
 
+Signed-off-by: Alvaro Karsz <alvaro.karsz@solid-run.com>
 ---
- configs/am64x_solidrun_defconfig | 54 ++++++++++++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
+ configs/am64x_solidrun_defconfig | 59 ++++++++++++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
  create mode 100644 configs/am64x_solidrun_defconfig
 
 diff --git a/configs/am64x_solidrun_defconfig b/configs/am64x_solidrun_defconfig
 new file mode 100644
-index 0000000..ec1c078
+index 0000000..6a664ba
 --- /dev/null
 +++ b/configs/am64x_solidrun_defconfig
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,59 @@
 +BR2_aarch64=y
 +BR2_TOOLCHAIN_BUILDROOT_GLIBC=y
 +BR2_PACKAGE_GLIBC_UTILS=y
@@ -68,6 +69,11 @@ index 0000000..ec1c078
 +BR2_TARGET_ROOTFS_CPIO=y
 +BR2_TARGET_ROOTFS_CPIO_UIMAGE=y
 +BR2_TARGET_ROOTFS_EXT2=y
++BR2_TARGET_ROOTFS_EXT2_4=y
++BR2_TARGET_ROOTFS_EXT2_GEN=4
++BR2_TARGET_ROOTFS_EXT2_REV=1
++BR2_PACKAGE_LIBUSB=y
++BR2_PACKAGE_UHUBCTL=y
 -- 
-2.25.1
+2.32.0
 

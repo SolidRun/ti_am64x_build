@@ -11,6 +11,8 @@ export PATH=$BASE_DIR/build/toolchain/gcc-arm-9.2-2019.12-x86_64-aarch64-none-li
 
 mkdir -p $BASE_DIR/build
 
+# Get number of jobs in this machine to use with make command
+JOBS=$(getconf _NPROCESSORS_ONLN)
 
 ###################################################################################################################################
 #                                                       INSTALL Packages
@@ -19,10 +21,10 @@ PACKAGES_LIST="sudo git make mtools coreutils u-boot-tools gcc-arm-linux-gnueabi
 
 set +e
 for i in $PACKAGES_LIST; do
-	
+
 	#Check if package is installed
 	dpkg -s $i > /dev/null  2>&1
-	
+
 	#If exit code is not 0 - package is not installed
 	if [ $? -ne 0 ]; then
 
@@ -135,7 +137,7 @@ if [[ ! -d $BASE_DIR/build/ti-u-boot ]]; then
 	git clone git://git.ti.com/ti-u-boot/ti-u-boot.git -b $U_BOOT_TAG --depth=1
 	cd ti-u-boot
 	git am $BASE_DIR/patches/uboot/*.patch
-	
+
 fi
 
 ###################################################################################################################################
@@ -179,11 +181,11 @@ mkdir -p $BASE_DIR/tmp
 
 
 ###################################################################################################################################
-#							BUILD ATF 
+#							BUILD ATF
 PLAT=k3
 
 cd  $BASE_DIR/build/arm-trusted-firmware
-make -j32 CROSS_COMPILE=aarch64-linux-gnu- ARCH=aarch64 PLAT=$PLAT TARGET_BOARD=lite SPD=opteed
+make -j${JOBS} CROSS_COMPILE=aarch64-linux-gnu- ARCH=aarch64 PLAT=$PLAT TARGET_BOARD=lite SPD=opteed
 cp build/k3/lite/release/bl31.bin $BASE_DIR/tmp/bl31.bin
 
 ###################################################################################################################################
@@ -196,8 +198,8 @@ cp build/k3/lite/release/bl31.bin $BASE_DIR/tmp/bl31.bin
 PLATFORM=k3-am64x
 
 cd  $BASE_DIR/build/optee_os
-make -j32  ARCH=arm PLATFORM=$PLATFORM CROSS_COMPILE32=arm-linux-gnueabihf- CFG_ARM64_core=y
-cp out/arm-plat-k3/core/tee-pager_v2.bin $BASE_DIR/tmp/tee-pager_v2.bin 
+make -j${JOBS} ARCH=arm PLATFORM=$PLATFORM CROSS_COMPILE32=arm-linux-gnueabihf- CFG_ARM64_core=y
+cp out/arm-plat-k3/core/tee-pager_v2.bin $BASE_DIR/tmp/tee-pager_v2.bin
 
 ###################################################################################################################################
 
@@ -215,16 +217,16 @@ cd $BASE_DIR/build/ti-u-boot
 
 # 	R5
 
-make -j32 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- $U_BOOT_R5_DEFCONFIG
-make -j32 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- $U_BOOT_R5_DEFCONFIG
+make -j${JOBS} ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
 cp tiboot3.bin $BASE_DIR/tmp/tiboot3.bin
 
 
 
 # 	A53
 
-make -j32 ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- $U_BOOT_A53_DEFCONFIG
-make -j32 ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- ATF=$BASE_DIR/tmp/bl31.bin TEE=$BASE_DIR/tmp/tee-pager_v2.bin
+make ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- $U_BOOT_A53_DEFCONFIG
+make -j${JOBS} ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- ATF=$BASE_DIR/tmp/bl31.bin TEE=$BASE_DIR/tmp/tee-pager_v2.bin
 
 
 cp tispl.bin $BASE_DIR/tmp/tispl.bin
@@ -253,8 +255,8 @@ cp sysfw-${SOC}-evm.itb  $BASE_DIR/tmp/sysfw.itb
 LINUX_DEFCONFIG=am64xx-solidrun_defconfig
 
 cd $BASE_DIR/build/ti-linux-kernel
-make -j32 $LINUX_DEFCONFIG
-make  -j32 Image dtbs
+make $LINUX_DEFCONFIG
+make -j${JOBS} Image dtbs
 cp arch/arm64/boot/Image $BASE_DIR/tmp/Image
 cp arch/arm64/boot/dts/ti/am642-solidrun.dtb $BASE_DIR/tmp/am642-solidrun.dtb
 
@@ -268,10 +270,11 @@ cp arch/arm64/boot/dts/ti/am642-solidrun.dtb $BASE_DIR/tmp/am642-solidrun.dtb
 BUILDROOT_DEFCONFIG=am64x_solidrun_defconfig
 
 cd $BASE_DIR/build/buildroot
-make -j32 $BUILDROOT_DEFCONFIG
-make -j32
+make $BUILDROOT_DEFCONFIG
+make -j${JOBS}
 
 cp $BASE_DIR/build/buildroot/output/images/rootfs.cpio.uboot $BASE_DIR/tmp/rootfs.cpio
+cp $BASE_DIR/build/buildroot/output/images/rootfs.ext4 $BASE_DIR/tmp/rootfs.ext4
 
 ###################################################################################################################################
 
@@ -289,27 +292,41 @@ cd $BASE_DIR
 COMMIT_HASH=`git log -1 --pretty=format:%h`
 IMAGE_NAME=microsd-${COMMIT_HASH}.img
 
-
+# Create the output image, 300MB, 2 partitions, 1 boot partition and one root partition
 dd if=/dev/zero of=$BASE_DIR/output/$IMAGE_NAME bs=1M count=300
+parted $BASE_DIR/output/$IMAGE_NAME mklabel msdos mkpart primary fat32 1 30% mkpart primary ext4 30% 100%
 
-mformat -F -i $BASE_DIR/output/$IMAGE_NAME ::
 
-mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/tiboot3.bin ::tiboot3.bin
+# Create boot partition as a different file
+dd if=/dev/zero of=$BASE_DIR/output/boot_$IMAGE_NAME bs=1M count=80
 
-mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/tispl.bin ::tispl.bin
+mformat -v boot -F -i $BASE_DIR/output/boot_$IMAGE_NAME ::
 
-mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/u-boot.img ::u-boot.img
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/tiboot3.bin ::tiboot3.bin
 
-mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/sysfw.itb ::sysfw.itb
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/tispl.bin ::tispl.bin
 
-mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/Image ::Image
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/u-boot.img ::u-boot.img
 
-mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/am642-solidrun.dtb ::am642-solidrun.dtb
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/sysfw.itb ::sysfw.itb
 
-mcopy -i $BASE_DIR/output/$IMAGE_NAME $BASE_DIR/tmp/rootfs.cpio ::rootfs.cpio
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/Image ::Image
+
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/am642-solidrun.dtb ::am642-solidrun.dtb
+
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/rootfs.cpio ::rootfs.cpio
+
+
+# Now find offsets in output image
+FIRST_PARTITION_OFFSET=`fdisk $BASE_DIR/output/$IMAGE_NAME -l | grep img1 | awk '{print $2}'`
+SECOND_PARTITION_OFFSET=`fdisk $BASE_DIR/output/$IMAGE_NAME -l | grep img2 | awk '{print $2}'`
+
+# Write boot partition into output partition
+dd if=$BASE_DIR/output/boot_$IMAGE_NAME of=$BASE_DIR/output/$IMAGE_NAME seek=$FIRST_PARTITION_OFFSET conv=notrunc
+
+# write rootfs into second partition
+dd if=$BASE_DIR/tmp/rootfs.ext4 of=$BASE_DIR/output/$IMAGE_NAME seek=$SECOND_PARTITION_OFFSET conv=notrunc
 
 printf "\n\nImage file: $BASE_DIR/output/$IMAGE_NAME\n\n"
 
 ###################################################################################################################################
-
-
