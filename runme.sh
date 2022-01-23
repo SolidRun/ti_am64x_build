@@ -1,6 +1,17 @@
 #!/bin/bash
 set -e
 
+
+
+# Check if git user name and git email are configured
+if [ -z "`git config user.name`" ] || [ -z "`git config user.email`" ]; then
+			echo "git is not configured, please run:"
+			echo "git config --global user.email \"you@example.com\""
+			echo "git config --global user.name \"Your Name\""
+			exit -1
+fi
+
+
 BASE_DIR=`pwd`
 
 
@@ -17,7 +28,7 @@ JOBS=$(getconf _NPROCESSORS_ONLN)
 ###################################################################################################################################
 #                                                       INSTALL Packages
 
-PACKAGES_LIST="sudo git make mtools coreutils u-boot-tools gcc-arm-linux-gnueabihf gcc-arm-linux-gnueabi gcc-aarch64-linux-gnu python3 python3-pyelftools libssl-dev build-essential device-tree-compiler bc unzip tar util-linux binutils e2fsprogs gawk wget diffstat texinfo chrpath sed g++ bash patch cpio python2 rsync file python3-pip"
+PACKAGES_LIST="git make mtools bison coreutils u-boot-tools gcc-arm-linux-gnueabihf gcc-arm-linux-gnueabi gcc-aarch64-linux-gnu python3 python3-pyelftools libssl-dev build-essential device-tree-compiler bc unzip tar util-linux binutils e2fsprogs gawk wget diffstat texinfo chrpath sed g++ bash patch cpio python2 rsync file python3-pip flex parted"
 
 set +e
 for i in $PACKAGES_LIST; do

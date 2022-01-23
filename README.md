@@ -5,8 +5,35 @@ Main intention of this repository is to build a buildroot based build environmen
 
 The build script provides ready to use images that can be deployed on a micro SD card.
 
-## Build with host tools
-Simply running ./runme.sh, it will check for required tools, clone and build images and place results in output/ directory.
+## Building Image
+
+The build script will check for required tools, clone and build images and place results in output/ directory.
+
+### Docker build (recommended)
+
+* Build the Docker image (<b>Just once</b>):
+
+```
+docker build --build-arg user=$(whoami) --build-arg userid=$(id -u) -t ti_am64x docker/
+```
+
+To check if the image exists in you machine, you can use the following command:
+
+```
+docker images | grep ti_am64x
+```
+
+* Run the build script:
+```
+docker run -i -t -v "$PWD":/ti_build -v /etc/gitconfig:/etc/gitconfig ti_am64x ./runme.sh
+```
+
+### Native Build
+Simply:
+
+```
+./runme.sh
+```
 
 ## Deploying
 In order to create a bootable SD card, plug in a micro SD into your machine and run the following, where sdX is the location of the SD card got probed into your machine -
