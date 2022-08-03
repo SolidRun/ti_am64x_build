@@ -1,0 +1,106 @@
+From da2dfc142ab7448741dc1192d6b7483895a81308 Mon Sep 17 00:00:00 2001
+From: Moaath Abusalh <moaath.abusalh@solid-run.com>
+Date: Wed, 3 Aug 2022 13:29:20 +0300
+Subject: [PATCH] Adding the PRU0&PRU1 ETH support
+
+---
+ arch/arm64/boot/dts/ti/am642-solidrun.dts | 44 +++++++++++------------
+ 1 file changed, 22 insertions(+), 22 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/am642-solidrun.dts b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+index 71a91cccd..37e4f6106 100644
+--- a/arch/arm64/boot/dts/ti/am642-solidrun.dts
++++ b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+@@ -169,7 +169,7 @@ icssg1_eth: icssg1-eth {
+ 		compatible = "ti,am642-icssg-prueth";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&icssg1_rgmii1_pins_default
+-			     &rgmii2_pins_default>;
++			     &icssg1_rgmii2_pins_default>;
+ 
+ 		sram = <&oc_sram>;
+ 		ti,prus = <&pru1_0>, <&rtu1_0>, <&tx_pru1_0>, <&pru1_1>, <&rtu1_1>, <&tx_pru1_1>;
+@@ -213,7 +213,7 @@ icssg1_eth: icssg1-eth {
+ 			    "rxmgm0", "rxmgm1";
+ 
+ 		icssg1_emac0: ethernet-mii0 {
+-			phy-handle = <&icssg1_phy1>;
++			phy-handle = <&icssg1_phy0>;
+ 			phy-mode = "rgmii-rxid";
+ 			syscon-rgmii-delay = <&main_conf 0x4110>;
+ 			/* Filled in by bootloader */
+@@ -221,7 +221,8 @@ icssg1_emac0: ethernet-mii0 {
+ 		};
+ 
+ 		icssg1_emac1: ethernet-mii1 {
+-			phy-handle = <&icssg1_phy2>;		
++            status = "okay";
++			phy-handle = <&icssg1_phy1>;		
+ 			phy-mode = "rgmii-rxid";
+ 			syscon-rgmii-delay = <&main_conf 0x4114>;
+ 			/* Filled in by bootloader */
+@@ -346,23 +347,6 @@ AM64X_IOPAD(0x00dc, PIN_OUTPUT, 4) /* (U15) PRG1_PRU0_GPO9.RGMII1_TX_CTL */
+ 		>;
+ 	};
+ 
+-       rgmii2_pins_default: rgmii2-pins-default {
+-		pinctrl-single,pins = <
+-			AM64X_IOPAD(0x0108, PIN_INPUT, 4) /* (W11) PRG1_PRU1_GPO0.RGMII2_RD0 */
+-			AM64X_IOPAD(0x010c, PIN_INPUT, 4) /* (V11) PRG1_PRU1_GPO1.RGMII2_RD1 */
+-			AM64X_IOPAD(0x0110, PIN_INPUT, 4) /* (AA12) PRG1_PRU1_GPO2.RGMII2_RD2 */
+-			AM64X_IOPAD(0x0114, PIN_INPUT, 4) /* (Y12) PRG1_PRU1_GPO3.RGMII2_RD3 */
+-			AM64X_IOPAD(0x0120, PIN_INPUT, 4) /* (U11) PRG1_PRU1_GPO6.RGMII2_RXC */
+-			AM64X_IOPAD(0x0118, PIN_INPUT, 4) /* (W12) PRG1_PRU1_GPO4.RGMII2_RX_CTL */
+-			AM64X_IOPAD(0x0134, PIN_OUTPUT, 4) /* (AA10) PRG1_PRU1_GPO11.RGMII2_TD0 */
+-			AM64X_IOPAD(0x0138, PIN_OUTPUT, 4) /* (V10) PRG1_PRU1_GPO12.RGMII2_TD1 */
+-			AM64X_IOPAD(0x013c, PIN_OUTPUT, 4) /* (U10) PRG1_PRU1_GPO13.RGMII2_TD2 */
+-			AM64X_IOPAD(0x0140, PIN_OUTPUT, 4) /* (AA11) PRG1_PRU1_GPO14.RGMII2_TD3 */
+-			AM64X_IOPAD(0x0148, PIN_OUTPUT, 4) /* (Y10) PRG1_PRU1_GPO16.RGMII2_TXC */
+-			AM64X_IOPAD(0x0144, PIN_OUTPUT, 4) /* (Y11) PRG1_PRU1_GPO15.RGMII2_TX_CTL */
+-		>;
+-	};
+-
+ 	main_usb0_pins_default: main-usb0-pins-default {
+ 		pinctrl-single,pins = <
+ 			AM64X_IOPAD(0x02a8, PIN_OUTPUT, 0) /* (E19) USB0_DRVVBUS */
+@@ -422,6 +406,22 @@ AM64X_IOPAD(0x00f8, PIN_INPUT, 2) /* (V9) PRG1_PRU0_GPO16.PRG1_RGMII1_TXC */
+ 			AM64X_IOPAD(0x00f4, PIN_INPUT, 2) /* (Y9) PRG1_PRU0_GPO15.PRG1_RGMII1_TX_CTL */
+ 		>;
+ 	};
++    icssg1_rgmii2_pins_default: icssg1-rgmii2-pins-default {
++            pinctrl-single,pins = <
++                    AM64X_IOPAD(0x0108, PIN_INPUT, 2) /* (W11) PRG1_PRU1_GPO0.RGMII2_RD0 */
++                    AM64X_IOPAD(0x010c, PIN_INPUT, 2) /* (V11) PRG1_PRU1_GPO1.RGMII2_RD1 */
++                    AM64X_IOPAD(0x0110, PIN_INPUT, 2) /* (AA12) PRG1_PRU1_GPO2.RGMII2_RD2 */
++                    AM64X_IOPAD(0x0114, PIN_INPUT, 2) /* (Y12) PRG1_PRU1_GPO3.RGMII2_RD3 */
++                    AM64X_IOPAD(0x0120, PIN_INPUT, 2) /* (U11) PRG1_PRU1_GPO6.RGMII2_RXC */
++                    AM64X_IOPAD(0x0118, PIN_INPUT, 2) /* (W12) PRG1_PRU1_GPO4.RGMII2_RX_CTL */
++                    AM64X_IOPAD(0x0134, PIN_OUTPUT, 2) /* (AA10) PRG1_PRU1_GPO11.RGMII2_TD0 */
++                    AM64X_IOPAD(0x0138, PIN_OUTPUT, 2) /* (V10) PRG1_PRU1_GPO12.RGMII2_TD1 */
++                    AM64X_IOPAD(0x013c, PIN_OUTPUT, 2) /* (U10) PRG1_PRU1_GPO13.RGMII2_TD2 */
++                    AM64X_IOPAD(0x0140, PIN_OUTPUT, 2) /* (AA11) PRG1_PRU1_GPO14.RGMII2_TD3 */
++                    AM64X_IOPAD(0x0148, PIN_OUTPUT, 2) /* (Y10) PRG1_PRU1_GPO16.RGMII2_TXC */
++                    AM64X_IOPAD(0x0144, PIN_OUTPUT, 2) /* (Y11) PRG1_PRU1_GPO15.RGMII2_TX_CTL */
++            >;
++    };
+ 
+ 	main_ecap0_pins_default: main-ecap0-pins-default {
+ 		pinctrl-single,pins = <
+@@ -626,12 +626,12 @@ &icssg1_mdio {
+ 	status = "okay";
+ 	pinctrl-0 = <&icssg1_mdio1_pins_default>;
+ 
+-	icssg1_phy1: ethernet-phy@f {
++	icssg1_phy0: ethernet-phy@f {
+ 		reg = <0xf>;
+ 		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
+ 	};
+ 	
+-	icssg1_phy2: ethernet-phy@3 {
++	icssg1_phy1: ethernet-phy@3 {
+ 		reg = <3>;
+ 		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
+ 	};
+-- 
+2.25.1
+
