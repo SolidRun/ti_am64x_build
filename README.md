@@ -171,6 +171,47 @@ booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
 
 Since rootfs is loaded into RAM, all changes to the file system (creating/deleting files/directories) will be discarded every reboot.
 
+### eMMC
+
+The following commands can be used to download tiboot3.bin, tispl.bin and u-boot.img from an SD card and write them to the eMMC boot0 partition at respective addresses.
+
+```
+    mmc dev 0 1
+    
+    fatload mmc 1  ${loadaddr} tiboot3.bin
+    mmc write ${loadaddr} 0x0 0x400
+    
+    fatload mmc 1 ${loadaddr} tispl.bin
+    mmc write ${loadaddr} 0x400 0x600
+    
+    fatload mmc 1 ${loadaddr}  u-boot.img
+    mmc write ${loadaddr} 0x1000  0x800
+    
+    fatload mmc 1 ${loadaddr} sysfw.itb
+    mmc write ${loadaddr}  0x1800 0x200
+```
+To give the ROM access to the boot partition, the following commands must be used for the first time:
+
+```
+    mmc partconf 0 1 1 1
+    mmc bootbus 0 2 0 0
+```
+
+eMMC layout:
+    
+```
+                    boot0 partition (4 MB)                        
+             0x0+----------------------------------+
+                |           tiboot3.bin            |
+           0x400+----------------------------------+ 
+                |           tispl.bin              | 
+          0x1000+----------------------------------+ 
+                |           u-boot.img             | 
+          0x1800+----------------------------------+ 
+                |           sysfw                  | 
+          0x2000+----------------------------------+
+
+```
 
 ## Features
 
