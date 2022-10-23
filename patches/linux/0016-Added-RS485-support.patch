@@ -1,0 +1,84 @@
+From cd4196df45f96d97e4abb3052a4c3901ff3ff714 Mon Sep 17 00:00:00 2001
+From: Kareiman Fadly <kareiman.fadly@solid-run.com>
+Date: Sun, 23 Oct 2022 17:00:48 +0300
+Subject: [PATCH] Added RS485-supprt
+
+---
+ arch/arm64/boot/dts/ti/am642-solidrun.dts | 23 ++++++++++++++++++-----
+ 1 file changed, 18 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/am642-solidrun.dts b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+index 37e4f6106..46b1c15db 100644
+--- a/arch/arm64/boot/dts/ti/am642-solidrun.dts
++++ b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+@@ -222,7 +222,7 @@ icssg1_emac0: ethernet-mii0 {
+ 
+ 		icssg1_emac1: ethernet-mii1 {
+             status = "okay";
+-			phy-handle = <&icssg1_phy1>;		
++			phy-handle = <&icssg1_phy1>;
+ 			phy-mode = "rgmii-rxid";
+ 			syscon-rgmii-delay = <&main_conf 0x4114>;
+ 			/* Filled in by bootloader */
+@@ -301,6 +301,17 @@ AM64X_IOPAD(0x0234, PIN_OUTPUT, 0) /* (C16) UART0_TXD */
+ 		>;
+ 	};
+ 
++
++  main_uart3_pins_default: main-uart3-pins-default {
++    pinctrl-single,pins = <
++      AM64X_IOPAD(0x016C, PIN_INPUT, 10) /* (V2) UART3_CTSn (gpio1_3)*/
++      AM64X_IOPAD(0x0174, PIN_OUTPUT, 10) /* (R3) UART3_RTSn (gpio1_5)*/
++      AM64X_IOPAD(0x01AC, PIN_INPUT, 10) /* (W1) UART3_RXD 0x000F41AC (gpio1_19)*/
++      AM64X_IOPAD(0x0170, PIN_OUTPUT, 10) /* (AA2) UART3_TXD 0x000F4170 (gpio1_4)*/
++    >;
++  };
++
++
+ 	main_spi0_pins_default: main-spi0-pins-default {
+ 		pinctrl-single,pins = <
+ 			AM64X_IOPAD(0x0210, PIN_INPUT, 0) /* (D13) SPI0_CLK */
+@@ -451,10 +462,14 @@ &main_uart1 {
+ 
+ &main_uart2 {
+ 	status = "disabled";
++
+ };
+ 
+ &main_uart3 {
+-	status = "disabled";
++	status = "okay";
++  pinctrl-names = "default";
++  linux,rs485-enabled-at-boot-time;
++  pinctrl-0 = <&main_uart3_pins_default>;
+ };
+ 
+ &main_uart4 {
+@@ -599,7 +614,6 @@ cpts@3d000 {
+ &cpsw_port1 {
+ 	phy-mode = "rgmii-rxid";
+ 	phy-handle = <&cpsw3g_phy0>;
+-	
+ 
+ 	/*
+ 	Parameter is defined in DTSI.
+@@ -630,7 +644,7 @@ icssg1_phy0: ethernet-phy@f {
+ 		reg = <0xf>;
+ 		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
+ 	};
+-	
++
+ 	icssg1_phy1: ethernet-phy@3 {
+ 		reg = <3>;
+ 		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
+@@ -642,7 +656,6 @@ icssg1_phy1: ethernet-phy@3 {
+ &timesync_router {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&mcu_cpts_pps>;
+-
+ 	/* Example of the timesync routing */
+ 	mcu_cpts_pps: mcu-cpts-pps {
+ 		pinctrl-single,pins = <
+-- 
+2.25.1
+
