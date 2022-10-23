@@ -264,6 +264,7 @@ cp sysfw-${SOC}-evm.itb  $BASE_DIR/tmp/sysfw.itb
 ###################################################################################################################################
 #							BUILD Linux
 LINUX_DEFCONFIG=am64xx-solidrun_defconfig
+cp $BASE_DIR/configs/am64xx-solidrun_defconfig $BASE_DIR/build/buildroot/configs/${BUILDROOT_DEFCONFIG}
 
 cd $BASE_DIR/build/ti-linux-kernel
 make $LINUX_DEFCONFIG
