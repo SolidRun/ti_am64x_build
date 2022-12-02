@@ -1,0 +1,66 @@
+From 68ce65d4d451fb3bd36597ed3fd06f4df6e8e885 Mon Sep 17 00:00:00 2001
+From: Kareiman Fadly <kareiman.fadly@solid-run.com>
+Date: Fri, 2 Dec 2022 15:11:47 +0200
+Subject: [PATCH 18/18] Added LEDS support
+
+---
+ arch/arm64/boot/dts/ti/am642-solidrun.dts | 33 ++++++++++++++++++-----
+ 1 file changed, 27 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/am642-solidrun.dts b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+index 05afd75c4..78c7b50ba 100644
+--- a/arch/arm64/boot/dts/ti/am642-solidrun.dts
++++ b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+@@ -154,15 +154,29 @@ vddb: fixedregulator-vddb {
+ 	};
+ 
+ 	leds {
++    status = "okay";
+ 		compatible = "gpio-leds";
++    pinctrl-names = "default";
++    pinctrl-0 = <&leds_pins>;
+ 
+-		led-0 {
+-			label = "am64-evm:red:heartbeat";
+-			gpios = <&exp1 16 GPIO_ACTIVE_HIGH>;
+-			linux,default-trigger = "heartbeat";
+-			function = LED_FUNCTION_HEARTBEAT;
+-			default-state = "off";
++    led1 {
++      label = "led1:green";
++  		gpios = <&main_gpio0 29 GPIO_ACTIVE_HIGH>;
++      default-state = "on";
+     };
++
++    led2 {
++      label = "led2:green";
++      gpios = <&main_gpio0 30 GPIO_ACTIVE_HIGH>;
++  		default-state = "on";
++    };
++
++    led3 {
++      label = "led3:green";
++      gpios = <&main_gpio0 33 GPIO_ACTIVE_HIGH>;
++      default-state = "on";
++    };
++
+ 	};
+ 
+ 	icssg1_eth: icssg1-eth {
+@@ -311,6 +325,13 @@ AM64X_IOPAD(0x0170, PIN_OUTPUT, 10) /* (AA2) UART3_TXD 0x000F4170 (gpio1_4)*/
+     >;
+   };
+ 
++  leds_pins: leds_pins {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x074, PIN_OUTPUT , 7) /* (Y21) LED1 (gpio0_29)*/
++			AM64X_IOPAD(0x078, PIN_OUTPUT , 7) /* (Y20) LED2 (gpio0_30)*/
++			AM64X_IOPAD(0x088, PIN_OUTPUT , 7) /* (R18) LED3 (gpio0_33)*/
++		>;
++	};
+ 
+ 	main_spi0_pins_default: main-spi0-pins-default {
+ 		pinctrl-single,pins = <
+-- 
+2.25.1
+
