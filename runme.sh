@@ -264,7 +264,7 @@ cp sysfw-${SOC}-evm.itb  $BASE_DIR/tmp/sysfw.itb
 ###################################################################################################################################
 #							BUILD Linux
 LINUX_DEFCONFIG=am64xx-solidrun_defconfig
-cp $BASE_DIR/configs/am64xx-solidrun_defconfig $BASE_DIR/build/buildroot/configs/${BUILDROOT_DEFCONFIG}
+cp $BASE_DIR/configs/am64xx-solidrun-linux_defconfig $BASE_DIR/build/ti-linux-kernel/arch/arm64/configs/${LINUX_DEFCONFIG}
 
 cd $BASE_DIR/build/ti-linux-kernel
 make $LINUX_DEFCONFIG
@@ -279,7 +279,8 @@ cp arch/arm64/boot/dts/ti/am642-solidrun.dtb $BASE_DIR/tmp/am642-solidrun.dtb
 
 ##################################################################################################################################
 #							BUILD Buildroot
-BUILDROOT_DEFCONFIG=am64x_solidrun_defconfig
+BUILDROOT_DEFCONFIG=am64xx_solidrun_defconfig
+cp $BASE_DIR/configs/am64xx-solidrun-buildroot_defconfig $BASE_DIR/build/buildroot/configs/${BUILDROOT_DEFCONFIG}
 
 cd $BASE_DIR/build/buildroot
 make $BUILDROOT_DEFCONFIG
