@@ -284,6 +284,8 @@ cp $BASE_DIR/configs/am64xx-solidrun-buildroot_defconfig $BASE_DIR/build/buildro
 
 cd $BASE_DIR/build/buildroot
 make $BUILDROOT_DEFCONFIG
+#make menuconfig
+make savedefconfig
 make -j${JOBS}
 
 cp $BASE_DIR/build/buildroot/output/images/rootfs.cpio.uboot $BASE_DIR/tmp/rootfs.cpio

@@ -13,7 +13,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y \
 	libssl-dev build-essential device-tree-compiler \
 	bc unzip tar util-linux binutils e2fsprogs gawk \
 	wget diffstat texinfo chrpath sed g++ bash patch \
-	cpio python2 rsync file python3-pip flex parted
+	cpio python2 rsync file python3-pip flex parted \
+	libncurses-dev
 
 
 # Install python modules
