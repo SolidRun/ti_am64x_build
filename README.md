@@ -25,7 +25,7 @@ docker images | grep ti_am64x
 
 * Run the build script:
 ```
-docker run -i -t -v "$PWD":/ti_build -v /etc/gitconfig:/etc/gitconfig ti_am64x ./runme.sh
+docker run --rm -i -t -v "$PWD":/ti_build -v /etc/gitconfig:/etc/gitconfig ti_am64x ./runme.sh
 ```
 
 ### Native Build

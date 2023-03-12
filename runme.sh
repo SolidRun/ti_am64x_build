@@ -1,7 +1,24 @@
 #!/bin/bash
 set -e
 
+###################################################################################################################################
+#							OPTIONS
 
+# Distribution for rootfs
+# - buildroot
+# - debian
+: ${DISTRO:=buildroot}
+
+## Buildroot Options
+: ${BUILDROOT_VERSION:=2020.02}
+: ${BUILDROOT_DEFCONFIG:=am64xx_solidrun_defconfig}
+: ${BR2_PRIMARY_SITE:=}
+
+## Debian Options
+: ${DEBIAN_VERSION:=bullseye}
+: ${DEBIAN_ROOTFS_SIZE:=936M}
+
+###################################################################################################################################
 
 # Check if git user name and git email are configured
 if [ -z "`git config user.name`" ] || [ -z "`git config user.email`" ]; then
@@ -173,17 +190,38 @@ fi
 
 
 ###################################################################################################################################
-#							CLONE Buildroot
-BUILDROOT_VERSION=2020.02
-
-if [[ ! -d $BASE_DIR/build/buildroot ]]; then
-	cd $BASE_DIR/build
-	git clone https://github.com/buildroot/buildroot -b $BUILDROOT_VERSION --depth=1
-	cd buildroot
-	git am $BASE_DIR/patches/buildroot/*.patch
-fi
+#							DOWNLOAD Buildroot
+do_fetch_buildroot() {
+	if [[ ! -d $BASE_DIR/build/buildroot ]]; then
+		cd $BASE_DIR/build
+		git clone https://github.com/buildroot/buildroot -b $BUILDROOT_VERSION --depth=1
+		cd buildroot
+		git am $BASE_DIR/patches/buildroot/*.patch
+	fi
+}
 
 ###################################################################################################################################
+
+
+
+
+###################################################################################################################################
+#							DOWNLOAD Debian
+do_fetch_debian() {
+	# Nothing to do here - will use debootstrap command later
+	:
+}
+
+###################################################################################################################################
+
+
+
+
+##################################################################################################################################
+#							DOWNLOAD selected Distro
+do_fetch_${DISTRO}
+##################################################################################################################################
+
 
 
 mkdir -p $BASE_DIR/tmp
@@ -280,20 +318,144 @@ cp arch/arm64/boot/dts/ti/am642-solidrun.dtb $BASE_DIR/tmp/am642-solidrun.dtb
 
 
 ##################################################################################################################################
-#							BUILD Buildroot
-BUILDROOT_DEFCONFIG=am64xx_solidrun_defconfig
-cp $BASE_DIR/configs/am64xx-solidrun-buildroot_defconfig $BASE_DIR/build/buildroot/configs/${BUILDROOT_DEFCONFIG}
+#							BUILD Buildroot rootfs
+do_build_buildroot() {
+	cp $BASE_DIR/configs/am64xx-solidrun-buildroot_defconfig $BASE_DIR/build/buildroot/configs/${BUILDROOT_DEFCONFIG}
+	printf 'BR2_PRIMARY_SITE="%s"\n' "${BR2_PRIMARY_SITE}" >> $BASE_DIR/build/buildroot/configs/${BUILDROOT_DEFCONFIG}
 
-cd $BASE_DIR/build/buildroot
-make $BUILDROOT_DEFCONFIG
-#make menuconfig
-make savedefconfig
-make -j${JOBS}
+	cd $BASE_DIR/build/buildroot
+	make $BUILDROOT_DEFCONFIG
+	#make menuconfig
+	make savedefconfig
+	make -j${JOBS}
 
-cp $BASE_DIR/build/buildroot/output/images/rootfs.cpio.uboot $BASE_DIR/tmp/rootfs.cpio
-cp $BASE_DIR/build/buildroot/output/images/rootfs.ext4 $BASE_DIR/tmp/rootfs.ext4
-
+	cp $BASE_DIR/build/buildroot/output/images/rootfs.cpio.uboot $BASE_DIR/tmp/rootfs.cpio
+	cp $BASE_DIR/build/buildroot/output/images/rootfs.ext4 $BASE_DIR/tmp/rootfs.ext4
+}
 ###################################################################################################################################
+
+
+
+
+##################################################################################################################################
+#							BUILD Debian rootfs
+do_build_debian() {
+	mkdir -p $BASE_DIR/build/debian
+	cd $BASE_DIR/build/debian
+
+	# (re-)generate only if rootfs doesn't exist or runme script has changed
+	if [ ! -f rootfs.e2.orig ] || [[ ${BASE_DIR}/${BASH_SOURCE[0]} -nt rootfs.e2.orig ]]; then
+		rm -f rootfs.e2.orig
+
+		# bootstrap a first-stage rootfs
+		rm -rf stage1
+		fakeroot debootstrap --variant=minbase \
+			--arch=arm64 --components=main,contrib,non-free \
+			--foreign \
+			--include=apt-transport-https,busybox,ca-certificates,can-utils,command-not-found,chrony,curl,e2fsprogs,ethtool,fdisk,gpiod,haveged,i2c-tools,ifupdown,iputils-ping,isc-dhcp-client,initramfs-tools,libiio-utils,lm-sensors,locales,nano,net-tools,ntpdate,openssh-server,psmisc,rfkill,sudo,systemd-sysv,tio,usbutils,wget,xterm,xz-utils \
+			${DEBIAN_VERSION} \
+			stage1 \
+			https://deb.debian.org/debian
+
+		# prepare init-script for second stage inside VM
+		cat > stage1/stage2.sh << EOF
+#!/bin/sh
+
+# run second-stage bootstrap
+/debootstrap/debootstrap --second-stage
+
+# mount pseudo-filesystems
+mount -vt proc proc /proc
+mount -vt sysfs sysfs /sys
+
+# configure dns
+cat /proc/net/pnp > /etc/resolv.conf
+
+# set empty root password
+passwd -d root
+
+# update command-not-found db
+apt-file update
+update-command-not-found
+
+# enable optional system services
+# none yet ...
+
+# populate fstab
+printf "/dev/root / ext4 defaults 0 1\\n" > /etc/fstab
+
+# delete self
+rm -f /stage2.sh
+
+# flush disk
+sync
+
+# power-off
+reboot -f
+EOF
+		chmod +x stage1/stage2.sh
+
+		# create empty partition image
+		dd if=/dev/zero of=rootfs.e2.orig bs=1 count=0 seek=${DEBIAN_ROOTFS_SIZE}
+
+		# create filesystem from first stage
+		mkfs.ext2 -L rootfs -E root_owner=0:0 -d stage1 rootfs.e2.orig
+
+		# bootstrap second stage within qemu
+		qemu-system-aarch64 \
+			-m 1G \
+			-M virt \
+			-cpu cortex-a57 \
+			-smp 1 \
+			-netdev user,id=eth0 \
+			-device virtio-net-device,netdev=eth0 \
+			-drive file=rootfs.e2.orig,if=none,format=raw,id=hd0 \
+			-device virtio-blk-device,drive=hd0 \
+			-nographic \
+			-no-reboot \
+			-kernel "${BASE_DIR}/tmp/Image" \
+			-append "console=ttyAMA0 root=/dev/vda rootfstype=ext2 ip=dhcp rw init=/stage2.sh" \
+
+
+		:
+
+		# convert to ext4
+		tune2fs -O extents,uninit_bg,dir_index,has_journal rootfs.e2.orig
+	fi;
+
+	# export final rootfs for next steps
+	cp rootfs.e2.orig "${BASE_DIR}/tmp/rootfs.ext4"
+}
+##################################################################################################################################
+
+
+
+
+##################################################################################################################################
+#							BUILD selected Distro
+do_build_${DISTRO}
+##################################################################################################################################
+
+
+
+##################################################################################################################################
+#							APPLY OVERLAY
+do_overlay_rootfs() {
+	if [ "x${DISTRO}" = "xbuildroot" ]; then
+		# buildroot consumes overlay directory automatically as part of the build
+		return 0
+	fi
+
+	if [ -d "${BASE_DIR}/overlay/${DISTRO}" ]; then
+		# apply overlay (configuration + data files only - can't "chmod +x")
+		# TODO: implement this step through qemu with full permissions
+		find "${BASE_DIR}/overlay/${DISTRO}" -type f -printf "%P\n" | e2cp -G 0 -O 0 -s "${BASE_DIR}/overlay/${DISTRO}" -d "${BASE_DIR}/tmp/rootfs.ext4:" -a
+	fi
+}
+do_overlay_rootfs
+##################################################################################################################################
+
+
 
 
 mkdir -p $BASE_DIR/output
