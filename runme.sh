@@ -28,7 +28,7 @@ JOBS=$(getconf _NPROCESSORS_ONLN)
 ###################################################################################################################################
 #                                                       INSTALL Packages
 
-PACKAGES_LIST="git make mtools bison coreutils u-boot-tools gcc-arm-linux-gnueabihf gcc-arm-linux-gnueabi gcc-aarch64-linux-gnu python3 python3-pyelftools libssl-dev build-essential device-tree-compiler bc unzip tar util-linux binutils e2fsprogs gawk wget diffstat texinfo chrpath sed g++ bash patch cpio python2 rsync file python3-pip flex parted"
+PACKAGES_LIST="bc bison build-essential ca-certificates cpio crossbuild-essential-arm64 crossbuild-essential-armhf debootstrap device-tree-compiler e2tools fakeroot fdisk flex git kmod libncurses-dev libssl-dev make mtools parted python3-pyelftools qemu-system-arm rsync sudo u-boot-tools unzip wget xz-utils"
 
 set +e
 for i in $PACKAGES_LIST; do

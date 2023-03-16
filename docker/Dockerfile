@@ -1,24 +1,34 @@
 FROM ubuntu:20.04
 
+# retry at least 3 times to succeed on sketchy connections
+RUN printf 'Acquire::http { Proxy "%s"; };\n' $APTPROXY | tee -a /etc/apt/apt.conf.d/proxy
+
+# apt proxy (optional)
+ARG APTPROXY=
+RUN printf 'Acquire::Retries 3;\n' | tee -a /etc/apt/apt.conf.d/retry || true
+
+# prevent dpkg interactive dialogues
+ENV DEBIAN_FRONTEND=noninteractive
+
+# install updates
 RUN set -e; \
-        apt-get update; \
+	apt-get update; \
 	apt-get upgrade -y; \
-        :
+	:
 
 # Install packages
-RUN DEBIAN_FRONTEND=noninteractive apt install -y \
-	git make mtools coreutils u-boot-tools bison \
-	gcc-arm-linux-gnueabihf gcc-arm-linux-gnueabi \
-	gcc-aarch64-linux-gnu python3 python3-pyelftools \
-	libssl-dev build-essential device-tree-compiler \
-	bc unzip tar util-linux binutils e2fsprogs gawk \
-	wget diffstat texinfo chrpath sed g++ bash patch \
-	cpio python2 rsync file python3-pip flex parted \
-	libncurses-dev
-
+RUN set -e; \
+	apt-get update; \
+	apt-get --no-install-recommends -y install \
+		bc bison build-essential ca-certificates cpio crossbuild-essential-arm64 crossbuild-essential-armhf debootstrap device-tree-compiler e2tools fakeroot fdisk flex git kmod libncurses-dev libssl-dev make mtools parted python3-pyelftools qemu-system-arm rsync sudo u-boot-tools unzip wget xz-utils; \
+	:
 
 # Install python modules
-RUN pip3 install pycryptodome
+RUN set -e; \
+	apt-get update; \
+	apt-get --no-install-recommends -y install python3-pip; \
+	pip3 install pycryptodome; \
+	:
 
 # Set workdir
 WORKDIR /ti_build
