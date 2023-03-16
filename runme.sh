@@ -268,6 +268,8 @@ cp $BASE_DIR/configs/am64xx-solidrun-linux_defconfig $BASE_DIR/build/ti-linux-ke
 
 cd $BASE_DIR/build/ti-linux-kernel
 make $LINUX_DEFCONFIG
+#make menuconfig
+make savedefconfig
 make -j${JOBS} Image dtbs
 cp arch/arm64/boot/Image $BASE_DIR/tmp/Image
 cp arch/arm64/boot/dts/ti/am642-solidrun.dtb $BASE_DIR/tmp/am642-solidrun.dtb
