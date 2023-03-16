@@ -307,9 +307,18 @@ cd $BASE_DIR
 COMMIT_HASH=`git log -1 --pretty=format:%h`
 IMAGE_NAME=microsd-${COMMIT_HASH}.img
 
-# Create the output image, 300MB, 2 partitions, 1 boot partition and one root partition
-dd if=/dev/zero of=$BASE_DIR/output/$IMAGE_NAME bs=1M count=300
-parted $BASE_DIR/output/$IMAGE_NAME mklabel msdos mkpart primary fat32 1 30% mkpart primary ext4 30% 100%
+# define partition offsets
+# note: partition start and end sectors are inclusive, add/subtract 1 where appropriate
+IMAGE_BOOTPART_START=$((4*1024*1024)) # partition start aligned to 4MiB
+IMAGE_BOOTPART_END=$((64*1024*1024-1)) # bootpart size = 60MiB
+IMAGE_ROOTPART_SIZE=`stat -c "%s" tmp/rootfs.ext4`
+IMAGE_ROOTPART_START=$((IMAGE_BOOTPART_END+1))
+IMAGE_ROOTPART_END=$((IMAGE_ROOTPART_START+IMAGE_ROOTPART_SIZE))
+IMAGE_SIZE=$((IMAGE_ROOTPART_END+512)) # require 1 additional sector at end
+
+# Create the output image, 2 partitions: 1 boot partition and one root partition
+dd if=/dev/zero of=$BASE_DIR/output/$IMAGE_NAME bs=1 count=0 seek=${IMAGE_SIZE}
+parted -s $BASE_DIR/output/$IMAGE_NAME -- mklabel msdos mkpart primary fat32 ${IMAGE_BOOTPART_START}B ${IMAGE_BOOTPART_END}B mkpart primary ext4 ${IMAGE_ROOTPART_START}B ${IMAGE_ROOTPART_END}B
 
 
 # Create boot partition as a different file
