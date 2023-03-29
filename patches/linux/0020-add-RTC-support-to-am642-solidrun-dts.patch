@@ -1,0 +1,38 @@
+From 3e998791301c3f61532f44ad87f8613ba92deb7f Mon Sep 17 00:00:00 2001
+From: Yazan Shhady <yazan.shhady@solid-run.com>
+Date: Wed, 29 Mar 2023 11:46:52 +0300
+Subject: [PATCH] add RTC support to am642-solidrun dts
+
+---
+ arch/arm64/boot/dts/ti/am642-solidrun.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/am642-solidrun.dts b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+index 78c7b50ba..3020a523d 100644
+--- a/arch/arm64/boot/dts/ti/am642-solidrun.dts
++++ b/arch/arm64/boot/dts/ti/am642-solidrun.dts
+@@ -533,6 +533,7 @@ &main_i2c1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&main_i2c1_pins_default>;
+ 	clock-frequency = <400000>;
++	status = "okay";
+ 
+ 	exp1: gpio@22 {
+ 		compatible = "ti,tca6424";
+@@ -550,6 +551,13 @@ exp1: gpio@22 {
+ 				  "TEST_LED1", "TP92", "TP90", "TP88",
+ 				  "TP87", "TP86", "TP89", "TP91";
+ 	};
++
++        rtc@69 {
++                compatible = "abracon,abx80x";
++                reg = <0x69>;
++                abracon,tc-diode = "schottky";
++		abracon,tc-resistor = <3>;
++	};
+ };
+ 
+ &main_i2c2 {
+-- 
+2.25.1
+
