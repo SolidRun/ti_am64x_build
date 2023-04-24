@@ -1,0 +1,135 @@
+From 7d9ff19a7aa6f6bd78d1540ca46b4eb3956f2539 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Mon, 24 Apr 2023 12:20:49 +0300
+Subject: [PATCH] disable HW reset for ethernet PHYs
+
+It was discovered that HW reset of the PHYs is problematic especially
+during soc reset.
+pull-downs have been removed from the reset-lines to avoid issues during
+soc reset. Also disable software toggling of reset gpios completely and
+rely on the full SW restart command.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ .../solidrun/am64x_solidrun/am64x_solidrun.c  | 62 +++++++++++--------
+ 1 file changed, 35 insertions(+), 27 deletions(-)
+
+diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
+index b72b9034..a3b9d123 100644
+--- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
++++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
+@@ -21,6 +21,7 @@
+ 
+ #include "am64x_solidrun.h"
+ 
++#define SRAM64X_PHY_HW_RESET 0
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+@@ -313,42 +314,47 @@ int board_phy_config(struct phy_device *phydev)
+ {
+ 	int ret;
+ 
+-	/* write into BMCR
+-	 * speed selection = 1000 Mbps
+-	 * A/N enable
+-	 * duplex = full
+-	 */
+-	ret = phy_write(phydev, MDIO_DEVAD_NONE, AM64X_SR_PHY_BMCR_REG, 0x1140);
+-	if (ret)
+-		return ret;
+-
+-	/* write into GEN_CFG1*/
+-	ret = phy_write(phydev, MDIO_DEVAD_NONE, AM64X_SR_PHY_GEN_CFG1_REG, 0xb00);
+-	if (ret)
+-		return ret;
+-
+-	/* write into PHY_CONTROL */
+-	ret = phy_write(phydev, MDIO_DEVAD_NONE, AM64X_SR_PHY_PHY_CONTROL_REG, 0x5048);
++#if !SRAM64X_PHY_HW_RESET
++	/* write into GEN_CTRL - Global Software Reset */
++	ret = phy_write(phydev, MDIO_DEVAD_NONE, AM64X_SR_PHY_GEN_CTRL_REG, 0x8000);
+ 	if (ret)
+ 		return ret;
++#endif
+ 
+-	/* write into OP_MODE_DECODE */
+-	ret = am64x_sr_phy_write_mmd(phydev, AM64X_SR_PHY_OP_MODE_DECODE_REG, 0x0);
+-	if (ret)
+-		return ret;
++	/*
++	 * Operation Mode after Reset is RGMII to Copper - no need to manually reconfigure ...
++	 * - OP_MODE_DECODE = 0x0040
++	 * - BMCR = 0x1140
++	 * - ANAR = 0x01e1
++	 * - GEN_CFG1 = 0x0300
++	 * - PHY_CONTROL = 0x5048
++	 * - GEN_CTRL = 0x4000
++	 */
+ 
+-	/* write into ANA_RGMII_DLL_CTRL */
+-	ret = am64x_sr_phy_write_mmd(phydev, AM64X_SR_PHY_ANA_RGMII_DLL_CTRL_REG, 0x3d0);
++	/*
++	 * configure delays:
++	 * - enable rx delay: 2ns
++	 * - disable tx delay (MAC has fixed delay)
++	 *
++	/*
++	 * ANA_RGMII_DLL_CTRL (reset = 0x77):
++	 * - DLL_TX_DELAY_CTRL_SL: 0b1111 = 0ns
++	 * - DLL_RX_DELAY_CTRL_SL: 0b0111 = 2ns (reset-default)
++	 */
++	ret = am64x_sr_phy_write_mmd(phydev, AM64X_SR_PHY_ANA_RGMII_DLL_CTRL_REG, 0xf7);
+ 	if (ret)
+ 		return ret;
+ 
+-	/* write into RGMII_CTRL */
++	/*
++	 * RGMII_CTRL (reset = 0xd0):
++	 * - RGMII_TX_CLK_DELAY: 1 (disable)
++	 * - RGMII_RX_CLK_DELAY: 0 (enable)
++	 */
+ 	ret = am64x_sr_phy_write_mmd(phydev, AM64X_SR_PHY_RGMII_CTRL_REG, 0xd2);
+ 	if (ret)
+ 		return ret;
+ 
+-	/* write into GEN_CTRL - SW reset*/
+-	return phy_write(phydev, MDIO_DEVAD_NONE, AM64X_SR_PHY_GEN_CTRL_REG, 0x4000);
++	return ret;
+ }
+ 
+ /*
+@@ -562,6 +568,7 @@ void am64xSolidrunSetMacAddresses(void)
+ 
+ int8_t initPhys(void)
+ {
++#if SRAM64X_PHY_HW_RESET
+ 	am64x_solidrun_gpio_t reset1, reset2, reset3;
+ 
+ 	/*build reset gpio structs*/
+@@ -584,12 +591,12 @@ int8_t initPhys(void)
+ 
+ 		return -1; /*error bulding sturct from reset2*/
+ 	}
+-
++#endif
+ 
+ 	/*init PHY clock*/
+ 	setAm64XSolidRunPhyClock();
+ 
+-
++#if SRAM64X_PHY_HW_RESET
+ 	/*add a small delay after setting the clock and before reseting the PHYs*/
+ 	mdelay(10);
+ 
+@@ -601,6 +608,7 @@ int8_t initPhys(void)
+ 
+ 
+ 	am64xSolidRunResetPhy(&reset3);
++#endif
+ 
+ 	return 0;
+ }
+-- 
+2.35.3
+
