@@ -1,0 +1,55 @@
+From 227aa296cf68c2b888c86593c08b5fa6f07fb36c Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Thu, 13 Apr 2023 12:33:55 +0300
+Subject: [PATCH 2/8] net: phy: dp83869: clear both interrupt status registers
+
+DP83869 has two interrupt status registers - one for copper, and one for
+fiber mode. According to datasheet both should be cleared after
+interrupt occured, or future interrupts may be missed.
+
+Add defines for the missing FX_INT_STS register and mask for interrupt
+status bits. Finally read both status registers in dp83869_ack_interrupt.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ drivers/net/phy/dp83869.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/phy/dp83869.c b/drivers/net/phy/dp83869.c
+index 3a26d75dea3f..dcc1c5c0c121 100644
+--- a/drivers/net/phy/dp83869.c
++++ b/drivers/net/phy/dp83869.c
+@@ -40,6 +40,8 @@
+ #define DP83869_IO_MUX_CFG	0x0170
+ #define DP83869_OP_MODE		0x01df
+ #define DP83869_FX_CTRL		0x0c00
++#define DP83860_FX_INT_STS	0x0c19
++#define DP83860_FX_INT_STS_MASK	GENMASK(9, 0)
+ 
+ #define DP83869_SW_RESET	BIT(15)
+ #define DP83869_SW_RESTART	BIT(14)
+@@ -176,10 +178,18 @@ static int dp83869_read_status(struct phy_device *phydev)
+ 
+ static int dp83869_ack_interrupt(struct phy_device *phydev)
+ {
+-	int err = phy_read(phydev, MII_DP83869_ISR);
++	int isr, fisr;
+ 
+-	if (err < 0)
+-		return err;
++	// clear ISR
++	isr = phy_read(phydev, MII_DP83869_ISR);
++
++	// clear fiber ISR
++	fisr = phy_read(phydev, DP83860_FX_INT_STS);
++
++	if (isr < 0)
++		return isr;
++	if (fisr < 0)
++		return fisr;
+ 
+ 	return 0;
+ }
+-- 
+2.35.3
+

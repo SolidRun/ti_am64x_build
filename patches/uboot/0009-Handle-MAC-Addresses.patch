@@ -1,7 +1,7 @@
-From 1d0360a360a3265519a4d2148bcc70426d70ff6b Mon Sep 17 00:00:00 2001
+From 31acf466e485b293fffeb36922d555e58b69fbf7 Mon Sep 17 00:00:00 2001
 From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
 Date: Mon, 8 Nov 2021 16:10:48 +0200
-Subject: [PATCH] Handle MAC Addresses
+Subject: [PATCH 09/16] Handle MAC Addresses
 
 This board has 3 ethernet interfaces, hence, needs 3 MAC addresses.
 Only one MAC address is read from EFUSE, second and third MAC addresses are calculated based on the first one.
@@ -14,7 +14,7 @@ calculate the second and third, and save them as environment variables.
  2 files changed, 214 insertions(+), 3 deletions(-)
 
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
-index e69fab81..3ac64fa8 100644
+index e69fab8145..3ac64fa8d2 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 @@ -192,7 +192,7 @@ void am64xSolidRunGpioClear(am64x_solidrun_gpio_t *gpio)
@@ -244,7 +244,7 @@ index e69fab81..3ac64fa8 100644
  	return initPhys();
  
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.h b/board/solidrun/am64x_solidrun/am64x_solidrun.h
-index 9428bcdc..2306270a 100644
+index 9428bcdc5b..2306270aa2 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.h
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.h
 @@ -52,6 +52,15 @@
@@ -286,5 +286,5 @@ index 9428bcdc..2306270a 100644
  #ifndef	CONFIG_SPL_BUILD
  
 -- 
-2.25.1
+2.35.3
 

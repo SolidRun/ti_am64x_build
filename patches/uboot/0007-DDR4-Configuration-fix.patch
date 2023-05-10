@@ -1,7 +1,7 @@
-From 14eb324f0a53d0118ffd25e121e3f767a9e985c3 Mon Sep 17 00:00:00 2001
+From e7f94492f47fc95643cc3c2e68dde9b739aed7c9 Mon Sep 17 00:00:00 2001
 From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
 Date: Wed, 27 Oct 2021 12:08:23 +0300
-Subject: [PATCH] DDR4 Configuration fix.
+Subject: [PATCH 07/16] DDR4 Configuration fix.
 
 Before this commit, Memtester caused bit flips and linux crashes.
 
@@ -11,7 +11,7 @@ This commit fixes this by enabling the DBI (Data Bus Inversion) in the DDR4 inte
  1 file changed, 59 insertions(+), 59 deletions(-)
 
 diff --git a/arch/arm/dts/am64-ddr-solidrun.dtsi b/arch/arm/dts/am64-ddr-solidrun.dtsi
-index fc996509..9a43feaa 100644
+index fc99650943..9a43feaaa8 100644
 --- a/arch/arm/dts/am64-ddr-solidrun.dtsi
 +++ b/arch/arm/dts/am64-ddr-solidrun.dtsi
 @@ -1,8 +1,8 @@
@@ -296,5 +296,5 @@ index fc996509..9a43feaa 100644
  #define DDRSS_PHY_350_DATA 0x42100010
  #define DDRSS_PHY_351_DATA 0x010C053E
 -- 
-2.25.1
+2.35.3
 

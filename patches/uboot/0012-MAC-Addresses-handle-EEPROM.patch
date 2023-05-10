@@ -1,7 +1,7 @@
-From 6c39ff8f3a665778654fbe1938848773a9335edf Mon Sep 17 00:00:00 2001
+From 6a7a4caf789797a8e38d68d2b0aedfa7bc5d0334 Mon Sep 17 00:00:00 2001
 From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
 Date: Thu, 9 Dec 2021 10:08:40 +0200
-Subject: [PATCH] MAC Addresses handle - EEPROM.
+Subject: [PATCH 12/16] MAC Addresses handle - EEPROM.
 
 Since the EFUSE region is not available for Software, the MAC addresses
 should be stored in a different non volatile memory.
@@ -32,7 +32,7 @@ Signed-off-by: Alvaro-Karsz <alvaro.karsz@solid-run.com>
  2 files changed, 78 insertions(+), 55 deletions(-)
 
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
-index d8924a95..46974442 100644
+index d8924a95b1..4697444252 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 @@ -16,6 +16,7 @@
@@ -192,7 +192,7 @@ index d8924a95..46974442 100644
  
  
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.h b/board/solidrun/am64x_solidrun/am64x_solidrun.h
-index a5a7df8a..9b6e3e5c 100644
+index a5a7df8a92..9b6e3e5c36 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.h
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.h
 @@ -54,13 +54,12 @@
@@ -227,5 +227,5 @@ index a5a7df8a..9b6e3e5c 100644
  /*save MAC address in environment, macNum is the interface number*/
  void am64xSolidrunSaveMacAddress(u8 *mac, u8 macNum);
 -- 
-2.25.1
+2.35.3
 

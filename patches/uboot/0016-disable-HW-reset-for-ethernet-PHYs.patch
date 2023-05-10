@@ -1,7 +1,7 @@
-From 7d9ff19a7aa6f6bd78d1540ca46b4eb3956f2539 Mon Sep 17 00:00:00 2001
+From e3962863b0aa922e18f3ec01f9a40db21d8d014c Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Mon, 24 Apr 2023 12:20:49 +0300
-Subject: [PATCH] disable HW reset for ethernet PHYs
+Subject: [PATCH 16/16] disable HW reset for ethernet PHYs
 
 It was discovered that HW reset of the PHYs is problematic especially
 during soc reset.
@@ -15,7 +15,7 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  1 file changed, 35 insertions(+), 27 deletions(-)
 
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
-index b72b9034..a3b9d123 100644
+index b72b90344e..a3b9d12312 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 @@ -21,6 +21,7 @@

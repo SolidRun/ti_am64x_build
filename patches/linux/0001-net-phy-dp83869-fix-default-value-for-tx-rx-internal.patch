@@ -1,7 +1,7 @@
-From 94afe91495a87fd83685bd79fbf76243368ee8ad Mon Sep 17 00:00:00 2001
+From 5a457159e06d3b4032f504a58e1bde7acff488e4 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Thu, 23 Mar 2023 12:19:28 +0200
-Subject: [PATCH 1/1] net: phy: dp83869: fix default value for
+Subject: [PATCH 1/8] net: phy: dp83869: fix default value for
  tx-/rx-internal-delay
 
 dp83869 internally uses a look-up table for mapping supported delays in
@@ -25,10 +25,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  1 file changed, 2 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/phy/dp83869.c b/drivers/net/phy/dp83869.c
-index b4ff9c5073a3c..9ab5eff502b71 100644
+index 84c7895df25f..3a26d75dea3f 100644
 --- a/drivers/net/phy/dp83869.c
 +++ b/drivers/net/phy/dp83869.c
-@@ -588,15 +588,13 @@ static int dp83869_of_init(struct phy_device *phydev)
+@@ -553,15 +553,13 @@ static int dp83869_of_init(struct phy_device *phydev)
  						       &dp83869_internal_delay[0],
  						       delay_size, true);
  	if (dp83869->rx_int_delay < 0)

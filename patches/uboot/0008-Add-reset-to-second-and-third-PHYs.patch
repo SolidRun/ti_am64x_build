@@ -1,7 +1,7 @@
-From 17f92eacdb74cbc63551c4aeb751e420aa8bede7 Mon Sep 17 00:00:00 2001
+From e54f2d37825fb9121eb79467992ebfb638749664 Mon Sep 17 00:00:00 2001
 From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
 Date: Thu, 4 Nov 2021 15:16:19 +0200
-Subject: [PATCH] Add reset to second and third PHYs.
+Subject: [PATCH 08/16] Add reset to second and third PHYs.
 
 ---
  .../solidrun/am64x_solidrun/am64x_solidrun.c  | 314 ++++++++++++++----
@@ -11,7 +11,7 @@ Subject: [PATCH] Add reset to second and third PHYs.
  create mode 100644 board/solidrun/am64x_solidrun/am64x_solidrun.h
 
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
-index 8bfe1762..e69fab81 100644
+index 8bfe17621b..e69fab8145 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 @@ -1,11 +1,11 @@
@@ -435,7 +435,7 @@ index 8bfe1762..e69fab81 100644
  #endif
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.h b/board/solidrun/am64x_solidrun/am64x_solidrun.h
 new file mode 100644
-index 00000000..9428bcdc
+index 0000000000..9428bcdc5b
 --- /dev/null
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.h
 @@ -0,0 +1,132 @@
@@ -572,7 +572,7 @@ index 00000000..9428bcdc
 +
 +#endif //__AM64X_SOLIDRUN_BOARD_H__
 diff --git a/configs/am64x_a53_solidrun_defconfig b/configs/am64x_a53_solidrun_defconfig
-index 296dca24..6acc0e18 100644
+index 296dca2426..6acc0e1891 100644
 --- a/configs/am64x_a53_solidrun_defconfig
 +++ b/configs/am64x_a53_solidrun_defconfig
 @@ -119,7 +119,6 @@ CONFIG_SPI_FLASH_MT35XU=y
@@ -584,5 +584,5 @@ index 296dca24..6acc0e18 100644
  CONFIG_DM_ETH=y
  CONFIG_TI_AM65_CPSW_NUSS=y
 -- 
-2.25.1
+2.35.3
 

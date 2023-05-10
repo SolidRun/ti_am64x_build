@@ -1,7 +1,7 @@
-From f57867bade4bad70a691344f5b22042dfe96b303 Mon Sep 17 00:00:00 2001
+From 04e52530b5166439d707c590209c108ca171311c Mon Sep 17 00:00:00 2001
 From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
 Date: Sun, 5 Dec 2021 12:46:34 +0200
-Subject: [PATCH] Add SimpleLink MCU reset during boot.
+Subject: [PATCH 11/16] Add SimpleLink MCU reset during boot.
 
 Signed-off-by: Alvaro-Karsz <alvaro.karsz@solid-run.com>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Alvaro-Karsz <alvaro.karsz@solid-run.com>
  2 files changed, 79 insertions(+), 34 deletions(-)
 
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
-index 3ac64fa8..d8924a95 100644
+index 3ac64fa8d2..d8924a95b1 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 @@ -64,8 +64,13 @@ int8_t buildAm64xSolidRunGpio(uint8_t gpioBase, uint8_t gpioNum, u32 muxAddress,
@@ -95,7 +95,7 @@ index 3ac64fa8..d8924a95 100644
  
  #endif //CONFIG_SPL_BUILD
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.h b/board/solidrun/am64x_solidrun/am64x_solidrun.h
-index 2306270a..a5a7df8a 100644
+index 2306270aa2..a5a7df8a92 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.h
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.h
 @@ -14,47 +14,49 @@
@@ -186,5 +186,5 @@ index 2306270a..a5a7df8a 100644
  int board_phy_config(struct phy_device *phydev);
  
 -- 
-2.25.1
+2.35.3
 

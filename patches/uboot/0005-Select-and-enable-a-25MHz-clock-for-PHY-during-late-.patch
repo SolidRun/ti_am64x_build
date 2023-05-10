@@ -1,14 +1,15 @@
-From ffed3a738643ba56300351fe87987e5ebd0ac92d Mon Sep 17 00:00:00 2001
+From c0d651edfaf1766d04ad4c042adfb1664ae92771 Mon Sep 17 00:00:00 2001
 From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
 Date: Tue, 19 Oct 2021 10:46:55 +0300
-Subject: [PATCH] Select and enable a 25MHz clock for PHY during late init
+Subject: [PATCH 05/16] Select and enable a 25MHz clock for PHY during late
+ init
 
 ---
  .../solidrun/am64x_solidrun/am64x_solidrun.c  | 44 +++++++++++++++++++
  1 file changed, 44 insertions(+)
 
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
-index fda39a73..ca160604 100644
+index fda39a73d3..ca16060456 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 @@ -152,6 +152,12 @@ static void setup_serial(void)
@@ -73,5 +74,5 @@ index fda39a73..ca160604 100644
  	releaseResetPhy(PHY1_RESET_GPIO_NUM, PHY1_RESET_MUX_ADDR, PHY1_RESET_DIR_ADDR, PHY1_RESET_SET_ADDR, PHY1_RESET_DATA_ADDR);
  
 -- 
-2.25.1
+2.35.3
 

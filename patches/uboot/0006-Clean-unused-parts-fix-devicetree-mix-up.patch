@@ -1,7 +1,7 @@
-From 44f2635ccfd38cd48eb4e597ffbac0ae1e8c0ed6 Mon Sep 17 00:00:00 2001
+From d5a9bf00050ce673ce6083a999bcf8afbb447e55 Mon Sep 17 00:00:00 2001
 From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
 Date: Tue, 19 Oct 2021 16:07:13 +0300
-Subject: [PATCH] Clean unused parts + fix devicetree mix up
+Subject: [PATCH 06/16] Clean unused parts + fix devicetree mix up
 
 * Clean board c code file, remove unused parts (board detect for example).
 * Add a -u-boot.dtsi file and change CONFIG_OF_LIST, so our device-tree will be used instead of EVM's (was selected in CONFIG_OF_LIST).
@@ -19,7 +19,7 @@ Subject: [PATCH] Clean unused parts + fix devicetree mix up
 
 diff --git a/arch/arm/dts/am642-solidrun-u-boot.dtsi b/arch/arm/dts/am642-solidrun-u-boot.dtsi
 new file mode 100644
-index 00000000..d066973f
+index 0000000000..d066973f89
 --- /dev/null
 +++ b/arch/arm/dts/am642-solidrun-u-boot.dtsi
 @@ -0,0 +1,149 @@
@@ -173,7 +173,7 @@ index 00000000..d066973f
 +	};
 +};
 diff --git a/arch/arm/dts/am642-solidrun.dts b/arch/arm/dts/am642-solidrun.dts
-index 0731c08a..6370cf60 100644
+index 0731c08a46..6370cf603b 100644
 --- a/arch/arm/dts/am642-solidrun.dts
 +++ b/arch/arm/dts/am642-solidrun.dts
 @@ -12,7 +12,7 @@
@@ -196,7 +196,7 @@ index 0731c08a..6370cf60 100644
  
  	reserved-memory {
 diff --git a/arch/arm/dts/am64x-solidrun-r5.dts b/arch/arm/dts/am64x-solidrun-r5.dts
-index 7246fb1f..578a57e1 100644
+index 7246fb1f8d..578a57e18b 100644
 --- a/arch/arm/dts/am64x-solidrun-r5.dts
 +++ b/arch/arm/dts/am64x-solidrun-r5.dts
 @@ -23,8 +23,7 @@
@@ -210,7 +210,7 @@ index 7246fb1f..578a57e1 100644
  
  	a53_0: a53@0 {
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
-index ca160604..8bfe1762 100644
+index ca16060456..8bfe17621b 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 @@ -1,9 +1,9 @@
@@ -365,7 +365,7 @@ index ca160604..8bfe1762 100644
  #endif
 diff --git a/board/solidrun/common/ti_board_detect.h b/board/solidrun/common/ti_board_detect.h
 deleted file mode 100644
-index de7cb52d..00000000
+index de7cb52dfc..0000000000
 --- a/board/solidrun/common/ti_board_detect.h
 +++ /dev/null
 @@ -1,471 +0,0 @@
@@ -841,7 +841,7 @@ index de7cb52d..00000000
 -
 -#endif	/* __BOARD_DETECT_H */
 diff --git a/configs/am64x_a53_solidrun_defconfig b/configs/am64x_a53_solidrun_defconfig
-index 8618bf65..296dca24 100644
+index 8618bf65cc..296dca2426 100644
 --- a/configs/am64x_a53_solidrun_defconfig
 +++ b/configs/am64x_a53_solidrun_defconfig
 @@ -64,7 +64,7 @@ CONFIG_MTDPARTS_DEFAULT="mtdparts=fc40000.spi.0:512k(ospi.tiboot3),2m(ospi.tispl
@@ -854,7 +854,7 @@ index 8618bf65..296dca24 100644
  CONFIG_SPL_MULTI_DTB_FIT=y
  CONFIG_SPL_MULTI_DTB_FIT_NO_COMPRESSION=y
 diff --git a/configs/am64x_r5_solidrun_defconfig b/configs/am64x_r5_solidrun_defconfig
-index afd79682..a3d8ff45 100644
+index afd7968277..a3d8ff451b 100644
 --- a/configs/am64x_r5_solidrun_defconfig
 +++ b/configs/am64x_r5_solidrun_defconfig
 @@ -69,7 +69,6 @@ CONFIG_CMD_FAT=y
@@ -866,5 +866,5 @@ index afd79682..a3d8ff45 100644
  CONFIG_ENV_IS_NOWHERE=y
  CONFIG_SYS_RELOC_GD_ENV_ADDR=y
 -- 
-2.25.1
+2.35.3
 

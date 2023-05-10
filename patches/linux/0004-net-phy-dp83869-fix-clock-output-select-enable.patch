@@ -1,0 +1,86 @@
+From b017b1f4792dbdce37e08b5e13522905c5444be2 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Sun, 7 May 2023 10:16:46 +0300
+Subject: [PATCH 4/8] net: phy: dp83869: fix clock output select / enable
+
+dts property for selecting clock output "ti,clk-output-sel" has been
+declared optional, and from source comments should only trigger register
+write if the property has been set.
+
+There are two bugs currently:
+1. if property had not been specified, driver will explicitly choose the
+   default pass-through of reference input.
+2. driver never clears the clock output disable bit
+
+Current code compared to zero to detect if property had been set or
+not. Unfortunately 0 is a valid value for the clock selection
+(DP83869_CLK_O_SEL_CHN_A_RCLK).
+
+Add boolean variable clk_output_en to the private data and set it only
+if dts property has been read successfully - to fix issue 1.
+
+Additionally ensure clearing the CLK_O_DISABLE bit when selecting a
+specific clock fixing issue 2.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ drivers/net/phy/dp83869.c | 22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/phy/dp83869.c b/drivers/net/phy/dp83869.c
+index 2baa869124ba..e5acac68dcfd 100644
+--- a/drivers/net/phy/dp83869.c
++++ b/drivers/net/phy/dp83869.c
+@@ -105,6 +105,7 @@
+ #define DP83869_IO_MUX_CFG_IO_IMPEDANCE_MIN	0x1f
+ #define DP83869_IO_MUX_CFG_CLK_O_SEL_MASK	(0x1f << 8)
+ #define DP83869_IO_MUX_CFG_CLK_O_SEL_SHIFT	8
++#define DP83869_IO_MUX_CFG_CLK_O_DISABLE_MASK	BIT(6)
+ 
+ /* CFG3 bits */
+ #define DP83869_CFG3_PORT_MIRROR_EN              BIT(0)
+@@ -150,6 +151,7 @@ struct dp83869_private {
+ 	int io_impedance;
+ 	int port_mirroring;
+ 	bool rxctrl_strap_quirk;
++	bool clk_output_en;
+ 	int clk_output_sel;
+ 	int mode;
+ };
+@@ -532,8 +534,11 @@ static int dp83869_of_init(struct phy_device *phydev)
+ 	/* Optional configuration */
+ 	ret = of_property_read_u32(of_node, "ti,clk-output-sel",
+ 				   &dp83869->clk_output_sel);
+-	if (ret || dp83869->clk_output_sel > DP83869_CLK_O_SEL_REF_CLK)
+-		dp83869->clk_output_sel = DP83869_CLK_O_SEL_REF_CLK;
++	if (!ret) {
++		dp83869->clk_output_en = true;
++		if (dp83869->clk_output_sel > DP83869_CLK_O_SEL_REF_CLK)
++			dp83869->clk_output_sel = DP83869_CLK_O_SEL_REF_CLK;
++	}
+ 
+ 	ret = of_property_read_u32(of_node, "ti,op-mode", &dp83869->mode);
+ 	if (ret == 0) {
+@@ -797,12 +802,13 @@ static int dp83869_config_init(struct phy_device *phydev)
+ 		dp83869_config_port_mirroring(phydev);
+ 
+ 	/* Clock output selection if muxing property is set */
+-	if (dp83869->clk_output_sel != DP83869_CLK_O_SEL_REF_CLK)
+-		ret = phy_modify_mmd(phydev,
+-				     DP83869_DEVADDR, DP83869_IO_MUX_CFG,
+-				     DP83869_IO_MUX_CFG_CLK_O_SEL_MASK,
+-				     dp83869->clk_output_sel <<
+-				     DP83869_IO_MUX_CFG_CLK_O_SEL_SHIFT);
++	if (dp83869->clk_output_en) {
++		val = phy_read_mmd(phydev, DP83869_DEVADDR, DP83869_IO_MUX_CFG);
++		val &= ~DP83869_IO_MUX_CFG_CLK_O_DISABLE_MASK;
++		val &= ~DP83869_IO_MUX_CFG_CLK_O_SEL_MASK;
++		val |= dp83869->clk_output_sel << DP83869_IO_MUX_CFG_CLK_O_SEL_SHIFT;
++		ret = phy_write_mmd(phydev, DP83869_DEVADDR, DP83869_IO_MUX_CFG, val);
++	}
+ 
+ 	if (phy_interface_is_rgmii(phydev)) {
+ 		ret = phy_write_mmd(phydev, DP83869_DEVADDR, DP83869_RGMIIDCTL,
+-- 
+2.35.3
+

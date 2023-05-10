@@ -114,7 +114,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE K3 Image Gen
-IMAGE_GEN_TAG=08.00.00.004
+IMAGE_GEN_TAG=08.06.00.007
 
 if [[ ! -d $BASE_DIR/build/k3-image-gen ]]; then
 	cd $BASE_DIR/build
@@ -128,7 +128,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE ATF
-ATF_TAG=08.00.00.004
+ATF_TAG=08.06.00.007
 
 if [[ ! -d $BASE_DIR/build/arm-trusted-firmware ]]; then
 	cd $BASE_DIR/build
@@ -158,7 +158,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE U-boot
-U_BOOT_TAG=08.00.00.004
+U_BOOT_TAG=08.06.00.007
 
 if [[ ! -d $BASE_DIR/build/ti-u-boot ]]; then
 	cd $BASE_DIR/build
@@ -175,7 +175,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE Linux Kernel
-KERNEL_TAG=08.00.00.004
+KERNEL_TAG=08.06.00.007
 
 if [[ ! -d $BASE_DIR/build/ti-linux-kernel ]]; then
 	cd $BASE_DIR/build
@@ -301,16 +301,21 @@ cp sysfw-${SOC}-evm.itb  $BASE_DIR/tmp/sysfw.itb
 
 ###################################################################################################################################
 #							BUILD Linux
-LINUX_DEFCONFIG=am64xx-solidrun_defconfig
-cp $BASE_DIR/configs/am64xx-solidrun-linux_defconfig $BASE_DIR/build/ti-linux-kernel/arch/arm64/configs/${LINUX_DEFCONFIG}
+LINUX_DEFCONFIG=am64xx-solidrun-linux_defconfig
 
 cd $BASE_DIR/build/ti-linux-kernel
-make $LINUX_DEFCONFIG
+./scripts/kconfig/merge_config.sh -O "${BASE_DIR}/build/ti-linux-kernel" -m arch/arm64/configs/defconfig "${BASE_DIR}/configs/${LINUX_DEFCONFIG}"
+make olddefconfig
 #make menuconfig
 make savedefconfig
-make -j${JOBS} Image dtbs
-cp arch/arm64/boot/Image $BASE_DIR/tmp/Image
-cp arch/arm64/boot/dts/ti/am642-solidrun.dtb $BASE_DIR/tmp/am642-solidrun.dtb
+make -j${JOBS} dtbs Image modules
+rm -rf "${BASE_DIR}/tmp/linux"
+mkdir -p "${BASE_DIR}/tmp/linux/boot"
+cp arch/arm64/boot/Image "${BASE_DIR}/tmp/linux/boot/Image"
+cp arch/arm64/boot/dts/ti/*.dtb "${BASE_DIR}/tmp/linux/boot/"
+cp .config "${BASE_DIR}/tmp/linux/boot/config"
+cp System.map "${BASE_DIR}/tmp/linux/boot/System.map"
+make -j${JOBS} INSTALL_MOD_PATH="${BASE_DIR}/tmp/linux/usr" modules_install
 
 ###################################################################################################################################
 
@@ -326,7 +331,7 @@ do_build_buildroot() {
 	cd $BASE_DIR/build/buildroot
 	make $BUILDROOT_DEFCONFIG
 	#make menuconfig
-	make savedefconfig
+	make savedefconfig BR2_DEFCONFIG="${BASE_DIR}/build/buildroot/defconfig"
 	make -j${JOBS}
 
 	cp $BASE_DIR/build/buildroot/output/images/rootfs.cpio.uboot $BASE_DIR/tmp/rootfs.cpio
@@ -413,7 +418,7 @@ EOF
 			-device virtio-blk-device,drive=hd0 \
 			-nographic \
 			-no-reboot \
-			-kernel "${BASE_DIR}/tmp/Image" \
+			-kernel "${BASE_DIR}/tmp/linux/boot/Image" \
 			-append "console=ttyAMA0 root=/dev/vda rootfstype=ext2 ip=dhcp rw init=/stage2.sh" \
 
 
@@ -498,9 +503,11 @@ mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/u-boot.img ::u-boot.img
 
 mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/sysfw.itb ::sysfw.itb
 
-mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/Image ::Image
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/Image ::Image
 
-mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/am642-solidrun.dtb ::am642-solidrun.dtb
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/k3-am642-hummingboard-t.dtb ::am642-solidrun.dtb
+
+find "${BASE_DIR}/tmp/linux/usr/lib/modules" -type f -printf "%P\n" | e2cp -G 0 -O 0 -P 644 -s "${BASE_DIR}/tmp/linux/usr/lib/modules" -d "${BASE_DIR}/tmp/rootfs.ext4:usr/lib/modules" -a
 
 mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/rootfs.cpio ::rootfs.cpio
 

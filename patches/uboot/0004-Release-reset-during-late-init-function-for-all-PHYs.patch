@@ -1,14 +1,14 @@
-From 61ed1396c92f38122c6f2a6fefe28cb40f5f5007 Mon Sep 17 00:00:00 2001
+From d58f3e22fcb68fbaa08e98d1cb82b2296d3556b1 Mon Sep 17 00:00:00 2001
 From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
 Date: Sun, 17 Oct 2021 15:11:45 +0300
-Subject: [PATCH] Release reset during late init function for all PHYs
+Subject: [PATCH 04/16] Release reset during late init function for all PHYs
 
 ---
  .../solidrun/am64x_solidrun/am64x_solidrun.c  | 73 +++++++++++++++++++
  1 file changed, 73 insertions(+)
 
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
-index 4ba18507..fda39a73 100644
+index 4ba18507f7..fda39a73d3 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 @@ -132,8 +132,81 @@ static void setup_serial(void)
@@ -94,5 +94,5 @@ index 4ba18507..fda39a73 100644
  		struct ti_am6_eeprom *ep = TI_AM6_EEPROM_DATA;
  
 -- 
-2.25.1
+2.35.3
 

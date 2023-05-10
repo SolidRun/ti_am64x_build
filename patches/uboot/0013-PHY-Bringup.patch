@@ -1,7 +1,7 @@
-From 04f693120f88ee614b809817b735d436e2a89b74 Mon Sep 17 00:00:00 2001
+From 52d81ba5e3787d95f983eb3ebcd5069b984f4081 Mon Sep 17 00:00:00 2001
 From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
 Date: Tue, 11 Jan 2022 16:54:00 +0200
-Subject: [PATCH] PHY Bringup.
+Subject: [PATCH 13/16] PHY Bringup.
 
 Bringup CPSW PHY in U-boot.
 This is done by writing to PHY registers.
@@ -14,7 +14,7 @@ Signed-off-by: Alvaro-Karsz <alvaro.karsz@solid-run.com>
  2 files changed, 81 insertions(+), 2 deletions(-)
 
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
-index 46974442..bbb6a49c 100644
+index 4697444252..bbb6a49cb6 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 @@ -278,11 +278,76 @@ void am64xSolidRunResetPhy(am64x_solidrun_gpio_t *reset)
@@ -96,7 +96,7 @@ index 46974442..bbb6a49c 100644
  
  /*
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.h b/board/solidrun/am64x_solidrun/am64x_solidrun.h
-index 9b6e3e5c..999ebd8e 100644
+index 9b6e3e5c36..999ebd8e64 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.h
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.h
 @@ -62,6 +62,19 @@
@@ -137,5 +137,5 @@ index 9b6e3e5c..999ebd8e 100644
  void am64xSolidrunSetMacAddresses(void);
  
 -- 
-2.25.1
+2.35.3
 

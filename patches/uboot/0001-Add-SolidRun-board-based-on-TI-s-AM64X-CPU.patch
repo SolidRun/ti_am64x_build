@@ -1,7 +1,7 @@
-From 9faa3ac8ce89098a47d3920b05a2c512d5087646 Mon Sep 17 00:00:00 2001
+From 01d5e6fc09e8e2952343de185af2c93773b5a847 Mon Sep 17 00:00:00 2001
 From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
 Date: Tue, 5 Oct 2021 14:59:43 +0300
-Subject: [PATCH] Add SolidRun board based on TI's AM64X CPU
+Subject: [PATCH 01/16] Add SolidRun board based on TI's AM64X CPU
 
 ---
  arch/arm/dts/Makefile                         |    4 +-
@@ -29,23 +29,23 @@ Subject: [PATCH] Add SolidRun board based on TI's AM64X CPU
  create mode 100644 include/configs/am64x_solidrun.h
 
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index 79050e5d..ac422016 100644
+index b5e73235c0..f276cdc5f2 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -981,7 +981,9 @@ dtb-$(CONFIG_SOC_K3_J721E) += k3-j721e-common-proc-board.dtb \
- dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
+@@ -994,7 +994,9 @@ dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
  			      k3-am642-r5-evm.dtb \
  			      k3-am642-sk.dtb \
--			      k3-am642-r5-sk.dtb
-+			      k3-am642-r5-sk.dtb \
+ 			      k3-am642-r5-sk.dtb \
+-			      k3-am642-evm-nand.dtbo
++			      k3-am642-evm-nand.dtbo \
 +			      am64x-solidrun-r5.dtb \
 +			      am642-solidrun.dtb
  
- dtb-$(CONFIG_ARCH_MEDIATEK) += \
- 	mt7622-rfb.dtb \
+ dtb-$(CONFIG_SOC_K3_AM625) += k3-am625-sk.dtb \
+ 			      k3-am625-r5-sk.dtb \
 diff --git a/arch/arm/dts/am64-ddr-solidrun.dtsi b/arch/arm/dts/am64-ddr-solidrun.dtsi
 new file mode 100644
-index 00000000..fc996509
+index 0000000000..fc99650943
 --- /dev/null
 +++ b/arch/arm/dts/am64-ddr-solidrun.dtsi
 @@ -0,0 +1,2189 @@
@@ -2240,7 +2240,7 @@ index 00000000..fc996509
 +#define DDRSS_PHY_1405_DATA 0x20040001
 diff --git a/arch/arm/dts/am642-solidrun.dts b/arch/arm/dts/am642-solidrun.dts
 new file mode 100644
-index 00000000..0731c08a
+index 0000000000..0731c08a46
 --- /dev/null
 +++ b/arch/arm/dts/am642-solidrun.dts
 @@ -0,0 +1,369 @@
@@ -2615,7 +2615,7 @@ index 00000000..0731c08a
 +};
 diff --git a/arch/arm/dts/am64x-solidrun-r5.dts b/arch/arm/dts/am64x-solidrun-r5.dts
 new file mode 100644
-index 00000000..7246fb1f
+index 0000000000..7246fb1f8d
 --- /dev/null
 +++ b/arch/arm/dts/am64x-solidrun-r5.dts
 @@ -0,0 +1,267 @@
@@ -2887,18 +2887,20 @@ index 00000000..7246fb1f
 +
 +#include "k3-am642-evm-u-boot.dtsi"
 diff --git a/arch/arm/mach-k3/Kconfig b/arch/arm/mach-k3/Kconfig
-index 5e7daed9..a887189c 100644
+index 9c0572597f..32d8e5eee9 100644
 --- a/arch/arm/mach-k3/Kconfig
 +++ b/arch/arm/mach-k3/Kconfig
-@@ -168,4 +168,5 @@ config K3_ATF_LOAD_ADDR
+@@ -201,6 +201,7 @@ config K3_X509_SWRV
+ 	help
+ 	  SWRV for X509 certificate used for boot images
+ 
++source "board/solidrun/am64x_solidrun/Kconfig"
  source "board/ti/am65x/Kconfig"
  source "board/ti/am64x/Kconfig"
- source "board/ti/j721e/Kconfig"
-+source "board/solidrun/am64x_solidrun/Kconfig"
- endif
+ source "board/ti/am62x/Kconfig"
 diff --git a/board/solidrun/am64x_solidrun/Kconfig b/board/solidrun/am64x_solidrun/Kconfig
 new file mode 100644
-index 00000000..2987ca00
+index 0000000000..2987ca005c
 --- /dev/null
 +++ b/board/solidrun/am64x_solidrun/Kconfig
 @@ -0,0 +1,62 @@
@@ -2966,14 +2968,14 @@ index 00000000..2987ca00
 +endif
 diff --git a/board/solidrun/am64x_solidrun/Makefile b/board/solidrun/am64x_solidrun/Makefile
 new file mode 100644
-index 00000000..31353f31
+index 0000000000..31353f3175
 --- /dev/null
 +++ b/board/solidrun/am64x_solidrun/Makefile
 @@ -0,0 +1 @@
 +obj-y	+= am64x_solidrun.o
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 new file mode 100644
-index 00000000..4ba18507
+index 0000000000..4ba18507f7
 --- /dev/null
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 @@ -0,0 +1,167 @@
@@ -3146,7 +3148,7 @@ index 00000000..4ba18507
 +#endif
 diff --git a/board/solidrun/common/ti_board_detect.h b/board/solidrun/common/ti_board_detect.h
 new file mode 100644
-index 00000000..de7cb52d
+index 0000000000..de7cb52dfc
 --- /dev/null
 +++ b/board/solidrun/common/ti_board_detect.h
 @@ -0,0 +1,471 @@
@@ -3623,7 +3625,7 @@ index 00000000..de7cb52d
 +#endif	/* __BOARD_DETECT_H */
 diff --git a/configs/am64x_a53_solidrun_defconfig b/configs/am64x_a53_solidrun_defconfig
 new file mode 100644
-index 00000000..1c9306fd
+index 0000000000..1c9306fd9b
 --- /dev/null
 +++ b/configs/am64x_a53_solidrun_defconfig
 @@ -0,0 +1,177 @@
@@ -3806,7 +3808,7 @@ index 00000000..1c9306fd
 +CONFIG_TI_I2C_BOARD_DETECT=n
 diff --git a/configs/am64x_r5_solidrun_defconfig b/configs/am64x_r5_solidrun_defconfig
 new file mode 100644
-index 00000000..afd79682
+index 0000000000..afd7968277
 --- /dev/null
 +++ b/configs/am64x_r5_solidrun_defconfig
 @@ -0,0 +1,158 @@
@@ -3970,7 +3972,7 @@ index 00000000..afd79682
 +CONFIG_TI_I2C_BOARD_DETECT=n
 diff --git a/include/configs/am64x_solidrun.h b/include/configs/am64x_solidrun.h
 new file mode 100644
-index 00000000..56b1c6d5
+index 0000000000..56b1c6d519
 --- /dev/null
 +++ b/include/configs/am64x_solidrun.h
 @@ -0,0 +1,128 @@
@@ -4103,5 +4105,5 @@ index 00000000..56b1c6d5
 +
 +#endif /* __CONFIG_AM642_EVM_H */
 -- 
-2.25.1
+2.35.3
 

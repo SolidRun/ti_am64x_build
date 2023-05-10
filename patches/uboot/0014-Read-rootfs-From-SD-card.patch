@@ -1,7 +1,7 @@
-From aab8b481570b78292de9ddc04c6b9392f72d8498 Mon Sep 17 00:00:00 2001
+From 1c4f512f278182fd88bc4a29d5289621a71cdd8f Mon Sep 17 00:00:00 2001
 From: Alvaro Karsz <alvaro.karsz@solid-run.com>
 Date: Tue, 18 Jan 2022 15:57:30 +0200
-Subject: [PATCH] Read rootfs From SD card.
+Subject: [PATCH 14/16] Read rootfs From SD card.
 
 By default:
 	booti won't pass rootfs address and bootargs points kernel to
@@ -17,7 +17,7 @@ Signed-off-by: Alvaro Karsz <alvaro.karsz@solid-run.com>
  3 files changed, 29 insertions(+), 11 deletions(-)
 
 diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
-index bbb6a49c..b72b9034 100644
+index bbb6a49cb6..b72b90344e 100644
 --- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
 +++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
 @@ -8,6 +8,7 @@
@@ -55,7 +55,7 @@ index bbb6a49c..b72b9034 100644
 +
 +#endif //CONFIG_SPL_BUILD
 diff --git a/configs/am64x_a53_solidrun_defconfig b/configs/am64x_a53_solidrun_defconfig
-index 6acc0e18..000932a1 100644
+index 6acc0e1891..000932a1ea 100644
 --- a/configs/am64x_a53_solidrun_defconfig
 +++ b/configs/am64x_a53_solidrun_defconfig
 @@ -26,7 +26,7 @@ CONFIG_DISTRO_DEFAULTS=y
@@ -68,7 +68,7 @@ index 6acc0e18..000932a1 100644
  CONFIG_SPL_SYS_MALLOC_SIMPLE=y
  CONFIG_SPL_STACK_R=y
 diff --git a/include/configs/am64x_solidrun.h b/include/configs/am64x_solidrun.h
-index 56b1c6d5..eacd53c1 100644
+index 56b1c6d519..eacd53c1d1 100644
 --- a/include/configs/am64x_solidrun.h
 +++ b/include/configs/am64x_solidrun.h
 @@ -60,18 +60,13 @@
@@ -96,5 +96,5 @@ index 56b1c6d5..eacd53c1 100644
  /* U-Boot MMC-specific configuration */
  #define EXTRA_ENV_AM642_BOARD_SETTINGS_MMC				\
 -- 
-2.32.0
+2.35.3
 
