@@ -1,0 +1,27 @@
+From 03e5869b68f4a835bc546c39c60dda4ccecb4dba Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Thu, 11 May 2023 17:04:15 +0300
+Subject: [PATCH] arm64: dts: am642-hummingboard-t: fix typo in usb serdes phy
+ reference
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ arch/arm64/boot/dts/ti/k3-am642-hummingboard-t.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t.dts b/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t.dts
+index f6c6243cfdd3..76d9971760c7 100644
+--- a/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t.dts
++++ b/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t.dts
+@@ -1058,7 +1058,7 @@ &usb0 {
+ 	pinctrl-0 = <&main_usb0_pins_default>;
+ #if SERDES0_USB3
+ 	maximum-speed = "super-speed";
+-	phys = <&serdes0_pcie_usb_link>;
++	phys = <&serdes0_usb_link>;
+ 	phy-names = "cdns3,usb3-phy";
+ #else
+ 	maximum-speed = "high-speed";
+-- 
+2.35.3
+
