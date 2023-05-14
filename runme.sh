@@ -9,6 +9,11 @@ set -e
 # - debian
 : ${DISTRO:=buildroot}
 
+# Target Board
+# - evm: TI TMDS64GPEVM AM64 EVK
+# - hummingboard-t: SolidRun AM6442 HummingBoard T
+: ${BOARD:=hummingboard-t}
+
 ## Buildroot Options
 : ${BUILDROOT_VERSION:=2020.02}
 : ${BUILDROOT_DEFCONFIG:=am64xx_solidrun_defconfig}
@@ -45,7 +50,7 @@ JOBS=$(getconf _NPROCESSORS_ONLN)
 ###################################################################################################################################
 #                                                       INSTALL Packages
 
-PACKAGES_LIST="bc bison build-essential ca-certificates cpio crossbuild-essential-arm64 crossbuild-essential-armhf debootstrap device-tree-compiler e2tools fakeroot fdisk flex git kmod libncurses-dev libssl-dev make mtools parted python3-pyelftools qemu-system-arm rsync sudo u-boot-tools unzip wget xz-utils"
+PACKAGES_LIST="bc bison build-essential ca-certificates cpio crossbuild-essential-arm64 crossbuild-essential-armhf debootstrap device-tree-compiler e2tools fakeroot fdisk flex git kmod libncurses-dev libssl-dev make mtools parted python3-dev python3-pyelftools qemu-system-arm rsync sudo swig u-boot-tools unzip wget xz-utils"
 
 set +e
 for i in $PACKAGES_LIST; do
@@ -258,9 +263,20 @@ cp out/arm-plat-k3/core/tee-pager_v2.bin $BASE_DIR/tmp/tee-pager_v2.bin
 ###################################################################################################################################
 #							BUILD U-boot
 
-
-U_BOOT_R5_DEFCONFIG=am64x_r5_solidrun_defconfig
-U_BOOT_A53_DEFCONFIG=am64x_a53_solidrun_defconfig
+case ${BOARD} in
+	evm)
+		U_BOOT_R5_DEFCONFIG=am64x_evm_r5_defconfig
+		U_BOOT_A53_DEFCONFIG=am64x_evm_a53_defconfig
+		;;
+	hummingboard-t)
+		U_BOOT_R5_DEFCONFIG=am64x_r5_solidrun_defconfig
+		U_BOOT_A53_DEFCONFIG=am64x_a53_solidrun_defconfig
+		;;
+	*)
+		echo "ERROR: Board \"${BOARD}\" not supported!"
+		exit 1
+		;;
+esac
 cd $BASE_DIR/build/ti-u-boot
 
 
@@ -505,6 +521,7 @@ mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/sysfw.itb ::sysfw.itb
 
 mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/Image ::Image
 
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/k3-am642-evm.dtb ::k3-am642-evm.dtb
 mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/k3-am642-hummingboard-t.dtb ::am642-solidrun.dtb
 
 find "${BASE_DIR}/tmp/linux/usr/lib/modules" -type f -printf "%P\n" | e2cp -G 0 -O 0 -P 644 -s "${BASE_DIR}/tmp/linux/usr/lib/modules" -d "${BASE_DIR}/tmp/rootfs.ext4:usr/lib/modules" -a

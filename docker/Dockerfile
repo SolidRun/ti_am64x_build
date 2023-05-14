@@ -20,7 +20,7 @@ RUN set -e; \
 RUN set -e; \
 	apt-get update; \
 	apt-get --no-install-recommends -y install \
-		bc bison build-essential ca-certificates cpio crossbuild-essential-arm64 crossbuild-essential-armhf debootstrap device-tree-compiler e2tools fakeroot fdisk flex git kmod libncurses-dev libssl-dev make mtools parted python3-pyelftools qemu-system-arm rsync sudo u-boot-tools unzip wget xz-utils; \
+		bc bison build-essential ca-certificates cpio crossbuild-essential-arm64 crossbuild-essential-armhf debootstrap device-tree-compiler e2tools fakeroot fdisk flex git kmod libncurses-dev libssl-dev make mtools parted python3-dev python3-pyelftools qemu-system-arm rsync sudo swig u-boot-tools unzip wget xz-utils; \
 	:
 
 # Install python modules
