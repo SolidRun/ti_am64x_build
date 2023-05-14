@@ -1,41 +1,29 @@
 # SolidRun's TI AM64x based  build scripts
 
-## Introduction
-Main intention of this repository is to build a buildroot based build environment for TI AM64x based product evaluation.
+Main intention of this repository is to produce a reference system for TI AM64x product evaluation.
+Automatic binary releases are available on [our website](https://images.solid-run.com/AM64X/ti_am64x_build) for download.
 
-The build script provides ready to use images that can be deployed on a micro SD card.
+## Get Started
 
-## Building Image
+AM64x SoM and Carriers currently ship without OS or Bootloader preinstalled.
+Please download the latest binary release from
 
-The build script will check for required tools, clone and build images and place results in output/ directory.
+If no operating system was installed, please download the latest binary release from [our website](https://images.solid-run.com/AM64X/ti_am64x_build).
+Then follow the steps in section "Deploying -> to microSD".
 
-### Docker build (recommended)
+Before power-on, ensure that the Board has been configured to boot from microSD according to [this table](#configure-boot-mode-dip-switch)
 
-* Build the Docker image (<b>Just once</b>):
+After flashing a microSD and booting into Linux, the serial console must be used for logging into the root account for the first time.
+Simply enter "root" and press return:
 
-```
-docker build --build-arg user=$(whoami) --build-arg userid=$(id -u) -t ti_am64x docker/
-```
-
-To check if the image exists in you machine, you can use the following command:
-
-```
-docker images | grep ti_am64x
-```
-
-* Run the build script:
-```
-docker run --rm -i -t -v "$PWD":/ti_build -v /etc/gitconfig:/etc/gitconfig ti_am64x ./runme.sh
-```
-
-### Native Build
-Simply:
-
-```
-./runme.sh
-```
+    Welcome to Buildroot
+    buildroot login: root
+    #
 
 ## Deploying
+
+### to microSD
+
 In order to create a bootable SD card, plug in a micro SD into your machine and run the following, where sdX is the location of the SD card got probed into your machine -
 
 ```
@@ -43,29 +31,135 @@ umount /media/<relevant directory>
 sudo dd if=output/microsd-<hash>.img of=/dev/sdX
 ```
 
+### to eMMC
 
-## Booting Linux and Rootfs
+**TODO**
 
-### SD card
+## Configure Boot Mode DIP Switch
 
-By default, Linux will read rootfs from SD card, partition 2.<br>
-In order to load rootfs into RAM, please run the following command in U-boot:
+This table indicates valid boot-modes selectable via the DIP switch S1 on the HummingBoard-T Carrier.
+The value 0 indicates OFF, 1 indicates the ON state and X indicates don't care.
 
-```
-Hit any key to stop autoboot:  0
-=> run load_rootfs; boot
+| Switch                  | 1 | 2 | 3 | 4 | 5 | 6 |
+|-------------------------|---|---|---|---|---|---|
+| microSD (FAT partition) | 0 | 0 | 0 | 1 | 0 | 1 |
+| microSD (RAW)           | 1 | 0 | 0 | 0 | 1 | 1 |
+| eMMC                    | 1 | 0 | 0 | 1 | X | X |
 
-```
-
-In this case, Linux won't load the rootfs from SD card.<br>
-Please note that all changes to the file system (creating/deleting files/directories) will be discarded every reboot.
-
+## Configure Interfaces
 
 ### Ethernet
 
+HummingBoard-T has 3x RJ45 interfaces that can be independently controlled by Linux: `eth0`, `eth1`, `eth2`.
+The standard linux tools such as `ifconfig` (legacy) and `ip` can be used to configure the network.
+
+Examples:
+
+- enable link:
+
+      ip link set dev eth0 up
+
+- acquire IP address by DHCP
+
+      udhcpc -i eth0
+
+- set a static IP & default Gateway
+
+      ip addr add dev eth0 192.168.0.2/24
+      ip route add default via 192.168.0.1 dev eth0
+
+### CAN
+
+The HummingBoard-T has 2x can interfaces: `can0`, `can1`.
+Steps are identical except for replacing the name in instructions below.
+
+1. Enable can0 netdev:
+
+       ip link set can0 up type can bitrate 125000 up
+
+2. Receive on can0 to a temporary file:
+
+       touch /tmp/can_test
+       candump can0 >> /tmp/can_test &
+
+3. Send a message on can0:
+
+       cansend can0 "123#1234"
+
+### RS485
+
+1. View current configuration:
+
+       rs485conf /dev/ttyS5
+       = Current configuration:
+       RS485 enabled:                true
+       RTS on send:                  low
+       RTS after send:               high
+       RTS delay before send:        0
+       RTS delay after send:         0
+       Receive during sending data:  false
+
+2. Optionally change configuration as needed, e.g.:
+
+       rs485conf /dev/ttyS5 -e 1 -o 0 -a 1
+
+3. Receive data to a temporary file:
+
+       touch /tmp/rs485_test
+       stty -F /dev/ttyS5 raw -echo -echoe -echok
+       cat /dev/ttyS5 > /tmp/rs485_test &
+
+4. Transmit a message:
+
+       echo "OK" > /dev/ttyS5
+
+## Booting from eMMC
+
+The following commands can be used to download tiboot3.bin, tispl.bin and u-boot.img from an SD card and write them to the eMMC boot0 partition at respective addresses.
+
+```
+    mmc dev 0 1
+
+    fatload mmc 1  ${loadaddr} tiboot3.bin
+    mmc write ${loadaddr} 0x0 0x400
+
+    fatload mmc 1 ${loadaddr} tispl.bin
+    mmc write ${loadaddr} 0x400 0x600
+
+    fatload mmc 1 ${loadaddr}  u-boot.img
+    mmc write ${loadaddr} 0x1000  0x800
+
+    fatload mmc 1 ${loadaddr} sysfw.itb
+    mmc write ${loadaddr}  0x1800 0x200
+```
+eMMC layout:
+
+```
+                    boot0 partition (4 MB)
+             0x0+----------------------------------+
+                |           tiboot3.bin            |
+           0x400+----------------------------------+
+                |           tispl.bin              |
+          0x1000+----------------------------------+
+                |           u-boot.img             |
+          0x1800+----------------------------------+
+                |           sysfw                  |
+          0x2000+----------------------------------+
+
+```
+
+To give the ROM access to the boot partition, the following commands must be used for the first time:
+
+```
+    mmc partconf 0 1 1 1
+    mmc bootbus 0 2 0 0
+```
+
+## Booting from Network
+
 In order to boot Linux kernel and rootfs over ethernet, you'll need a TFTP server to serve the required files.
 
-#### Setting a TFTP server (From a different Linux machine in the same network)
+### Setting a TFTP server (From a different Linux machine in the same network)
 
 * Install tftpd, xinetd and tftp.
 
@@ -119,7 +213,7 @@ cp some_location/ti_am64x_build/tmp/rootfs.cpio /path/to/boot/dir/
 ```
 
 
-#### Retrieving booting files over ethetnet.
+### Retrieving booting files over ethetnet.
 This part assumes that you have a tftp server in the same network, and that your board is in U-boot.
 
 * Get IP address using dhcp command (ignore the error, we are using this command to get an IP address for a DHCP server)
@@ -171,50 +265,6 @@ booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
 
 Since rootfs is loaded into RAM, all changes to the file system (creating/deleting files/directories) will be discarded every reboot.
 
-### eMMC
-
-The following commands can be used to download tiboot3.bin, tispl.bin and u-boot.img from an SD card and write them to the eMMC boot0 partition at respective addresses.
-
-```
-    mmc dev 0 1
-    
-    fatload mmc 1  ${loadaddr} tiboot3.bin
-    mmc write ${loadaddr} 0x0 0x400
-    
-    fatload mmc 1 ${loadaddr} tispl.bin
-    mmc write ${loadaddr} 0x400 0x600
-    
-    fatload mmc 1 ${loadaddr}  u-boot.img
-    mmc write ${loadaddr} 0x1000  0x800
-    
-    fatload mmc 1 ${loadaddr} sysfw.itb
-    mmc write ${loadaddr}  0x1800 0x200
-```
-eMMC layout:
-    
-```
-                    boot0 partition (4 MB)                        
-             0x0+----------------------------------+
-                |           tiboot3.bin            |
-           0x400+----------------------------------+ 
-                |           tispl.bin              | 
-          0x1000+----------------------------------+ 
-                |           u-boot.img             | 
-          0x1800+----------------------------------+ 
-                |           sysfw                  | 
-          0x2000+----------------------------------+
-
-```
-
-To give the ROM access to the boot partition, the following commands must be used for the first time:
-
-```
-    mmc partconf 0 1 1 1
-    mmc bootbus 0 2 0 0
-```
-
-
-
 ## Features
 
 ### MAC Addresses:
@@ -239,4 +289,56 @@ i2cset -y 0 0x50 0 0xaa 0xbb 0xcc 0xdd 0xee 0xff i
 # Verify by dumping the EEPROM content:
 
 i2cdump -y 0 0x50
+```
+
+## Compiling Image from Source
+
+### Configuration Options
+
+The build script supports several customisation options that can be applied through environment variables:
+
+- BOARD: Choose target Board
+  - evm
+  - hummingboard-t (default)
+- MODULES: comma-separated list of kernel modules to include in rootfs
+- DISTRO: Choose Linux distribution for rootfs
+  - buildroot (default)
+  - debian
+- BUILDROOT_VERSION
+  - 2020.02 (default)
+- BUILDROOT_DEFCONFIG: Choose specific config file name from `config/` folder
+  - am64xx_solidrun_defconfig (default)
+- BR2_PRIMARY_SITE: Use specific (local) buildroot mirror
+- DEBIAN_VERSION
+  - bullseye (default)
+- DEBIAN_ROOTFS_SIZE
+  - 936M (default)
+
+### With Docker (recommended)
+
+* Build the Docker image (**Just once**):
+
+```
+docker build --build-arg user=$(whoami) --build-arg userid=$(id -u) -t ti_am64x docker/
+```
+
+To check if the image exists in you machine, you can use the following command:
+
+```
+docker images | grep ti_am64x
+```
+
+* Run the build script:
+```
+docker run --rm -i -t -v "$PWD":/ti_build -v /etc/gitconfig:/etc/gitconfig ti_am64x ./runme.sh
+```
+
+### on Host OS
+
+This can only work on Debian-based host, and has been tested only on Ubuntu 20.04.
+
+The build script will check for required tools, clone and build images and place results in output/ directory:
+
+```
+./runme.sh
 ```
