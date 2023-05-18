@@ -1,0 +1,30 @@
+From 8c2cb7f4f124233f8726a294e7f58e5b0caaecac Mon Sep 17 00:00:00 2001
+From: Sven Auhagen <Sven.Auhagen@voleatech.de>
+Date: Sun, 12 Sep 2021 09:25:44 +0200
+Subject: [PATCH 17/27] cmd: tlv_eeprom
+
+The function show_eeprom is missing int i if debug is enabled.
+
+Signed-off-by: Sven Auhagen <sven.auhagen@voleatech.de>
+Reviewed-by: Stefan Roese <sr@denx.de>
+---
+ cmd/tlv_eeprom.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/cmd/tlv_eeprom.c b/cmd/tlv_eeprom.c
+index eab0531c96..a8db3e1a42 100644
+--- a/cmd/tlv_eeprom.c
++++ b/cmd/tlv_eeprom.c
+@@ -168,6 +168,9 @@ static void show_eeprom(u8 *eeprom)
+ {
+ 	int tlv_end;
+ 	int curr_tlv;
++#ifdef DEBUG
++	int i;
++#endif
+ 	struct tlvinfo_header *eeprom_hdr = to_header(eeprom);
+ 	struct tlvinfo_tlv    *eeprom_tlv;
+ 
+-- 
+2.35.3
+

@@ -1,0 +1,37 @@
+From 7250f154c71b1069376f689f7694a526970e2377 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Thu, 18 May 2023 15:32:10 +0300
+Subject: [PATCH 26/27] [HACK] i2c: omap24xx_i2c: add delay between transfers
+
+Add artificial delay between transactions, to avoid timeouts such as:
+
+i2c_write: error waiting for data ACK (status=0x1012)
+
+Delay was derived experimentally:
+- debug("i2c_xfer: %d messages\n", nmsgs); was enough
+- 1ms was not enough
+- 10ms were not enough
+- 100ms were sufficient
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ drivers/i2c/omap24xx_i2c.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/i2c/omap24xx_i2c.c b/drivers/i2c/omap24xx_i2c.c
+index 0af4e333c4..3585a8b686 100644
+--- a/drivers/i2c/omap24xx_i2c.c
++++ b/drivers/i2c/omap24xx_i2c.c
+@@ -1004,6 +1004,9 @@ static int omap_i2c_xfer(struct udevice *bus, struct i2c_msg *msg, int nmsgs)
+ 	struct omap_i2c *priv = dev_get_priv(bus);
+ 	int ret;
+ 
++	/* add delay between transfers */
++	udelay(100000);
++
+ 	debug("i2c_xfer: %d messages\n", nmsgs);
+ 	for (; nmsgs > 0; nmsgs--, msg++) {
+ 		debug("i2c_xfer: chip=0x%x, len=0x%x\n", msg->addr, msg->len);
+-- 
+2.35.3
+

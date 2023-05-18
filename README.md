@@ -270,25 +270,38 @@ Since rootfs is loaded into RAM, all changes to the file system (creating/deleti
 ### MAC Addresses:
 
 This SOM has 3 Ethernet interfaces, CPSW and 2 ICSSGs, hence, needs 3 MAC addresses.
-<br>
-U-boot will try to read these MAC addresses from an EEPROM in I2C bus 0, address 0x50.
-<br>
-* CPSW's MAC address will be read from offsets 0x00->0x05.
-* First ICSSG's MAC address will be read from offsets 0x06->0x0b.
-* Second ICSSG's MAC address will be read from offsets 0x0c->0x11.
+**U-boot will try to read these MAC addresses from an EEPROM in I2C bus 0, address 0x50.**
+
+EEPROM data is stored in ONIE TLV format:
+* Number of MAC addresses stored will be read from entry TLV_CODE_MAC_SIZE.
+* First MAC address will be read from entry TLV_CODE_MAC_BASE.
+* Consecutive MACs are calculated by incrementing first MAC.
 
 If no valid MAC addresses are found, random MAC addresses will be used.
 <br>
-Here is an example on how to write your own MAC address from Linux:
+Here is an example on how to write your own MAC addresses from U-Boot:
 
 ```
-# Write aa:bb:cc:dd:ee:ff as CPSW's MAC address:
+# Write 34:88:de:e3:c0:17, 34:88:de:e3:c0:18, 34:88:de:e3:c0:19 as MAC addresses:
 
-i2cset -y 0 0x50 0 0xaa 0xbb 0xcc 0xdd 0xee 0xff i
+tlv_eeprom set 0x24 "34:88:de:e3:c0:17"
+tlv_eeprom set 0x2A 3
+tlv_eeprom write
 
-# Verify by dumping the EEPROM content:
+# Verify by re-reading the TLV data from eeprom
 
-i2cdump -y 0 0x50
+tlv_eeprom read
+tlv_eeprom
+# TLV: 0
+# TlvInfo Header:
+#    Id String:    TlvInfo
+#    Version:      1
+#    Total Length: 18
+# TLV Name             Code Len Value
+# -------------------- ---- --- -----
+# Base MAC Address     0x24   6 34:88:DE:E3:C0:17
+# MAC Addresses        0x2A   2 3
+# CRC-32               0xFE   4 0x2214EB35
 ```
 
 ## Compiling Image from Source
