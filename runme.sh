@@ -187,6 +187,24 @@ fi
 
 
 ###################################################################################################################################
+#							CLONE k3conf Tool
+K3CONF_BRANCH=master
+K3CONF_HEAD=982f5c2f02f732b5829861218812904cd776773d
+
+if [[ ! -d $BASE_DIR/build/k3conf ]]; then
+	cd $BASE_DIR/build
+	git clone git://git.ti.com/k3conf/k3conf.git -b $K3CONF_BRANCH
+	cd k3conf
+	git reset --hard $K3CONF_HEAD
+	test -d $BASE_DIR/patches/k3conf && git am $BASE_DIR/patches/k3conf/*.patch
+fi
+
+###################################################################################################################################
+
+
+
+
+###################################################################################################################################
 #							CLONE Linux Kernel
 KERNEL_TAG=08.06.00.007
 
@@ -317,6 +335,18 @@ SOC=am64x
 cd $BASE_DIR/build/k3-image-gen
 make CROSS_COMPILE=arm-linux-gnueabihf- SOC=$SOC
 cp sysfw-${SOC}-evm.itb  $BASE_DIR/tmp/sysfw.itb
+
+###################################################################################################################################
+
+
+
+
+###################################################################################################################################
+#							BUILD k3conf Tool
+cd $BASE_DIR/build/k3conf
+make
+${CROSS_COMPILE}strip --strip-unneeded k3conf
+install -v -m755 k3conf $BASE_DIR/tmp/k3conf
 
 ###################################################################################################################################
 
@@ -538,6 +568,9 @@ mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/Image ::Imag
 
 mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/k3-am642-evm.dtb ::k3-am642-evm.dtb
 mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/k3-am642-hummingboard-t.dtb ::am642-solidrun.dtb
+
+echo "copying \"k3conf\" ..."
+e2cp -G 0 -O 0 -P 755 -s "$BASE_DIR/tmp" -d "${BASE_DIR}/tmp/rootfs.ext4:/usr/bin" -a -v k3conf
 
 echo "copying kernel modules ..."
 find "${BASE_DIR}/tmp/linux/usr/lib/modules" -type f -not -name "*.ko*" -printf "%P\n" | e2cp -G 0 -O 0 -P 644 -s "${BASE_DIR}/tmp/linux/usr/lib/modules" -d "${BASE_DIR}/tmp/rootfs.ext4:usr/lib/modules" -a
