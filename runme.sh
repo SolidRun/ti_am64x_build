@@ -20,7 +20,7 @@ set -e
 : ${MODULES:=at24,authenc,can_dev,cdns3,cdns3_ti,crct10dif_ce,fuse,hdc2010,icss_iep,icssg_prueth,ip_tables,ipv6,irq_pruss_intc,m_can,m_can_platform,opt3001,pru_rproc,pruss,rtc_abx80x,rti_wdt,sa2ul,sha512_generic,ti_k3_r5_remoteproc,udc_core,usb_storage,usbcore,x_tables,xhci_hcd,xhci_plat_hcd}
 
 ## Buildroot Options
-: ${BUILDROOT_VERSION:=2020.02}
+: ${BUILDROOT_VERSION:=2023.02.2}
 : ${BUILDROOT_DEFCONFIG:=am64xx_solidrun_defconfig}
 : ${BR2_PRIMARY_SITE:=}
 
