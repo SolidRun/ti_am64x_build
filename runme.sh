@@ -309,6 +309,9 @@ cd $BASE_DIR/build/ti-u-boot
 # 	R5
 
 make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- $U_BOOT_R5_DEFCONFIG
+#make ARCH=arm menuconfig
+make ARCH=arm savedefconfig
+mv defconfig defconfig_r5
 make -j${JOBS} ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
 cp tiboot3.bin $BASE_DIR/tmp/tiboot3.bin
 
@@ -317,6 +320,9 @@ cp tiboot3.bin $BASE_DIR/tmp/tiboot3.bin
 # 	A53
 
 make ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- $U_BOOT_A53_DEFCONFIG
+#make ARCH=arm menuconfig
+make ARCH=arm savedefconfig
+mv defconfig defconfig_a53
 make -j${JOBS} ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- ATF=$BASE_DIR/tmp/bl31.bin TEE=$BASE_DIR/tmp/tee-pager_v2.bin
 
 
@@ -530,6 +536,29 @@ do_package_kernel() {
 }
 do_package_kernel
 
+
+
+
+###################################################################################################################################
+#							Generate extlinux.conf for U-Boot Distro-Boot Feature
+do_generate_extlinux() {
+	local FSUUID=`blkid -s UUID -o value ${BASE_DIR}/tmp/rootfs.ext4`
+
+	mkdir -p ${BASE_DIR}/tmp/extlinux
+	cat > ${BASE_DIR}/tmp/extlinux/extlinux.conf << EOF
+TIMEOUT 0
+DEFAULT default
+MENU TITLE SolidRun AM64 Reference BSP
+LABEL default
+	MENU LABEL default kernel
+	LINUX ../Image
+	FDTDIR ../
+	APPEND earlycon=ns16550a,mmio32,0x02800000 console=ttyS2,115200n8 log_level=9 root=UUID=$FSUUID rw rootwait
+EOF
+}
+do_generate_extlinux
+
+
 ###################################################################################################################################
 #							Create Image file
 
@@ -568,6 +597,8 @@ mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/Image ::Imag
 
 mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/k3-am642-evm.dtb ::k3-am642-evm.dtb
 mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/k3-am642-hummingboard-t.dtb ::am642-solidrun.dtb
+
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME -s $BASE_DIR/tmp/extlinux ::extlinux
 
 echo "copying \"k3conf\" ..."
 e2cp -G 0 -O 0 -P 755 -s "$BASE_DIR/tmp" -d "${BASE_DIR}/tmp/rootfs.ext4:/usr/bin" -a -v k3conf
