@@ -542,7 +542,8 @@ do_package_kernel
 ###################################################################################################################################
 #							Generate extlinux.conf for U-Boot Distro-Boot Feature
 do_generate_extlinux() {
-	local FSUUID=`blkid -s UUID -o value ${BASE_DIR}/tmp/rootfs.ext4`
+	local PARTUUID=`blkid -s PTUUID -o value ${BASE_DIR}/output/${IMAGE_NAME}`
+	PARTUUID=${PARTUUID//'-01'/'-02'} # second partition rootfs
 
 	mkdir -p ${BASE_DIR}/tmp/extlinux
 	cat > ${BASE_DIR}/tmp/extlinux/extlinux.conf << EOF
@@ -553,11 +554,9 @@ LABEL default
 	MENU LABEL default kernel
 	LINUX ../Image
 	FDTDIR ../
-	APPEND earlycon=ns16550a,mmio32,0x02800000 console=ttyS2,115200n8 log_level=9 root=UUID=$FSUUID rw rootwait
+	APPEND earlycon=ns16550a,mmio32,0x02800000 console=ttyS2,115200n8 log_level=9 root=PARTUUID=$PARTUUID rw rootwait
 EOF
 }
-do_generate_extlinux
-
 
 ###################################################################################################################################
 #							Create Image file
@@ -579,6 +578,8 @@ IMAGE_SIZE=$((IMAGE_ROOTPART_END+512)) # require 1 additional sector at end
 dd if=/dev/zero of=$BASE_DIR/output/$IMAGE_NAME bs=1 count=0 seek=${IMAGE_SIZE}
 parted -s $BASE_DIR/output/$IMAGE_NAME -- mklabel msdos mkpart primary fat32 ${IMAGE_BOOTPART_START}B ${IMAGE_BOOTPART_END}B mkpart primary ext4 ${IMAGE_ROOTPART_START}B ${IMAGE_ROOTPART_END}B
 
+# generate extlinux.conf after partition table exists and partition uuids are known
+do_generate_extlinux
 
 # Create boot partition as a different file
 dd if=/dev/zero of=$BASE_DIR/output/boot_$IMAGE_NAME bs=1M count=80
