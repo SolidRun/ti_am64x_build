@@ -543,7 +543,7 @@ do_package_kernel
 #							Generate extlinux.conf for U-Boot Distro-Boot Feature
 do_generate_extlinux() {
 	local PARTUUID=`blkid -s PTUUID -o value ${BASE_DIR}/output/${IMAGE_NAME}`
-	PARTUUID=${PARTUUID//'-01'/'-02'} # second partition rootfs
+	PARTUUID=${PARTUUID}'-02' # second partition rootfs
 
 	mkdir -p ${BASE_DIR}/tmp/extlinux
 	cat > ${BASE_DIR}/tmp/extlinux/extlinux.conf << EOF
