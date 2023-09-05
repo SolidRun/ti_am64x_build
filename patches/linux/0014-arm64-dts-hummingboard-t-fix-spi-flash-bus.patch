@@ -1,0 +1,155 @@
+From 471250ad363dc6a1b1c30e9b1bdcb5c2a0fd03aa Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Tue, 5 Sep 2023 10:38:26 +0200
+Subject: [PATCH 14/15] arm64: dts: hummingboard-t: fix spi flash bus
+
+SPI flash on the SoM is connected to ospi node, not main_spi0.
+Rename pinctrl and move flash node into ospi0 node.
+
+Since spi flash on the SoM is not assembled on soms sold so far,
+disable it until further notice.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ .../boot/dts/ti/k3-am642-hummingboard-t.dts   | 104 +++++++++---------
+ 1 file changed, 54 insertions(+), 50 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t.dts b/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t.dts
+index 29478ffc8701..6db74b53017f 100644
+--- a/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t.dts
++++ b/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t.dts
+@@ -644,31 +644,6 @@ AM64X_IOPAD(0x0290, PIN_INPUT, 0)			/* MMC1_CLKLB: Undocumented clock loopback *
+ 		>;
+ 	};
+ 
+-	main_spi0_pins_default: main-spi0-pins-default {
+-		pinctrl-single,pins = <
+-			/* external pull-down on SoM */
+-			AM64X_IOPAD(0x0000, PIN_OUTPUT, 0)	/* Pad OSPI0_CLK Mux OSPI0_CLK */
+-			AM64X_IOPAD(0x0008, PIN_OUTPUT, 0)	/* Pad OSPI0_DQS Mux OSPI0_DQS */
+-			/* external pull-up on SoM */
+-			AM64X_IOPAD(0x002c, PIN_OUTPUT, 0)	/* Pad OSPI0_CSn0 Mux OSPI0_CSn0 */
+-			AM64X_IOPAD(0x000c, PIN_INPUT, 0)	/* Pad OSPI0_D0 Mux OSPI0_D0 */
+-			AM64X_IOPAD(0x0010, PIN_INPUT, 0)	/* Pad OSPI0_D1 Mux OSPI0_D1 */
+-			AM64X_IOPAD(0x0014, PIN_INPUT, 0)	/* Pad OSPI0_D2 Mux OSPI0_D2 */
+-			AM64X_IOPAD(0x0018, PIN_INPUT, 0)	/* Pad OSPI0_D3 Mux OSPI0_D3 */
+-			AM64X_IOPAD(0x001c, PIN_INPUT, 0)	/* Pad OSPI0_D4 Mux OSPI0_D4 */
+-			AM64X_IOPAD(0x0020, PIN_INPUT, 0)	/* Pad OSPI0_D5 Mux OSPI0_D5 */
+-			AM64X_IOPAD(0x0024, PIN_INPUT, 0)	/* Pad OSPI0_D6 Mux OSPI0_D6 */
+-			AM64X_IOPAD(0x0028, PIN_INPUT, 0)	/* Pad OSPI0_D7 Mux OSPI0_D7 */
+-		>;
+-	};
+-
+-	flash0_pins_default: flash0-pins-default {
+-		pinctrl-single,pins = <
+-			AM64X_IOPAD(0x0034, PIN_OUTPUT, 7)	/* Pad OSPI0_CSn2 Mux GPIO0_13 */
+-			AM64X_IOPAD(0x0038, PIN_INPUT, 7)	/* Pad OSPI0_CSn3 Mux GPIO0_14 */
+-		>;
+-	};
+-
+ 	main_uart0_pins_default: main-uart0-pins-default {
+ 		pinctrl-single,pins = <
+ 			AM64X_IOPAD(0x0230, PIN_INPUT, 0)	/* Pad UART0_RXD Mux UART0_RXD */
+@@ -699,6 +674,31 @@ AM64X_IOPAD(0x01f8, PIN_INPUT, 4)	/* Pad PRG0_PRU1_GPO18 Mux MDIO0_MDIO */
+ 		>;
+ 	};
+ 
++	ospi0_pins_default: ospi0-pins-default {
++		pinctrl-single,pins = <
++			/* external pull-down on SoM */
++			AM64X_IOPAD(0x0000, PIN_OUTPUT, 0)	/* Pad OSPI0_CLK Mux OSPI0_CLK */
++			AM64X_IOPAD(0x0008, PIN_OUTPUT, 0)	/* Pad OSPI0_DQS Mux OSPI0_DQS */
++			/* external pull-up on SoM */
++			AM64X_IOPAD(0x002c, PIN_OUTPUT, 0)	/* Pad OSPI0_CSn0 Mux OSPI0_CSn0 */
++			AM64X_IOPAD(0x000c, PIN_INPUT, 0)	/* Pad OSPI0_D0 Mux OSPI0_D0 */
++			AM64X_IOPAD(0x0010, PIN_INPUT, 0)	/* Pad OSPI0_D1 Mux OSPI0_D1 */
++			AM64X_IOPAD(0x0014, PIN_INPUT, 0)	/* Pad OSPI0_D2 Mux OSPI0_D2 */
++			AM64X_IOPAD(0x0018, PIN_INPUT, 0)	/* Pad OSPI0_D3 Mux OSPI0_D3 */
++			AM64X_IOPAD(0x001c, PIN_INPUT, 0)	/* Pad OSPI0_D4 Mux OSPI0_D4 */
++			AM64X_IOPAD(0x0020, PIN_INPUT, 0)	/* Pad OSPI0_D5 Mux OSPI0_D5 */
++			AM64X_IOPAD(0x0024, PIN_INPUT, 0)	/* Pad OSPI0_D6 Mux OSPI0_D6 */
++			AM64X_IOPAD(0x0028, PIN_INPUT, 0)	/* Pad OSPI0_D7 Mux OSPI0_D7 */
++		>;
++	};
++
++	ospi0_flash0_pins_default: ospi0-flash0-pins-default {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x0034, PIN_OUTPUT, 7)	/* Pad OSPI0_CSn2 Mux GPIO0_13 */
++			AM64X_IOPAD(0x0038, PIN_INPUT, 7)	/* Pad OSPI0_CSn3 Mux GPIO0_14 */
++		>;
++	};
++
+ 	pcie0_pins_default: pcie0-pins-default {
+ 		pinctrl-single,pins = <
+ 			/* connector M2 RESET */
+@@ -815,31 +815,7 @@ &main_r5fss1_core1 {
+ };
+ 
+ &main_spi0 {
+-	status = "okay";
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&main_spi0_pins_default>;
+-	ti,pindir-d0-out-d1-in = <1>;
+-	ti,spi-num-cs = <1>;
+-
+-	/* Carrier */
+-	sh28hs512t@0 {
+-		status = "okay";
+-		compatible = "jedec,spi-nor";
+-		reg = <0>;
+-		spi-tx-bus-width = <8>;
+-		spi-rx-bus-width = <8>;
+-		spi-max-frequency = <200000000>;
+-		cdns,tshsl-ns = <50>;
+-		cdns,tsd2d-ns = <50>;
+-		cdns,tchsh-ns = <4>;
+-		cdns,tslch-ns = <4>;
+-		cdns,read-delay = <0>;
+-		pinctrl-names = "default";
+-		pinctrl-0 = <&flash0_pins_default>;
+-		interrupt-parent = <&main_gpio0>;
+-		interrupts = <14 IRQ_TYPE_EDGE_FALLING>;
+-		reset-gpios = <&main_gpio0 13 GPIO_ACTIVE_LOW>;
+-	};
++	status = "disabled";
+ };
+ 
+ &main_spi1 {
+@@ -930,6 +906,34 @@ &mcu_uart1 {
+ 	status = "disabled";
+ };
+ 
++&ospi0 {
++	status = "disabled";
++	pinctrl-names = "default";
++	pinctrl-0 = <&ospi0_pins_default>;
++	ti,pindir-d0-out-d1-in = <1>;
++	ti,spi-num-cs = <1>;
++
++	/* SoM */
++	sh28hs512t@0 {
++		status = "disabled";
++		compatible = "jedec,spi-nor";
++		reg = <0>;
++		spi-tx-bus-width = <8>;
++		spi-rx-bus-width = <8>;
++		spi-max-frequency = <200000000>;
++		cdns,tshsl-ns = <50>;
++		cdns,tsd2d-ns = <50>;
++		cdns,tchsh-ns = <4>;
++		cdns,tslch-ns = <4>;
++		cdns,read-delay = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&ospi0_flash0_pins_default>;
++		interrupt-parent = <&main_gpio0>;
++		interrupts = <14 IRQ_TYPE_EDGE_FALLING>;
++		reset-gpios = <&main_gpio0 13 GPIO_ACTIVE_LOW>;
++	};
++};
++
+ #if SERDES0_USB3
+ &pcie0_rc {
+ 	status = "disabled";
+-- 
+2.35.3
+

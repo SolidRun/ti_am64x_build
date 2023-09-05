@@ -113,6 +113,40 @@ Steps are identical except for replacing the name in instructions below.
 
        echo "OK" > /dev/ttyS5
 
+### m.2 Connectors
+
+The HummingBoard-T features 2x m.2 connectors:
+
+- M1 (E key): usb-2.0 + pci-e
+- M2 (B key): usb-2.0 + usb-3.1
+
+PCI-Express and USB-3.1 are mutually exclusive, the SoC supports only one function at a time.
+
+#### Function Selection
+
+Selection of specific function requires changes to the device-tree to ensure that:
+
+- USB-Controller
+- PCI-Controller
+- Serdes MUX
+
+are configured as required.
+
+Open `arch/arm64/boot/dts/ti/k3-am642-hummingboard-t.dts`:
+
+```
+/*
+ * choose either PCI-E (M1) or USB-3.1 (M2):
+ * - PHY_TYPE_PCIE
+ * - PHY_TYPE_USB3
+ */
+#define SERDES0_PHY_TYPE PHY_TYPE_USB3
+```
+
+Change the value of `SERDES0_PHY_TYPE`, and rebuild a full image.
+
+We are working on a more user-friendly configuration method in the background ... .
+
 ## Booting from eMMC
 
 The following commands can be used to download tiboot3.bin, tispl.bin and u-boot.img from an SD card and write them to the eMMC boot0 partition at respective addresses.
