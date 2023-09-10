@@ -347,6 +347,13 @@ The build script supports several customisation options that can be applied thro
 - BOARD: Choose target Board
   - evm
   - hummingboard-t (default)
+- SOC_VERSION: Choose Silicon Revision
+  - sr1 (AM6442A - SR 1.0, default)
+  - sr2 (AM6442B - SR 2.0)
+- SOC_TYPE: Choose SoC Type (secure boot)
+  - gp (general purpose, **sr1 only**, default)
+  - hs-fs (high security, field-securable - before burning customer key to efuses, **sr2 and later**)
+  - hs-se (high security, security-enabled - after burning customer key to efuses, **sr2 and later**)
 - MODULES: comma-separated list of kernel modules to include in rootfs
 - DISTRO: Choose Linux distribution for rootfs
   - buildroot (default)
