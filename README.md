@@ -152,19 +152,26 @@ We are working on a more user-friendly configuration method in the background ..
 The following commands can be used to download tiboot3.bin, tispl.bin and u-boot.img from an SD card and write them to the eMMC boot0 partition at respective addresses.
 
 ```
+    # select eMMC
     mmc dev 0 1
 
-    fatload mmc 1  ${loadaddr} tiboot3.bin
-    mmc write ${loadaddr} 0x0 0x400
+    # erase (existing) boot data
+    mmc erase 0x0 0x1C00
 
-    fatload mmc 1 ${loadaddr} tispl.bin
-    mmc write ${loadaddr} 0x400 0x600
+    # optionally erase environment
+    mmc erase 0x1C00 0x400
 
-    fatload mmc 1 ${loadaddr}  u-boot.img
-    mmc write ${loadaddr} 0x1000  0x800
+    # write tiboot3.bin
+    load mmc 1 ${kernel_addr_r} tiboot3.bin
+    mmc write ${kernel_addr_r} 0x0 0x400
 
-    fatload mmc 1 ${loadaddr} sysfw.itb
-    mmc write ${loadaddr}  0x1800 0x200
+    # write tispl.bin
+    load mmc 1 ${kernel_addr_r} tispl.bin
+    mmc write ${kernel_addr_r} 0x400 0xC00
+
+    # write u-boot.img
+    load mmc 1 ${kernel_addr_r}  u-boot.img
+    mmc write ${kernel_addr_r} 0xC00 0x1000
 ```
 eMMC layout:
 
@@ -174,10 +181,10 @@ eMMC layout:
                 |           tiboot3.bin            |
            0x400+----------------------------------+
                 |           tispl.bin              |
-          0x1000+----------------------------------+
+           0xC00+----------------------------------+
                 |           u-boot.img             |
-          0x1800+----------------------------------+
-                |           sysfw                  |
+          0x1C00+----------------------------------+
+                |           environment            |
           0x2000+----------------------------------+
 
 ```
