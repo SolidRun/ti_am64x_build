@@ -189,12 +189,17 @@ eMMC layout:
 
 ```
 
-To give the ROM access to the boot partition, the following commands must be used for the first time:
+Select `boot0` partition as boot source (first time only, may be changed later):
 
-```
     mmc partconf 0 1 1 1
-    mmc bootbus 0 2 0 0
-```
+
+Configure bus for x8 sdr high-speed mode (first time only, may be changed later)
+
+    mmc bootbus 0 2 1 1
+
+Finally enable eMMC reset function (first time only, **can not be changed later**)
+
+    mmc rst-function 0 1
 
 ## Booting from Network
 
