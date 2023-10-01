@@ -1,0 +1,28 @@
+From 0b5e75be9b746f1d96d60dc0464b8b548526122c Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Sun, 1 Oct 2023 14:00:10 +0200
+Subject: [PATCH] configs: solidrun: am64 som: update default device-tree
+ filename
+
+Final DTB file is k3-am642-hummingboard-t.dtb, with ti/ prefix.
+Update DEFAULT_FDT_FILE option accordingly.
+---
+ configs/am64x_a53_solidrun_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configs/am64x_a53_solidrun_defconfig b/configs/am64x_a53_solidrun_defconfig
+index 5fee7c4276..83b4abcd63 100644
+--- a/configs/am64x_a53_solidrun_defconfig
++++ b/configs/am64x_a53_solidrun_defconfig
+@@ -32,7 +32,7 @@ CONFIG_SPL_LOAD_FIT=y
+ CONFIG_SPL_LOAD_FIT_ADDRESS=0x81000000
+ CONFIG_SPL_LOAD_FIT_APPLY_OVERLAY=y
+ CONFIG_SPL_FIT_IMAGE_POST_PROCESS=y
+-CONFIG_DEFAULT_FDT_FILE="am642-solidrun.dtb"
++CONFIG_DEFAULT_FDT_FILE="ti/k3-am642-hummingboard-t.dtb"
+ CONFIG_BOARD_LATE_INIT=y
+ CONFIG_SPL_BOARD_INIT=y
+ CONFIG_SPL_SYS_MALLOC_SIMPLE=y
+-- 
+2.35.3
+

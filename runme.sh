@@ -412,9 +412,9 @@ make olddefconfig
 make savedefconfig
 make -j${JOBS} dtbs Image modules
 rm -rf "${BASE_DIR}/tmp/linux"
-mkdir -p "${BASE_DIR}/tmp/linux/boot"
+mkdir -p "${BASE_DIR}/tmp/linux/boot/ti"
 cp arch/arm64/boot/Image "${BASE_DIR}/tmp/linux/boot/Image"
-cp arch/arm64/boot/dts/ti/*.dtb "${BASE_DIR}/tmp/linux/boot/"
+cp arch/arm64/boot/dts/ti/*.dtb "${BASE_DIR}/tmp/linux/boot/ti/"
 cp .config "${BASE_DIR}/tmp/linux/boot/config"
 cp System.map "${BASE_DIR}/tmp/linux/boot/System.map"
 make -j${JOBS} INSTALL_MOD_PATH="${BASE_DIR}/tmp/linux/usr" modules_install
@@ -636,8 +636,7 @@ mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/u-boot.img ::u-boot.img
 
 mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/Image ::Image
 
-mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/k3-am642-evm.dtb ::k3-am642-evm.dtb
-mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/k3-am642-hummingboard-t.dtb ::am642-solidrun.dtb
+mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/ti ::ti
 
 mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME -s $BASE_DIR/tmp/extlinux ::extlinux
 
