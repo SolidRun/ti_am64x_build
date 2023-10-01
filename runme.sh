@@ -390,6 +390,22 @@ do_build_sysfw
 
 
 ###################################################################################################################################
+#							BUILD EMMC BOOTPART BUNDLE
+function do_build_bootpart_bundle() {
+	local BUNDLE="$BASE_DIR/output/boot_emmc-${COMMIT_HASH}.img"
+	mkdir -p "$BASE_DIR/output"
+	truncate -s 4M "$BUNDLE"
+	dd of="$BUNDLE" bs=512 conv=notrunc seek=0    if="$BASE_DIR/tmp/tiboot3.bin"
+	dd of="$BUNDLE" bs=512 conv=notrunc seek=1024 if="$BASE_DIR/tmp/tispl.bin"
+	dd of="$BUNDLE" bs=512 conv=notrunc seek=3072 if="$BASE_DIR/tmp/u-boot.img"
+}
+do_build_bootpart_bundle
+###################################################################################################################################
+
+
+
+
+###################################################################################################################################
 #							BUILD k3conf Tool
 cd $BASE_DIR/build/k3conf
 make
@@ -660,6 +676,7 @@ dd if=$BASE_DIR/output/boot_$IMAGE_NAME of=$BASE_DIR/output/$IMAGE_NAME seek=$FI
 # write rootfs into second partition
 dd if=$BASE_DIR/tmp/rootfs.ext4 of=$BASE_DIR/output/$IMAGE_NAME seek=$SECOND_PARTITION_OFFSET conv=notrunc
 
+printf "\n\neMMC bootpart image: $BASE_DIR/output/boot_emmc-${COMMIT_HASH}.img\n\n"
 printf "\n\nImage file: $BASE_DIR/output/$IMAGE_NAME\n\n"
 printf "\n\nKernel package: $BASE_DIR/output/linux-${COMMIT_HASH}.tar\n\n"
 
