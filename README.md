@@ -9,6 +9,8 @@ AM64x SoM and Carriers currently ship without OS or Bootloader preinstalled.
 Please download the latest binary release from
 
 If no operating system was installed, please download the latest binary release from [our website](https://images.solid-run.com/AM64X/ti_am64x_build).
+Choose between Debian / Buildroot, annd pick the appropriate silicon revision ("sr1" / "sr2" suffix) matching your SoM.
+Note: SKU "SRT6442W00D01GE008V11I**0**" is Silicon 1.0 ("sr1").
 Then follow the steps in section "Deploying -> to microSD".
 
 Before power-on, ensure that the Board has been configured to boot from microSD according to [this table](#configure-boot-mode-dip-switch)
@@ -19,6 +21,108 @@ Simply enter "root" and press return:
     Welcome to Buildroot
     buildroot login: root
     #
+
+### Log-In via SSH
+
+To log in via SSH, an ssh key must be installed first. Copy your favourite public key, e.g. from `~/.ssh/id_ed25519.pub`, into a new file in the root users home directory at `~/.ssh/authorized_keys`:
+
+    # mkdir .ssh
+    # cat > .ssh/authorized_keys << EOF
+    ssh-ed25519 AAAAinsertyour pubkey@here
+    EOF
+
+After [network configuration](#ethernet) `ssh root@<ip>` can be used for logging in remotely.
+
+### Expand Root Filesystem
+
+After flashing an SD-Card or eMMC, the root filesystem is small and does not fill the complete disk.
+To utilize all space, resize both the rootfs partition - and then the filesystem:
+
+Note:
+- `mmcblk0` is eMMC, rootfs is on partition #1
+- `mmcblk1` is microSD, rootfs is on partition #2
+Adapt instructions below accordingly.
+
+1. inspect partitions:
+
+   Using fdisk, view the current partitions. Take note of the start sector ("StartLBA") for partition 2!
+
+       # fdisk /dev/mmcblk1
+
+       The number of cylinders for this disk is set to 243096.
+       There is nothing wrong with that, but this is larger than 1024,
+       and could in certain setups cause problems with:
+       1) software that runs at boot time (e.g., old versions of LILO)
+       2) booting and partitioning software from other OSs
+          (e.g., DOS FDISK, OS/2 FDISK)
+
+       Command (m for help): p
+       Disk /dev/mmcblk1: 15 GB, 15931539456 bytes, 31116288 sectors
+       243096 cylinders, 4 heads, 32 sectors/track
+       Units: sectors of 1 * 512 = 512 bytes
+
+       Device       Boot StartCHS    EndCHS        StartLBA     EndLBA    Sectors  Size Id Type
+       /dev/mmcblk1p1 *  16,0,1      127,3,32          2048      16383      14336 7168K  c Win95 FAT32 (LBA)
+       /dev/mmcblk1p2 *  128,0,1     1023,3,32        16384     409600     393217  192M 83 Linux
+
+       Command (m for help):
+
+2. resize partition 2:
+
+   Drop and re-create partition 2 at the same starting sector noted before, keeping the "Boot" flag active.
+   If prompted, do not remove the ext4 signature:
+
+       Command (m for help): d
+       Partition number (1-4): 2
+
+       Command (m for help): n
+       Partition type
+          p   primary partition (1-4)
+          e   extended
+       p
+       Partition number (1-4): 2
+       First sector (32-31116287, default 32): 16384
+       Last sector or +size{,K,M,G,T} (16384-31116287, default 31116287):
+       Using default value 31116287
+
+       Command (m for help): a
+       Partition number (1-4): 2
+
+       Command (m for help): p
+       Disk /dev/mmcblk1: 15 GB, 15931539456 bytes, 31116288 sectors
+       243096 cylinders, 4 heads, 32 sectors/track
+       Units: sectors of 1 * 512 = 512 bytes
+
+       Device       Boot StartCHS    EndCHS        StartLBA     EndLBA    Sectors  Size Id Type
+       /dev/mmcblk1p1 *  16,0,1      127,3,32          2048      16383      14336 7168K  c Win95 FAT32 (LBA)
+       /dev/mmcblk1p2 *  128,0,1     1023,3,32        16384   31116287   31099904 14.8G 83 Linux
+
+       Command (m for help): w
+       The partition table has been altered.
+       Calling ioctl() to re-read partition table
+       fdisk: WARNING: rereading partition table failed, kernel still uses old table: Device or resource busy
+
+3. If fdisk finished with the warning line above, reboot the device:
+
+       reboot
+
+   If there was no warning, or after reboot completed - proceed to step 4.
+
+4. resize root filesystem:
+
+   Linux supports online-resizing for the ext4 filesystem. Invoke `resize2fs` on partition 2 to do so:
+
+       # resize2fs /dev/mmcblk1p2
+
+### Install All Kernel Modules
+
+The basic images include only a small number of kernel modules required for basic operation.
+A package including all modules is generated as part of the build (`build/linux-<hash>.tar`) and available for download on [our website](https://images.solid-run.com/AM64X/ti_am64x_build).
+
+Ensure sufficient free space on rootfs - 300MB should be sufficient, then unpack to `/`:
+
+    tar -C / -xf linux-<hash>.tar
+    sync
 
 ## Deploying
 
@@ -33,7 +137,20 @@ sudo dd if=output/microsd-<hash>.img of=/dev/sdX
 
 ### to eMMC
 
-**TODO**
+The build process generates special rootfs images for deployment on the eMMC main (data) partition: `output/emmc-<hash>.img`
+Binary releases are available on [our website](https://images.solid-run.com/AM64X/ti_am64x_build) for download.
+
+1. Boot into Linux on the target system, e.g. using SD Card
+
+2. Download, or copy eMMC image to the target system (`wget`, `scp`, ...)
+
+3. Decompress image if necessary (e.g. if downloaded from our website):
+
+       xz -d emmc-<hash>.img.xz
+
+3. Write (uncompressed) image to eMMC:
+
+       dd if=emmc-<hash>.img of=/dev/mmcblk0 bs=4M conv=fsync
 
 ## Configure Boot Mode DIP Switch
 
@@ -149,7 +266,7 @@ We are working on a more user-friendly configuration method in the background ..
 
 ## Booting from eMMC
 
-The following commands can be used to download tiboot3.bin, tispl.bin and u-boot.img from an SD card and write them to the eMMC boot0 partition at respective addresses.
+The following commands can be used to download tiboot3.bin, tispl.bin and u-boot.img from a bootable SD card to the eMMC boot0 partition at appropriate offset:
 
 ```
     # select eMMC

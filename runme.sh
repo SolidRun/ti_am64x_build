@@ -390,22 +390,6 @@ do_build_sysfw
 
 
 ###################################################################################################################################
-#							BUILD EMMC BOOTPART BUNDLE
-function do_build_bootpart_bundle() {
-	local BUNDLE="$BASE_DIR/output/boot_emmc-${COMMIT_HASH}.img"
-	mkdir -p "$BASE_DIR/output"
-	truncate -s 4M "$BUNDLE"
-	dd of="$BUNDLE" bs=512 conv=notrunc seek=0    if="$BASE_DIR/tmp/tiboot3.bin"
-	dd of="$BUNDLE" bs=512 conv=notrunc seek=1024 if="$BASE_DIR/tmp/tispl.bin"
-	dd of="$BUNDLE" bs=512 conv=notrunc seek=3072 if="$BASE_DIR/tmp/u-boot.img"
-}
-do_build_bootpart_bundle
-###################################################################################################################################
-
-
-
-
-###################################################################################################################################
 #							BUILD k3conf Tool
 cd $BASE_DIR/build/k3conf
 make
@@ -532,7 +516,7 @@ EOF
 			-smp 1 \
 			-netdev user,id=eth0 \
 			-device virtio-net-device,netdev=eth0 \
-			-drive file=rootfs.e2.orig,if=none,format=raw,id=hd0 \
+			-drive file=rootfs.e2.orig,if=none,format=raw,id=hd0,discard=unmap \
 			-device virtio-blk-device,drive=hd0 \
 			-nographic \
 			-no-reboot \
@@ -547,7 +531,7 @@ EOF
 	fi;
 
 	# export final rootfs for next steps
-	cp rootfs.e2.orig "${BASE_DIR}/tmp/rootfs.ext4"
+	cp --sparse=always rootfs.e2.orig "${BASE_DIR}/tmp/rootfs.ext4"
 }
 ##################################################################################################################################
 
@@ -593,6 +577,7 @@ do_package_kernel() {
 	tar --numeric-owner --owner=0 --group=0 --create --file ${BASE_DIR}/output/linux-${COMMIT_HASH}.tar *
 }
 do_package_kernel
+###################################################################################################################################
 
 
 
@@ -600,8 +585,9 @@ do_package_kernel
 ###################################################################################################################################
 #							Generate extlinux.conf for U-Boot Distro-Boot Feature
 do_generate_extlinux() {
+	local PARTNUMBER=$1
 	local PARTUUID=`blkid -s PTUUID -o value ${BASE_DIR}/output/${IMAGE_NAME}`
-	PARTUUID=${PARTUUID}'-02' # second partition rootfs
+	PARTUUID=${PARTUUID}'-0'${PARTNUMBER} # specific partition uuid
 
 	mkdir -p ${BASE_DIR}/tmp/extlinux
 	cat > ${BASE_DIR}/tmp/extlinux/extlinux.conf << EOF
@@ -612,70 +598,143 @@ LABEL default
 	MENU LABEL default kernel
 	LINUX ../Image
 	FDTDIR ../
-	APPEND earlycon=ns16550a,mmio32,0x02800000 console=ttyS2,115200n8 log_level=9 root=PARTUUID=$PARTUUID rw rootwait
+	APPEND earlycon=ns16550a,mmio32,0x02800000 console=ttyS2,115200n8 log_level=9 root=PARTUUID=$PARTUUID rw rootwait pcie_aspm=off
 EOF
 }
+###################################################################################################################################
+
+
+
 
 ###################################################################################################################################
-#							Create Image file
-
-#Image name should include the commit hash
-cd $BASE_DIR
-IMAGE_NAME=microsd-${COMMIT_HASH}.img
-
-# define partition offsets
-# note: partition start and end sectors are inclusive, add/subtract 1 where appropriate
-IMAGE_BOOTPART_START=$((4*1024*1024)) # partition start aligned to 4MiB
-IMAGE_BOOTPART_END=$((64*1024*1024-1)) # bootpart size = 60MiB
-IMAGE_ROOTPART_SIZE=`stat -c "%s" tmp/rootfs.ext4`
-IMAGE_ROOTPART_START=$((IMAGE_BOOTPART_END+1))
-IMAGE_ROOTPART_END=$((IMAGE_ROOTPART_START+IMAGE_ROOTPART_SIZE))
-IMAGE_SIZE=$((IMAGE_ROOTPART_END+512)) # require 1 additional sector at end
-
-# Create the output image, 2 partitions: 1 boot partition and one root partition
-dd if=/dev/zero of=$BASE_DIR/output/$IMAGE_NAME bs=1 count=0 seek=${IMAGE_SIZE}
-parted -s $BASE_DIR/output/$IMAGE_NAME -- mklabel msdos mkpart primary fat32 ${IMAGE_BOOTPART_START}B ${IMAGE_BOOTPART_END}B mkpart primary ext4 ${IMAGE_ROOTPART_START}B ${IMAGE_ROOTPART_END}B
-
-# generate extlinux.conf after partition table exists and partition uuids are known
-do_generate_extlinux
-
-# Create boot partition as a different file
-dd if=/dev/zero of=$BASE_DIR/output/boot_$IMAGE_NAME bs=1M count=80
-
-mformat -v boot -F -i $BASE_DIR/output/boot_$IMAGE_NAME ::
-
-mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/tispl.bin ::tispl.bin
-
-mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/tiboot3.bin ::tiboot3.bin
-
-mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/u-boot.img ::u-boot.img
-
-mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/Image ::Image
-
-mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/linux/boot/ti ::ti
-
-mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME -s $BASE_DIR/tmp/extlinux ::extlinux
+#							Integrate Artifacts on rootfs
 
 echo "copying \"k3conf\" ..."
 e2cp -G 0 -O 0 -P 755 -s "$BASE_DIR/tmp" -d "${BASE_DIR}/tmp/rootfs.ext4:/usr/bin" -a -v k3conf
+
+echo "copying kernel ..."
+e2cp -G 0 -O 0 -P 644 -a -d "${BASE_DIR}/tmp/rootfs.ext4:" -s "${BASE_DIR}/tmp/linux" -v boot/Image boot/ti/*.dtb
 
 echo "copying kernel modules ..."
 find "${BASE_DIR}/tmp/linux/usr/lib/modules" -type f -not -name "*.ko*" -printf "%P\n" | e2cp -G 0 -O 0 -P 644 -s "${BASE_DIR}/tmp/linux/usr/lib/modules" -d "${BASE_DIR}/tmp/rootfs.ext4:usr/lib/modules" -a
 for module in ${MODULES//,/ }; do
 	find "${BASE_DIR}/tmp/linux/usr/lib/modules" -type f -name "${module//[_-]/\[_-\]}.ko*" -printf "%P\n" | e2cp -G 0 -O 0 -P 644 -s "${BASE_DIR}/tmp/linux/usr/lib/modules" -d "${BASE_DIR}/tmp/rootfs.ext4:usr/lib/modules" -a -v
 done
+###################################################################################################################################
 
 
-# Now find offsets in output image
-FIRST_PARTITION_OFFSET=`fdisk $BASE_DIR/output/$IMAGE_NAME -l | grep img1 | awk '{print $2}'`
-SECOND_PARTITION_OFFSET=`fdisk $BASE_DIR/output/$IMAGE_NAME -l | grep img2 | awk '{print $2}'`
 
-# Write boot partition into output partition
-dd if=$BASE_DIR/output/boot_$IMAGE_NAME of=$BASE_DIR/output/$IMAGE_NAME seek=$FIRST_PARTITION_OFFSET conv=notrunc
 
-# write rootfs into second partition
-dd if=$BASE_DIR/tmp/rootfs.ext4 of=$BASE_DIR/output/$IMAGE_NAME seek=$SECOND_PARTITION_OFFSET conv=notrunc
+###################################################################################################################################
+#							Create SD Image file
+function do_assemble_sd() {
+	local IMAGE_NAME=microsd-${COMMIT_HASH}.img
 
+	cd $BASE_DIR
+	mkdir -p "$BASE_DIR/output"
+
+	# define partition offsets
+	# note: partition start and end sectors are inclusive, add/subtract 1 where appropriate
+	IMAGE_BOOTPART_START=$((1*1024*1024)) # partition start aligned to 1MiB
+	IMAGE_BOOTPART_END=$((8*1024*1024-1)) # bootpart size = 7MiB
+	IMAGE_ROOTPART_SIZE=`stat -c "%s" tmp/rootfs.ext4`
+	IMAGE_ROOTPART_START=$((IMAGE_BOOTPART_END+1))
+	IMAGE_ROOTPART_END=$((IMAGE_ROOTPART_START+IMAGE_ROOTPART_SIZE))
+	IMAGE_SIZE=$((IMAGE_ROOTPART_END+512)) # require 1 additional sector at end
+
+	# Create the output image, 2 partitions: 1 boot partition and one root partition
+	dd if=/dev/zero of=$BASE_DIR/output/$IMAGE_NAME bs=1 count=0 seek=${IMAGE_SIZE}
+	parted -s $BASE_DIR/output/$IMAGE_NAME -- mklabel msdos mkpart primary fat32 ${IMAGE_BOOTPART_START}B ${IMAGE_BOOTPART_END}B mkpart primary ext4 ${IMAGE_ROOTPART_START}B ${IMAGE_ROOTPART_END}B
+
+	# mark both partitions bootable:
+	# 1. for SoC Boot-ROM (tiboot3.bin on FAT part)
+	# 2. for U-Boot (extlinux.conf on rootfs)
+	sfdisk -A output/${IMAGE_NAME} 1 2
+
+	# generate extlinux.conf after partition table exists and partition uuids are known
+	do_generate_extlinux 2
+	e2cp -G 0 -O 0 -P 644 -a -d "${BASE_DIR}/tmp/rootfs.ext4:/boot" -s "${BASE_DIR}/tmp" -v extlinux/extlinux.conf
+
+	# Create boot partition as a different file
+	dd if=/dev/zero of=$BASE_DIR/output/boot_$IMAGE_NAME bs=1M count=0 seek=7
+
+	mformat -v boot -i $BASE_DIR/output/boot_$IMAGE_NAME ::
+
+	mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/tispl.bin ::tispl.bin
+
+	mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/tiboot3.bin ::tiboot3.bin
+
+	mcopy -i $BASE_DIR/output/boot_$IMAGE_NAME $BASE_DIR/tmp/u-boot.img ::u-boot.img
+
+	# Now find offsets in output image
+	FIRST_PARTITION_OFFSET=`fdisk $BASE_DIR/output/$IMAGE_NAME -l | grep img1 | awk '{print $3}'`
+	SECOND_PARTITION_OFFSET=`fdisk $BASE_DIR/output/$IMAGE_NAME -l | grep img2 | awk '{print $3}'`
+
+	# Write boot partition into output partition
+	dd if=$BASE_DIR/output/boot_$IMAGE_NAME of=$BASE_DIR/output/$IMAGE_NAME seek=$FIRST_PARTITION_OFFSET conv=sparse
+
+	# write rootfs into second partition
+	dd if=$BASE_DIR/tmp/rootfs.ext4 of=$BASE_DIR/output/$IMAGE_NAME seek=$SECOND_PARTITION_OFFSET conv=sparse
+}
+do_assemble_sd
+###################################################################################################################################
+
+
+
+
+###################################################################################################################################
+#							Create eMMC Image file (rootfs)
+function do_assemble_emmc_bootpart() {
+	local BUNDLE="$BASE_DIR/output/boot_emmc-${COMMIT_HASH}.img"
+
+	cd $BASE_DIR
+	mkdir -p "$BASE_DIR/output"
+
+	truncate -s 4M "$BUNDLE"
+	dd of="$BUNDLE" bs=512 conv=notrunc seek=0    if="$BASE_DIR/tmp/tiboot3.bin"
+	dd of="$BUNDLE" bs=512 conv=notrunc seek=1024 if="$BASE_DIR/tmp/tispl.bin"
+	dd of="$BUNDLE" bs=512 conv=notrunc seek=3072 if="$BASE_DIR/tmp/u-boot.img"
+}
+
+function do_assemble_emmc() {
+	local IMAGE_NAME=emmc-${COMMIT_HASH}.img
+
+	cd $BASE_DIR
+	mkdir -p "$BASE_DIR/output"
+
+	# define partition offsets
+	# note: partition start and end sectors are inclusive, add/subtract 1 where appropriate
+	IMAGE_ROOTPART_SIZE=`stat -c "%s" tmp/rootfs.ext4`
+	IMAGE_ROOTPART_START=$((4*1024*1024)) # partition start aligned to 4MiB
+	IMAGE_ROOTPART_END=$((IMAGE_ROOTPART_START+IMAGE_ROOTPART_SIZE))
+	IMAGE_SIZE=$((IMAGE_ROOTPART_END+512)) # require 1 additional sector at end
+
+	# Create the output image, 1 partition: rootfs, no boot partition
+	dd if=/dev/zero of=$BASE_DIR/output/$IMAGE_NAME bs=1 count=0 seek=${IMAGE_SIZE}
+	parted -s $BASE_DIR/output/$IMAGE_NAME -- mklabel msdos mkpart primary ext4 ${IMAGE_ROOTPART_START}B ${IMAGE_ROOTPART_END}B set 1 boot on
+
+	# generate extlinux.conf after partition table exists and partition uuids are known
+	do_generate_extlinux 1
+	e2cp -G 0 -O 0 -P 644 -a -d "${BASE_DIR}/tmp/rootfs.ext4:/boot" -s "${BASE_DIR}/tmp" -v extlinux/extlinux.conf
+
+	# Now find offsets in output image
+	FIRST_PARTITION_OFFSET=`fdisk $BASE_DIR/output/$IMAGE_NAME -l | grep img1 | awk '{print $3}'`
+
+	# write rootfs into first partition
+	dd if=$BASE_DIR/tmp/rootfs.ext4 of=$BASE_DIR/output/$IMAGE_NAME seek=$FIRST_PARTITION_OFFSET conv=sparse
+}
+do_assemble_emmc_bootpart
+do_assemble_emmc
+###################################################################################################################################
+
+
+
+
+###################################################################################################################################
+#							Print Report
+
+printf "\n\nSD bootable image: $BASE_DIR/output/microsd-${COMMIT_HASH}.img\n\n"
+printf "\n\neMMC rootfs image: $BASE_DIR/output/emmc-${COMMIT_HASH}.img\n\n"
 printf "\n\neMMC bootpart image: $BASE_DIR/output/boot_emmc-${COMMIT_HASH}.img\n\n"
 printf "\n\nImage file: $BASE_DIR/output/$IMAGE_NAME\n\n"
 printf "\n\nKernel package: $BASE_DIR/output/linux-${COMMIT_HASH}.tar\n\n"
