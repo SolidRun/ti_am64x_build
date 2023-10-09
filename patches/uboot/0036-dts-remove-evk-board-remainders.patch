@@ -1,0 +1,459 @@
+From eef10edd0b289386f8e4b2e8df1e87ce523a042a Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Mon, 9 Oct 2023 17:27:53 +0200
+Subject: [PATCH] dts: remove evk board remainders
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ arch/arm/dts/am64x-solidrun-r5.dts | 332 +++++++++++++++++------------
+ 1 file changed, 198 insertions(+), 134 deletions(-)
+
+diff --git a/arch/arm/dts/am64x-solidrun-r5.dts b/arch/arm/dts/am64x-solidrun-r5.dts
+index 578a57e18b..96797bf955 100644
+--- a/arch/arm/dts/am64x-solidrun-r5.dts
++++ b/arch/arm/dts/am64x-solidrun-r5.dts
+@@ -10,22 +10,13 @@
+ #include "k3-am64-ddr.dtsi"
+ 
+ / {
+-	chosen {
+-		stdout-path = "serial2:115200n8";
+-		tick-timer = &timer1;
+-	};
+-
+ 	aliases {
++		mmc0 = &sdhci0;
++		mmc1 = &sdhci1;
+ 		remoteproc0 = &sysctrler;
+ 		remoteproc1 = &a53_0;
+ 	};
+ 
+-	memory@80000000 {
+-		device_type = "memory";
+-		/* 1G RAM */
+-                reg = <0x0 0x80000000 0 0x40000000>;
+-	};
+-
+ 	a53_0: a53@0 {
+ 		compatible = "ti,am654-rproc";
+ 		reg = <0x00 0x00a90000 0x00 0x10>;
+@@ -42,6 +33,25 @@
+ 		u-boot,dm-spl;
+ 	};
+ 
++	chosen {
++		stdout-path = "serial2:115200n8";
++		tick-timer = &timer1;
++	};
++
++	clk_200mhz: dummy-clock-200mhz {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <200000000>;
++		u-boot,dm-spl;
++	};
++
++	memory@80000000 {
++		u-boot,dm-spl;
++		device_type = "memory";
++		/* 1G RAM */
++                reg = <0x0 0x80000000 0 0x40000000>;
++	};
++
+ 	reserved-memory {
+ 		#address-cells = <2>;
+ 		#size-cells = <2>;
+@@ -54,213 +64,267 @@
+ 		};
+ 	};
+ 
+-	clk_200mhz: dummy-clock-200mhz {
+-		compatible = "fixed-clock";
+-		#clock-cells = <0>;
+-		clock-frequency = <200000000>;
+-		u-boot,dm-spl;
+-	};
+-
+-	vtt_supply: vtt-supply {
+-		compatible = "regulator-gpio";
+-		regulator-name = "vtt";
+-		regulator-min-microvolt = <0>;
+-		regulator-max-microvolt = <3300000>;
+-		gpios = <&main_gpio0 12 GPIO_ACTIVE_HIGH>;
+-		states = <0 0x0 3300000 0x1>;
+-		u-boot,dm-spl;
++	reg_mmc0_vdd: regulator-mmc0-vdd {
++		compatible = "regulator-fixed";
++		regulator-name = "vdd-mmc0";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		regulator-always-on;
++		regulator-boot-on;
+ 	};
+ };
+ 
+ &cbass_main {
++	u-boot,dm-spl;
++
+ 	sysctrler: sysctrler {
+ 		compatible = "ti,am654-system-controller";
+ 		mboxes= <&secure_proxy_main 1>, <&secure_proxy_main 0>;
+ 		mbox-names = "tx", "rx";
+ 		u-boot,dm-spl;
+ 	};
+-};
+ 
+-&main_pmx0 {
+-	u-boot,dm-spl;
+-	main_uart0_pins_default: main-uart0-pins-default {
++	timer1: timer@2400000 {
+ 		u-boot,dm-spl;
+-		pinctrl-single,pins = <
+-			AM64X_IOPAD(0x0238, PIN_INPUT, 0)		/* (B16) UART0_CTSn */
+-			AM64X_IOPAD(0x023c, PIN_OUTPUT, 0)		/* (A16) UART0_RTSn */
+-			AM64X_IOPAD(0x0230, PIN_INPUT, 0)		/* (D15) UART0_RXD */
+-			AM64X_IOPAD(0x0234, PIN_OUTPUT, 0)		/* (C16) UART0_TXD */
+-		>;
++		compatible = "ti,omap5430-timer";
++		reg = <0x0 0x2400000 0x0 0x80>;
++		ti,timer-alwon;
++		clock-frequency = <200000000>;
+ 	};
++};
+ 
+-	main_uart1_pins_default: main-uart1-pins-default {
++&dmsc {
++	u-boot,dm-spl;
++	mboxes= <&secure_proxy_main 0>,
++		<&secure_proxy_main 1>,
++		<&secure_proxy_main 0>;
++	mbox-names = "rx", "tx", "notify";
++	ti,host-id = <35>;
++	ti,secure-host;
++
++	k3_sysreset: sysreset-controller {
++		compatible = "ti,sci-sysreset";
+ 		u-boot,dm-spl;
+-		pinctrl-single,pins = <
+-			AM64X_IOPAD(0x0248, PIN_INPUT, 0)		/* (D16) UART1_CTSn */
+-			AM64X_IOPAD(0x024c, PIN_OUTPUT, 0) 		/* (E16) UART1_RTSn */
+-			AM64X_IOPAD(0x0240, PIN_INPUT, 0) 		/* (E15) UART1_RXD */
+-			AM64X_IOPAD(0x0244, PIN_OUTPUT, 0)		/* (E14) UART1_TXD */
+-		>;
+ 	};
++};
++
++&dmss {
++	u-boot,dm-spl;
++};
+ 
+-	main_mmc0_pins_default: main-mmc0-pins-default {
++&elm0 {
++	u-boot,dm-spl;
++};
++
++&fss {
++	u-boot,dm-spl;
++};
++
++&gpmc0 {
++	u-boot,dm-spl;
++};
++
++&k3_pds {
++	u-boot,dm-spl;
++};
++
++&k3_clks {
++	u-boot,dm-spl;
++};
++
++&k3_reset {
++	u-boot,dm-spl;
++};
++
++&main_conf {
++	u-boot,dm-spl;
++
++	chipid@14 {
+ 		u-boot,dm-spl;
+-		pinctrl-single,pins = <
+-			AM64X_IOPAD(0x01a8, PIN_INPUT_PULLDOWN, 0)	/* (B25) MMC0_CLK */
+-			AM64X_IOPAD(0x01aC, PIN_INPUT_PULLUP, 0)	/* (B27) MMC0_CMD */
+-			AM64X_IOPAD(0x01a4, PIN_INPUT_PULLUP, 0)	/* (A26) MMC0_DAT0 */
+-			AM64X_IOPAD(0x01a0, PIN_INPUT_PULLUP, 0)	/* (E25) MMC0_DAT1 */
+-			AM64X_IOPAD(0x019c, PIN_INPUT_PULLUP, 0)	/* (C26) MMC0_DAT2 */
+-			AM64X_IOPAD(0x0198, PIN_INPUT_PULLUP, 0)	/* (A25) MMC0_DAT3 */
+-			AM64X_IOPAD(0x0194, PIN_INPUT_PULLUP, 0)	/* (E24) MMC0_DAT4 */
+-			AM64X_IOPAD(0x0190, PIN_INPUT_PULLUP, 0)	/* (A24) MMC0_DAT5 */
+-			AM64X_IOPAD(0x018c, PIN_INPUT_PULLUP, 0)	/* (B26) MMC0_DAT6 */
+-			AM64X_IOPAD(0x0188, PIN_INPUT_PULLUP, 0)	/* (D25) MMC0_DAT7 */
+-			AM64X_IOPAD(0x01b0, PIN_INPUT, 0)		/* (C25) MMC0_DS */
+-		>;
+ 	};
++};
++
++&main_gpio0 {
++	u-boot,dm-spl;
++	status = "okay";
++};
++
++&main_pmx0 {
++	u-boot,dm-spl;
++
++	/*
++	 * main_mmc0_pins_default: main-mmc0-pins-default
++	 *
++	 * MMC0_CMD: no padconfig
++	 * MMC0_CLK: no padconfig, external pull-up on SoM
++	 * MMC0_DAT0: no padconfig
++	 * MMC0_DAT1: no padconfig
++	 * MMC0_DAT2: no padconfig
++	 * MMC0_DAT3: no padconfig
++	 * MMC0_DAT4: no padconfig
++	 * MMC0_DAT5: no padconfig
++	 * MMC0_DAT6: no padconfig
++	 * MMC0_DAT7: no padconfig
++	 * MMC0_DS: no padconfig, external pull-down on SoM
++	 */
+ 
+ 	main_mmc1_pins_default: main-mmc1-pins-default {
+ 		u-boot,dm-spl;
+ 		pinctrl-single,pins = <
+ 			AM64X_IOPAD(0x0294, PIN_INPUT_PULLUP, 0)	/* (J19) MMC1_CMD */
+-			AM64X_IOPAD(0x028c, PIN_INPUT_PULLDOWN, 0)	/* (L20) MMC1_CLK */
+-			AM64X_IOPAD(0x0288, PIN_INPUT_PULLUP, 0)	/* (K21) MMC1_DAT0 */
+-			AM64X_IOPAD(0x0284, PIN_INPUT_PULLUP, 0)	/* (L21) MMC1_DAT1 */
+-			AM64X_IOPAD(0x0280, PIN_INPUT_PULLUP, 0)	/* (K19) MMC1_DAT2 */
+-			AM64X_IOPAD(0x027c, PIN_INPUT_PULLUP, 0)	/* (K18) MMC1_DAT3 */
+-			AM64X_IOPAD(0x0298, PIN_INPUT_PULLUP, 0)	/* (D19) MMC1_SDCD */
+-			AM64X_IOPAD(0x029c, PIN_INPUT_PULLUP, 0)	/* (C20) MMC1_SDWP */
++			AM64X_IOPAD(0x028c, PIN_INPUT_PULLDOWN, 0)	/* Pad MMC1_CLK Mux MMC1_CLK */
++			AM64X_IOPAD(0x0288, PIN_INPUT_PULLUP, 0)	/* Pad MMC1_DAT0 Mux MMC1_DAT0 */
++			AM64X_IOPAD(0x0284, PIN_INPUT_PULLUP, 0)	/* Pad MMC1_DAT1 Mux MMC1_DAT1 */
++			AM64X_IOPAD(0x0280, PIN_INPUT_PULLUP, 0)	/* Pad MMC1_DAT2 Mux MMC1_DAT2 */
++			AM64X_IOPAD(0x027c, PIN_INPUT_PULLUP, 0)	/* Pad MMC1_DAT3 Mux MMC1_DAT3 */
++			/* external pull-down on SoM & Carrier - should be up or DNP */
++			AM64X_IOPAD(0x0298, PIN_INPUT_PULLUP, 0)	/* Pad MMC1_SDCD Mux MMC1_SDCD */
++			AM64X_IOPAD(0x0290, PIN_INPUT, 0)			/* MMC1_CLKLB: Undocumented clock loopback */
+ 		>;
+ 	};
+ 
+-	ddr_vtt_pins_default: ddr-vtt-pins-default {
++	main_uart0_pins_default: main-uart0-pins-default {
+ 		u-boot,dm-spl;
+ 		pinctrl-single,pins = <
+-			AM64X_IOPAD(0x0030, PIN_OUTPUT_PULLUP, 7)	/* (L18) OSPI0_CSN1.GPIO0_12 */
++			AM64X_IOPAD(0x0230, PIN_INPUT, 0)	/* Pad UART0_RXD Mux UART0_RXD */
++			AM64X_IOPAD(0x0234, PIN_OUTPUT, 0)	/* Pad UART0_TXD Mux UART0_TXD */
+ 		>;
+ 	};
+ 
+ 	main_usb0_pins_default: main-usb0-pins-default {
++		u-boot,dm-spl;
+ 		pinctrl-single,pins = <
+-			AM64X_IOPAD(0x02a8, PIN_OUTPUT, 0) /* (E19) USB0_DRVVBUS */
++			AM64X_IOPAD(0x02a8, PIN_OUTPUT, 0)	/* Pad USB0_DRVBUS Mux USB0_DRVBUS */
+ 		>;
+ 	};
+ 
+ 	ospi0_pins_default: ospi0-pins-default {
++		u-boot,dm-spl;
+ 		pinctrl-single,pins = <
+-			AM64X_IOPAD(0x0000, PIN_OUTPUT, 0) /* (N20) OSPI0_CLK */
+-			AM64X_IOPAD(0x002c, PIN_OUTPUT, 0) /* (L19) OSPI0_CSn0 */
+-			AM64X_IOPAD(0x000c, PIN_INPUT, 0) /* (M19) OSPI0_D0 */
+-			AM64X_IOPAD(0x0010, PIN_INPUT, 0) /* (M18) OSPI0_D1 */
+-			AM64X_IOPAD(0x0014, PIN_INPUT, 0) /* (M20) OSPI0_D2 */
+-			AM64X_IOPAD(0x0018, PIN_INPUT, 0) /* (M21) OSPI0_D3 */
+-			AM64X_IOPAD(0x001c, PIN_INPUT, 0) /* (P21) OSPI0_D4 */
+-			AM64X_IOPAD(0x0020, PIN_INPUT, 0) /* (P20) OSPI0_D5 */
+-			AM64X_IOPAD(0x0024, PIN_INPUT, 0) /* (N18) OSPI0_D6 */
+-			AM64X_IOPAD(0x0028, PIN_INPUT, 0) /* (M17) OSPI0_D7 */
+-			AM64X_IOPAD(0x0008, PIN_INPUT, 0) /* (N19) OSPI0_DQS */
++			/* external pull-down on SoM */
++			AM64X_IOPAD(0x0000, PIN_OUTPUT, 0)	/* Pad OSPI0_CLK Mux OSPI0_CLK */
++			AM64X_IOPAD(0x0008, PIN_INPUT, 0)	/* Pad OSPI0_DQS Mux OSPI0_DQS */
++			/* external pull-up on SoM */
++			AM64X_IOPAD(0x002c, PIN_OUTPUT, 0)	/* Pad OSPI0_CSn0 Mux OSPI0_CSn0 */
++			AM64X_IOPAD(0x000c, PIN_INPUT, 0)	/* Pad OSPI0_D0 Mux OSPI0_D0 */
++			AM64X_IOPAD(0x0010, PIN_INPUT, 0)	/* Pad OSPI0_D1 Mux OSPI0_D1 */
++			AM64X_IOPAD(0x0014, PIN_INPUT, 0)	/* Pad OSPI0_D2 Mux OSPI0_D2 */
++			AM64X_IOPAD(0x0018, PIN_INPUT, 0)	/* Pad OSPI0_D3 Mux OSPI0_D3 */
++			AM64X_IOPAD(0x001c, PIN_INPUT, 0)	/* Pad OSPI0_D4 Mux OSPI0_D4 */
++			AM64X_IOPAD(0x0020, PIN_INPUT, 0)	/* Pad OSPI0_D5 Mux OSPI0_D5 */
++			AM64X_IOPAD(0x0024, PIN_INPUT, 0)	/* Pad OSPI0_D6 Mux OSPI0_D6 */
++			AM64X_IOPAD(0x0028, PIN_INPUT, 0)	/* Pad OSPI0_D7 Mux OSPI0_D7 */
+ 		>;
+ 	};
+-};
+ 
+-&dmsc {
+-	mboxes= <&secure_proxy_main 0>,
+-		<&secure_proxy_main 1>,
+-		<&secure_proxy_main 0>;
+-	mbox-names = "rx", "tx", "notify";
+-	ti,host-id = <35>;
+-	ti,secure-host;
++	ospi0_flash0_pins_default: ospi0-flash0-pins-default {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x0034, PIN_OUTPUT, 7)	/* Pad OSPI0_CSn2 Mux GPIO0_13 */
++			AM64X_IOPAD(0x0038, PIN_INPUT, 7)	/* Pad OSPI0_CSn3 Mux GPIO0_14 */
++		>;
++	};
+ };
+ 
++/* Console */
+ &main_uart0 {
+ 	/delete-property/ power-domains;
+ 	/delete-property/ clocks;
+ 	/delete-property/ clock-names;
++	u-boot,dm-spl;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&main_uart0_pins_default>;
+ 	status = "okay";
+ };
+ 
+-&main_uart1 {
++&ospi0 {
+ 	u-boot,dm-spl;
++	reg = <0x00 0x0fc40000 0x00 0x100>,
++	      <0x00 0x60000000 0x00 0x8000000>;
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&main_uart1_pins_default>;
+-};
+-
+-&memorycontroller {
+-	vtt-supply = <&vtt_supply>;
++	pinctrl-0 = <&ospi0_pins_default>;
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&ddr_vtt_pins_default>;
++	pinctrl-0 = <&ospi0_pins_default>;
++	ti,pindir-d0-out-d1-in = <1>;
++	ti,spi-num-cs = <1>;
++	status = "disabled";
++
++	/* SoM */
++	sh28hs512t@0 {
++		u-boot,dm-spl;
++		status = "disabled";
++		compatible = "jedec,spi-nor";
++		reg = <0>;
++		spi-tx-bus-width = <8>;
++		spi-rx-bus-width = <8>;
++		spi-max-frequency = <200000000>;
++		cdns,tshsl-ns = <50>;
++		cdns,tsd2d-ns = <50>;
++		cdns,tchsh-ns = <4>;
++		cdns,tslch-ns = <4>;
++		cdns,read-delay = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&ospi0_flash0_pins_default>;
++		interrupt-parent = <&main_gpio0>;
++		interrupts = <14 IRQ_TYPE_EDGE_FALLING>;
++		reset-gpios = <&main_gpio0 13 GPIO_ACTIVE_LOW>;
++	};
+ };
+ 
++/* eMMC */
++/* SoM */
+ &sdhci0 {
+ 	/delete-property/ power-domains;
++	u-boot,dm-spl;
+ 	clocks = <&clk_200mhz>;
+ 	clock-names = "clk_xin";
++	/* mmc0 pins have no padconfig */
++	bus-width = <8>;
+ 	ti,driver-strength-ohm = <50>;
+ 	disable-wp;
+-	pinctrl-0 = <&main_mmc0_pins_default>;
++	non-removable;
++	cap-mmc-hw-reset;
++	no-sd;
++	status = "okay";
++
++	/*
++	 * MMC controller supports switching between 1.8V and 3.3V signalling.
++	 * However MMC0 (unlike MMC1) does not integrate an LDO.
++	 * Explicitly link a regulator node for indicating to the driver which
++	 * voltages are actually usable.
++	 */
++	vqmmc-supply = <&reg_mmc0_vdd>;
+ };
+ 
++/* microSD connector */
++/* Carrier */
+ &sdhci1 {
+ 	/delete-property/ power-domains;
++	u-boot,dm-spl;
+ 	clocks = <&clk_200mhz>;
+ 	clock-names = "clk_xin";
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_mmc1_pins_default>;
++	bus-width = <4>;
+ 	ti,driver-strength-ohm = <50>;
+ 	disable-wp;
+-	pinctrl-0 = <&main_mmc1_pins_default>;
++	status = "okay";
++	no-1-8-v;
+ };
+ 
+-&main_gpio0 {
++&secure_proxy_main {
+ 	u-boot,dm-spl;
+-	/delete-property/ power-domains;
+ };
+ 
+ &usbss0 {
++	u-boot,dm-spl;
+ 	ti,vbus-divider;
+ 	ti,usb2-only;
+ };
+ 
+ &usb0 {
+-	dr_mode = "otg";
++	u-boot,dm-spl;
++	dr_mode = "peripheral";
+ 	maximum-speed = "high-speed";
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&main_usb0_pins_default>;
+ };
+-
+-&ospi0 {
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&ospi0_pins_default>;
+-
+-	reg = <0x00 0x0fc40000 0x00 0x100>,
+-	      <0x00 0x60000000 0x00 0x8000000>;
+-
+-	flash@0{
+-		compatible = "jedec,spi-nor";
+-		reg = <0x0>;
+-		spi-tx-bus-width = <8>;
+-		spi-rx-bus-width = <8>;
+-		spi-max-frequency = <25000000>;
+-		cdns,tshsl-ns = <60>;
+-		cdns,tsd2d-ns = <60>;
+-		cdns,tchsh-ns = <60>;
+-		cdns,tslch-ns = <60>;
+-		cdns,read-delay = <4>;
+-		cdns,phy-mode;
+-		#address-cells = <1>;
+-		#size-cells = <1>;
+-
+-		partition@3fc0000 {
+-			label = "ospi.phypattern";
+-			reg = <0x3fc0000 0x40000>;
+-		};
+-	};
+-};
+-
+-/* EEPROM might be read before SYSFW is available */
+-&main_i2c0 {
+-	/delete-property/ power-domains;
+-};
+-
+-#include "k3-am642-evm-u-boot.dtsi"
+-- 
+2.35.3
+
