@@ -512,8 +512,8 @@ EOF
 		qemu-system-aarch64 \
 			-m 1G \
 			-M virt \
-			-cpu cortex-a57 \
-			-smp 1 \
+			-cpu max,pauth-impdef=on,sve=off \
+			-smp 4 \
 			-netdev user,id=eth0 \
 			-device virtio-net-device,netdev=eth0 \
 			-drive file=rootfs.e2.orig,if=none,format=raw,id=hd0,discard=unmap \
