@@ -1,0 +1,147 @@
+From 8605e1474072e537993f0dc0deb7e45ef2550fdf Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Mon, 23 Oct 2023 16:55:18 +0200
+Subject: [PATCH] board: solidrun: am642-som: implement board file function for
+ MAC
+
+Only the first interface eth0 currently  has a driver in u-boot.
+This driver reads on-soc efuses providing a preprogrammed MAC by TI.
+
+eth-uclass common code then throws a warning when this MAC is different
+from the one read from tlv eeprom into environment.
+
+Implement a new board-file function board_get_mac_address called from
+common code to provide an alternate "ROM" address, from tlv eeprom.
+
+Because the otehr two interfaces do not currently have a driver, also
+keep the call to mac_read_from_eeprom function which populates
+environment with all MACs.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ .../solidrun/am64x_solidrun/am64x_solidrun.c  | 58 ++++++++++++++++++-
+ net/eth-uclass.c                              | 15 ++++-
+ 2 files changed, 71 insertions(+), 2 deletions(-)
+
+diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
+index c2cf2222..41317f8f 100644
+--- a/board/solidrun/am64x_solidrun/am64x_solidrun.c
++++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
+@@ -19,6 +19,8 @@
+ #include <miiphy.h>
+ #include <netdev.h>
+ #include <i2c.h>
++#include <tlv_eeprom.h>
++#include <linux/err.h>
+ 
+ #include "am64x_solidrun.h"
+ 
+@@ -471,11 +473,65 @@ int8_t resetSimpleLink(void)
+ /* from tlv_eeprom.c */
+ int mac_read_from_eeprom(void);
+ 
++int board_get_mac_address(struct udevice *dev, char *mac) {
++	u8 eeprom[TLV_INFO_MAX_LEN];
++	struct tlvinfo_priv *tlv;
++	struct tlvinfo_tlv *entry;
++	u16 maccount;
++	u8 macbase[6];
++	int i, ret;
++
++	// read tlv data from first eeprom
++	tlv = tlv_eeprom_read(tlv_eeprom_get_by_index(0), 0, eeprom, TLV_INFO_MAX_LEN);
++	if (IS_ERR(tlv))
++		return PTR_ERR(tlv);
++
++	// read mac count
++	entry = tlv_entry_next_by_code(tlv, NULL, TLV_CODE_MAC_SIZE);
++	if (IS_ERR(entry))
++		return PTR_ERR(entry);
++	tlv_entry_get_uint16(entry, &maccount);
++
++	// read mac base
++	entry = tlv_entry_next_by_code(tlv, NULL, TLV_CODE_MAC_BASE);
++	tlv_entry_get_raw(entry, macbase, 6);
++
++	// calculate MACs
++	for (i = 0; i < maccount; i++) {
++		if (i == 0 && strcmp("ethernet@8000000port@1", dev->name) == 0) {
++			memcpy(mac, macbase, 6);
++			return 0;
++		}
++
++		macbase[5]++;
++		if (macbase[5] == 0) {
++			macbase[4]++;
++			if (macbase[4] == 0) {
++				macbase[3]++;
++				if (macbase[3] == 0) {
++					macbase[2]++;
++					if (macbase[2] == 0) {
++						macbase[1]++;
++						if (macbase[1] == 0) {
++							macbase[0]++;
++						}
++					}
++				}
++			}
++		}
++	}
++
++	return -ENOENT;
++}
++
+ int board_late_init(void)
+ {
+ 	int ret;
+ 
+-	/*read Mac Addresses and save in environment*/
++	/* read Mac Addresses and save in environment
++	 * this is required because eth1/eth2 are not currently supported
++	 * in u-boot and will this not set ethaddr via board_get_mac_address.
++	 */
+ 	mac_read_from_eeprom();
+ 
+ 
+diff --git a/net/eth-uclass.c b/net/eth-uclass.c
+index bb4c362e..230662b8 100644
+--- a/net/eth-uclass.c
++++ b/net/eth-uclass.c
+@@ -508,10 +508,15 @@ static bool eth_dev_get_mac_address(struct udevice *dev, u8 mac[ARP_HLEN])
+ #endif
+ }
+ 
++__weak int board_get_mac_address(struct udevice *dev, char *mac) {
++	return -EOPNOTSUPP;
++}
++
+ static int eth_post_probe(struct udevice *dev)
+ {
+ 	struct eth_device_priv *priv = dev->uclass_priv;
+ 	struct eth_pdata *pdata = dev->platdata;
++	unsigned char board_enetaddr[ARP_HLEN];
+ 	unsigned char env_enetaddr[ARP_HLEN];
+ 	char *source = "DT";
+ 
+@@ -547,9 +552,17 @@ static int eth_post_probe(struct udevice *dev)
+ 	if (!eth_dev_get_mac_address(dev, pdata->enetaddr) ||
+ 	    !is_valid_ethaddr(pdata->enetaddr)) {
+ 		source = "ROM";
++
++		/* Check if the board-file has a valid MAC address */
++		if (!board_get_mac_address(dev, board_enetaddr) &&
++		    is_valid_ethaddr(board_enetaddr)) {
++			memcpy(pdata->enetaddr, board_enetaddr, ARP_HLEN);
++		}
++
+ 		/* Check if the device has a MAC address in ROM */
+-		if (eth_get_ops(dev)->read_rom_hwaddr)
++		else if (eth_get_ops(dev)->read_rom_hwaddr) {
+ 			eth_get_ops(dev)->read_rom_hwaddr(dev);
++		}
+ 	}
+ 
+ 	eth_env_get_enetaddr_by_index("eth", dev->seq, env_enetaddr);
+-- 
+2.35.3
+
