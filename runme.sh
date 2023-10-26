@@ -94,20 +94,20 @@ done
 
 # Check if needed Python modules are installed
 
-PYTHON_MODULES="pycryptodome"
+PYTHON_MODULES="pycryptodome:Cryptodome"
 
 for i in $PYTHON_MODULES; do
-
         #Check if module is installed
-        pip3 list | grep $i > /dev/null 2>&1
+        IFS=':' read -r -a m <<< "$i"
+        python3 -c "import ${m[1]}" > /dev/null 2>&1
 
         #If exit code is not 0 - module is not installed
         if [ $? -ne 0 ]; then
 
 
-                echo "Python module $i is not installed"
+                echo "Python module ${m[1]} is not installed"
                 echo "Please install it using:"
-                echo "  pip3 install $i"
+                echo "  pip3 install ${m[0]}"
 
                 exit -1
         fi

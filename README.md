@@ -499,29 +499,29 @@ The build script supports several customisation options that can be applied thro
 
 ### With Docker (recommended)
 
-* Build the Docker image (**Just once**):
+A docker image providing a consistent build environment can be used as below:
 
-```
-docker build --build-arg user=$(whoami) --build-arg userid=$(id -u) -t ti_am64x docker/
-```
+1. build container image (first time only)
+   ```
+   docker build -t ti_am64x_build docker
+   # optional with an apt proxy, e.g. apt-cacher-ng
+   # docker build --build-arg APTPROXY=http://127.0.0.1:3142 -t ti_am64x_build docker
+   ```
 
-To check if the image exists in you machine, you can use the following command:
+2. invoke build script in working directory
+   ```
+   docker run --rm -i -t -v "$PWD":/ti_build ti_am64x_build -u $(id -u) -g $(id -g)
+   ```
 
-```
-docker images | grep ti_am64x
-```
+#### rootless Podman
 
-* Run the build script:
-```
-docker run --rm -i -t -v "$PWD":/ti_build -v /etc/gitconfig:/etc/gitconfig ti_am64x ./runme.sh
-```
+Due to the way podman performs user-id mapping, the root user inside the container (uid=0, gid=0) will be mapped to the user running podman (e.g. 1000:100).
+Therefore in order for the build directory to be owned by current user, `-u 0 -g 0` have to be passed to *docker run*.
 
 ### on Host OS
 
-This can only work on Debian-based host, and has been tested only on Ubuntu 20.04.
+This can only work on Debian-based host, and has been tested only on Debian 11.
 
 The build script will check for required tools, clone and build images and place results in output/ directory:
 
-```
-./runme.sh
-```
+    ./runme.sh
