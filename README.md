@@ -488,7 +488,7 @@ The build script supports several customisation options that can be applied thro
   - buildroot (default)
   - debian
 - BUILDROOT_VERSION
-  - 2020.02 (default)
+  - 2023.02.6 (default)
 - BUILDROOT_DEFCONFIG: Choose specific config file name from `config/` folder
   - am64xx_solidrun_defconfig (default)
 - BR2_PRIMARY_SITE: Use specific (local) buildroot mirror

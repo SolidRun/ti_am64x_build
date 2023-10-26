@@ -31,7 +31,7 @@ set -e
 : ${MODULES:=at24,authenc,bluetooth,btbcm,btintel,btrtl,btusb,can_dev,cdns3,cdns3_ti,cfg80211,crct10dif_ce,ecc,ecdh_generic,fuse,hdc2010,icss_iep,icssg_prueth,ip_tables,ipv6,irq_pruss_intc,iwlmvm,iwlwifi,libarc4,m_can,m_can_platform,mac80211,opt3001,pci_endpoint_test,pru_rproc,pruss,qcserial,rfkill,rtc_abx80x,rti_wdt,sa2ul,sha512_generic,ti_k3_m4_remoteproc,ti_k3_r5_remoteproc,udc_core,usb_storage,usb_wwan,usbcore,x_tables,usbserial,xhci_hcd,xhci_plat_hcd}
 
 ## Buildroot Options
-: ${BUILDROOT_VERSION:=2023.02.2}
+: ${BUILDROOT_VERSION:=2023.02.6}
 : ${BUILDROOT_DEFCONFIG:=am64xx_solidrun_defconfig}
 : ${BR2_PRIMARY_SITE:=}
 
