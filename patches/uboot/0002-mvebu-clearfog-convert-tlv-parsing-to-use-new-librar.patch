@@ -1,0 +1,109 @@
+From a42c9f20c2ac146a485dd896c3162fcae35eddb1 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Tue, 16 May 2023 14:41:52 +0300
+Subject: [PATCH 2/6] mvebu: clearfog: convert tlv parsing to use new library
+
+Update the existing code reading tlv data from eeprom to use the new tlv
+library functions rather than relying on tlv_eeprom command internals.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ board/solidrun/common/tlv_data.c | 46 ++++++++++++--------------------
+ configs/clearfog_defconfig       |  4 ++-
+ 2 files changed, 20 insertions(+), 30 deletions(-)
+
+diff --git a/board/solidrun/common/tlv_data.c b/board/solidrun/common/tlv_data.c
+index 11d6e4a138..31b4b473c7 100644
+--- a/board/solidrun/common/tlv_data.c
++++ b/board/solidrun/common/tlv_data.c
+@@ -5,6 +5,7 @@
+ 
+ #include <common.h>
+ #include <compiler.h>
++#include <linux/err.h>
+ #include <tlv_eeprom.h>
+ #include "tlv_data.h"
+ 
+@@ -50,44 +51,31 @@ static void parse_tlv_vendor_ext(struct tlvinfo_tlv *tlv_entry,
+ 	td->ram_size = val[5];
+ }
+ 
+-static void parse_tlv_data(u8 *eeprom, struct tlvinfo_header *hdr,
+-			   struct tlvinfo_tlv *entry, struct tlv_data *td)
++static void parse_tlv_data(u8 *eeprom, struct tlvinfo_priv *tlv,
++						   struct tlv_data *td)
+ {
+-	unsigned int tlv_offset, tlv_len;
+-
+-	tlv_offset = sizeof(struct tlvinfo_header);
+-	tlv_len = sizeof(struct tlvinfo_header) + be16_to_cpu(hdr->totallen);
+-	while (tlv_offset < tlv_len) {
+-		entry = (struct tlvinfo_tlv *)&eeprom[tlv_offset];
+-
+-		switch (entry->type) {
+-		case TLV_CODE_PRODUCT_NAME:
+-			store_product_name(entry, td);
+-			break;
+-		case TLV_CODE_VENDOR_EXT:
+-			parse_tlv_vendor_ext(entry, td);
+-			break;
+-		default:
+-			break;
+-		}
+-
+-		tlv_offset += sizeof(struct tlvinfo_tlv) + entry->length;
+-	}
++	struct tlvinfo_tlv *entry;
++
++	entry = tlv_entry_next_by_code(tlv, NULL, TLV_CODE_PRODUCT_NAME);
++	if (!IS_ERR(entry))
++		store_product_name(entry, td);
++
++	entry = tlv_entry_next_by_code(tlv, NULL, TLV_CODE_VENDOR_EXT);
++	if (!IS_ERR(entry))
++		parse_tlv_vendor_ext(entry, td);
+ }
+ 
+ void read_tlv_data(struct tlv_data *td)
+ {
+ 	u8 eeprom_data[TLV_TOTAL_LEN_MAX];
+-	struct tlvinfo_header *tlv_hdr;
+-	struct tlvinfo_tlv *tlv_entry;
+-	int ret, i;
++	struct tlvinfo_priv *priv;
++	int i;
+ 
+ 	for (i = 0; i < 2; i++) {
+-		ret = read_tlvinfo_tlv_eeprom(eeprom_data, &tlv_hdr,
+-					      &tlv_entry, i);
+-		if (ret < 0)
++		priv = tlv_eeprom_read(tlv_eeprom_get_by_index(i), 0, eeprom_data, ARRAY_SIZE(eeprom_data));
++		if (IS_ERR(priv))
+ 			continue;
+-		parse_tlv_data(eeprom_data, tlv_hdr, tlv_entry, td);
++		parse_tlv_data(eeprom_data, priv, td);
+ 	}
+ }
+ 
+diff --git a/configs/clearfog_defconfig b/configs/clearfog_defconfig
+index 8cd35f9f1a..05af0e3e62 100644
+--- a/configs/clearfog_defconfig
++++ b/configs/clearfog_defconfig
+@@ -35,7 +35,7 @@ CONFIG_SPL_SYS_MALLOC_SIMPLE=y
+ CONFIG_SPL_I2C=y
+ CONFIG_SYS_MAXARGS=32
+ CONFIG_CMD_TLV_EEPROM=y
+-CONFIG_SPL_CMD_TLV_EEPROM=y
++# CONFIG_SPL_CMD_TLV_EEPROM is not set
+ # CONFIG_CMD_FLASH is not set
+ CONFIG_CMD_GPIO=y
+ CONFIG_CMD_I2C=y
+@@ -81,3 +81,5 @@ CONFIG_SYS_NS16550=y
+ CONFIG_KIRKWOOD_SPI=y
+ CONFIG_USB=y
+ CONFIG_USB_XHCI_HCD=y
++CONFIG_EEPROM_TLV_LIB=y
++CONFIG_SPL_EEPROM_TLV_LIB=y
+-- 
+2.35.3
+

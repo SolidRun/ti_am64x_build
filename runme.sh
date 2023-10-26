@@ -53,9 +53,8 @@ fi
 BASE_DIR=`pwd`
 
 
-export CROSS_COMPILE=aarch64-none-linux-gnu-
+export CROSS_COMPILE=aarch64-linux-gnu-
 export ARCH=arm64
-export PATH=$BASE_DIR/build/toolchain/gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu/bin:$PATH
 
 
 mkdir -p $BASE_DIR/build
@@ -122,29 +121,13 @@ set -e
 
 
 ###################################################################################################################################
-#							DOWNLOAD Toolchain
+#							CLONE K3 Firmware
+FIRMWARE_TAG=09.00.00.007
 
-if [[ ! -d $BASE_DIR/build/toolchain ]]; then
-	mkdir $BASE_DIR/build/toolchain
-	cd $BASE_DIR/build/toolchain
-	wget https://developer.arm.com/-/media/Files/downloads/gnu-a/9.2-2019.12/binrel/gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu.tar.xz
-	tar -xvf gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu.tar.xz
-fi
-
-###################################################################################################################################
-
-
-
-
-###################################################################################################################################
-#							CLONE K3 Image Gen
-IMAGE_GEN_TAG=08.06.00.007
-
-if [[ ! -d $BASE_DIR/build/k3-image-gen ]]; then
+if [[ ! -d $BASE_DIR/build/ti-linux-firmware ]]; then
 	cd $BASE_DIR/build
-	git clone git://git.ti.com/k3-image-gen/k3-image-gen.git -b $IMAGE_GEN_TAG --depth=1
+	git clone git://git.ti.com/processor-firmware/ti-linux-firmware.git -b $FIRMWARE_TAG --depth=1
 fi
-
 ###################################################################################################################################
 
 
@@ -166,13 +149,11 @@ fi
 
 ###################################################################################################################################
 #							CLONE OPTEE
-OPTEE_HASH=e4ca953c381e176bafe5a703c0cd18dd21aa5af5
+OPTEE_TAG=3.20.0
 
 if [[ ! -d $BASE_DIR/build/optee_os ]]; then
 	cd $BASE_DIR/build
-	git clone https://github.com/OP-TEE/optee_os.git
-	cd optee_os
-	git reset --hard $OPTEE_HASH
+	git clone https://github.com/OP-TEE/optee_os.git -b $OPTEE_TAG --depth 1
 fi
 
 ###################################################################################################################################
@@ -182,7 +163,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE U-boot
-U_BOOT_TAG=08.06.00.007
+U_BOOT_TAG=09.00.00.006
 
 if [[ ! -d $BASE_DIR/build/ti-u-boot ]]; then
 	cd $BASE_DIR/build
@@ -200,7 +181,7 @@ fi
 ###################################################################################################################################
 #							CLONE k3conf Tool
 K3CONF_BRANCH=master
-K3CONF_HEAD=982f5c2f02f732b5829861218812904cd776773d
+K3CONF_HEAD=1dd468d551fd786c410e88dadc1114505d057ebe
 
 if [[ ! -d $BASE_DIR/build/k3conf ]]; then
 	cd $BASE_DIR/build
@@ -325,8 +306,8 @@ case ${BOARD} in
 		U_BOOT_A53_DEFCONFIG=am64x_evm_a53_defconfig
 		;;
 	hummingboard-t)
-		U_BOOT_R5_DEFCONFIG=am64x_r5_solidrun_defconfig
-		U_BOOT_A53_DEFCONFIG=am64x_a53_solidrun_defconfig
+		U_BOOT_R5_DEFCONFIG=am64som_r5_defconfig
+		U_BOOT_A53_DEFCONFIG=am64som_a53_defconfig
 		;;
 	*)
 		echo "ERROR: Board \"${BOARD}\" not supported!"
@@ -338,52 +319,35 @@ cd $BASE_DIR/build/ti-u-boot
 
 # 	R5
 
-make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- $U_BOOT_R5_DEFCONFIG
+make ARCH=arm $U_BOOT_R5_DEFCONFIG
 #make ARCH=arm menuconfig
 make ARCH=arm savedefconfig
 mv defconfig defconfig_r5
-make -j${JOBS} ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
-cp spl/u-boot-spl.bin $BASE_DIR/tmp/u-boot-spl.bin
+make \
+	-j${JOBS} \
+	ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- \
+	BINMAN_INDIRS="./board/ti/am64x $BASE_DIR/build/ti-linux-firmware"
+cp -L tiboot3.bin $BASE_DIR/tmp/tiboot3.bin
 
 
 
 # 	A53
 
-make ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- $U_BOOT_A53_DEFCONFIG
+make ARCH=arm $U_BOOT_A53_DEFCONFIG
 #make ARCH=arm menuconfig
 make ARCH=arm savedefconfig
 mv defconfig defconfig_a53
-make -j${JOBS} ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- ATF=$BASE_DIR/tmp/bl31.bin TEE=$BASE_DIR/tmp/tee-pager_v2.bin
+make \
+	-j${JOBS} \
+	ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- \
+	BINMAN_INDIRS="./board/ti/am64x $BASE_DIR/build/ti-linux-firmware" \
+	BL31=$BASE_DIR/tmp/bl31.bin \
+	TEE=$BASE_DIR/tmp/tee-pager_v2.bin
 
 
 cp tispl.bin $BASE_DIR/tmp/tispl.bin
 cp u-boot.img $BASE_DIR/tmp/u-boot.img
 
-###################################################################################################################################
-
-
-
-
-###################################################################################################################################
-#							BUILD SYSFW
-function do_build_sysfw() {
-	case ${SOC_VERSION}_${SOC_TYPE} in
-		sr1_gp)
-			SOC=am64x
-		;;
-		sr2_hs-fs|sr2_hs-se)
-			SOC=am64x_sr2
-		;;
-		*)
-			echo "Error: Silicon \"${SOC_VERSION}\" type \"${SOC_TYPE}\" is not supported!"
-	esac
-
-	cd $BASE_DIR/build/k3-image-gen
-	make SOC=$SOC SOC_TYPE=$SOC_TYPE mrproper
-	make SOC=$SOC SOC_TYPE=$SOC_TYPE ENABLE_TRACE=1 SBL=$BASE_DIR/tmp/u-boot-spl.bin
-	cp tiboot3-${SOC}-${SOC_TYPE}-evm.bin $BASE_DIR/tmp/tiboot3.bin
-}
-do_build_sysfw
 ###################################################################################################################################
 
 
@@ -591,11 +555,11 @@ do_generate_extlinux() {
 
 	mkdir -p ${BASE_DIR}/tmp/extlinux
 	cat > ${BASE_DIR}/tmp/extlinux/extlinux.conf << EOF
-TIMEOUT 0
+TIMEOUT 1
 DEFAULT default
 MENU TITLE SolidRun AM64 Reference BSP
 LABEL default
-	MENU LABEL default kernel
+	MENU LABEL default
 	LINUX ../Image
 	FDTDIR ../
 	APPEND earlycon=ns16550a,mmio32,0x02800000 console=ttyS2,115200n8 log_level=9 root=PARTUUID=$PARTUUID rw rootwait pcie_aspm=off

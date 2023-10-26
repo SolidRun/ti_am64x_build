@@ -1,0 +1,71 @@
+From d0d98237521c6d2ec981a8be5f67502aa76983d2 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Wed, 27 Sep 2023 14:39:51 +0200
+Subject: [PATCH 5/6] arm: mach-k3: am642_init: support spl_boot_device in
+ u-boot proper
+
+The memory addresses for boot mode are still valid in full u-boot.
+Compile the spl_boot_device function unconditionally so that it can be
+available any time.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ arch/arm/mach-k3/Makefile     | 2 ++
+ arch/arm/mach-k3/am642_init.c | 5 +++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/arch/arm/mach-k3/Makefile b/arch/arm/mach-k3/Makefile
+index 14cf85ad38..4fea5817c9 100644
+--- a/arch/arm/mach-k3/Makefile
++++ b/arch/arm/mach-k3/Makefile
+@@ -20,5 +20,7 @@ obj-$(CONFIG_SOC_K3_AM625) += am625_init.o
+ obj-$(CONFIG_SOC_K3_AM62A7) += am62a7_init.o
+ obj-$(CONFIG_SOC_K3_J784S4) += j784s4_init.o
+ obj-$(CONFIG_K3_LOAD_SYSFW) += sysfw-loader.o
++else
++obj-$(CONFIG_SOC_K3_AM642) += am642_init.o
+ endif
+ obj-y += common.o security.o
+diff --git a/arch/arm/mach-k3/am642_init.c b/arch/arm/mach-k3/am642_init.c
+index 077612ff80..1e961ef298 100644
+--- a/arch/arm/mach-k3/am642_init.c
++++ b/arch/arm/mach-k3/am642_init.c
+@@ -31,6 +31,7 @@
+ #define SW_POR_MCU                             BIT(24)
+ #define SW_POR_MAIN                            BIT(25)
+ 
++#ifdef CONFIG_SPL_BUILD
+ static void ctrl_mmr_unlock(void)
+ {
+ 	/* Unlock all PADCFG_MMR1 module registers */
+@@ -287,6 +288,7 @@ u32 spl_mmc_boot_mode(struct mmc *mmc, const u32 boot_device)
+ 		return MMCSD_MODE_RAW;
+ 	}
+ }
++#endif
+ 
+ static u32 __get_backup_bootmedia(u32 main_devstat)
+ {
+@@ -373,12 +375,14 @@ static u32 __get_primary_bootmedia(u32 main_devstat)
+ u32 spl_boot_device(void)
+ {
+ 	u32 devstat = readl(CTRLMMR_MAIN_DEVSTAT);
++	u32 bootindex = readl(CONFIG_SYS_K3_BOOT_PARAM_TABLE_INDEX);
+ 
+ 	if (bootindex == K3_PRIMARY_BOOTMODE)
+ 		return __get_primary_bootmedia(devstat);
+ 	else
+ 		return __get_backup_bootmedia(devstat);
+ }
++#ifdef CONFIG_SPL_BUILD
+ 
+ #if defined(CONFIG_SYS_K3_SPL_ATF)
+ 
+@@ -430,3 +434,4 @@ void release_resources_for_core_shutdown(void)
+ 	}
+ }
+ #endif
++#endif /* CONFIG_SPL_BUILD */
+-- 
+2.35.3
+
