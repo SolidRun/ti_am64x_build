@@ -1,0 +1,69 @@
+From 154aceca4e4e9bf759b89a8c29bc53e1083a456d Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Thu, 4 May 2023 16:17:43 +0300
+Subject: [PATCH 3/4] mmc: core: disable voltage-switch from same voltage
+
+Per TI SDK v8 this was a workaround for Samsung eMMC connected to TI
+AM6442 SoC to enable HS200 mode.
+After initial detection of mmc card Linux will initiate voltage-switch
+to 3.3V or 1.8V - after which communication to the eMMC times out for
+unknown reasons.
+
+Skipping this procedure when the host controller is already configured
+for 1.8V avoided the problem completely.
+
+Since TI SDK v9 (based on Linux 6.1) the emmc card was not detected in
+the first place, i.e. no mmc messages since probe of bus 0:
+[    1.664913] mmc0: SDHCI controller on fa10000.mmc [fa10000.mmc] using ADMA 64-bit
+[nothing]
+
+Removing the voltage switch now causes first attempt at enabling hs200
+to fail, and second to succeed:
+[    1.608186] mmc0: CQHCI version 5.10
+[    1.664913] mmc0: SDHCI controller on fa10000.mmc [fa10000.mmc] using ADMA 64-bit
+[    1.766541] mmc0: mmc_select_hs200 failed, error -5
+[    1.771570] mmc0: error -5 whilst initialising MMC card
+[    1.905819] mmc0: Command Queue Engine enabled
+[    1.910306] mmc0: new HS200 MMC card at address 0001
+[    1.916201] mmcblk0: mmc0:0001 8GTF4R 7.28 GiB
+[    1.922713] mmcblk0boot0: mmc0:0001 8GTF4R 4.00 MiB
+[    1.929071] mmcblk0boot1: mmc0:0001 8GTF4R 4.00 MiB
+[    1.935212] mmcblk0rpmb: mmc0:0001 8GTF4R 512 KiB, chardev (511:0)
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ drivers/mmc/core/core.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index de1cc9e1ae57..590503694285 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1148,11 +1148,24 @@ u32 mmc_select_voltage(struct mmc_host *host, u32 ocr)
+ 	return ocr;
+ }
+ 
++static const char *mmc_voltage_strings[3] = {
++	"3.3",
++	"1.8",
++	"1.2"
++};
++
+ int mmc_set_signal_voltage(struct mmc_host *host, int signal_voltage)
+ {
+ 	int err = 0;
+ 	int old_signal_voltage = host->ios.signal_voltage;
+ 
++	if (old_signal_voltage == signal_voltage) {
++		dev_info(mmc_dev(host),
++				 "skipped voltage switch, already configured for %sV\n",
++				 mmc_voltage_strings[signal_voltage]);
++		return err;
++	}
++
+ 	host->ios.signal_voltage = signal_voltage;
+ 	if (host->ops->start_signal_voltage_switch)
+ 		err = host->ops->start_signal_voltage_switch(host, &host->ios);
+-- 
+2.35.3
+

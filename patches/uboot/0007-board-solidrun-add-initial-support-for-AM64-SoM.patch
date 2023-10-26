@@ -1,53 +1,1206 @@
-From 01d5e6fc09e8e2952343de185af2c93773b5a847 Mon Sep 17 00:00:00 2001
-From: Alvaro-Karsz <alvaro.karsz@solid-run.com>
-Date: Tue, 5 Oct 2021 14:59:43 +0300
-Subject: [PATCH 01/16] Add SolidRun board based on TI's AM64X CPU
+From 265865498df38cd5a5d5d3984b2ba2c1e09c5301 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Fri, 27 Oct 2023 16:58:16 +0200
+Subject: [PATCH 7/7] board: solidrun: add initial support for AM64 SoM
 
+SolidRun has a System on Module based on TI AM6442 SoC,
+as well as a reference carrier board called "HummingBoard-T".
+
+Add initial board file and device-tree files.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
 ---
- arch/arm/dts/Makefile                         |    4 +-
- arch/arm/dts/am64-ddr-solidrun.dtsi           | 2189 +++++++++++++++++
- arch/arm/dts/am642-solidrun.dts               |  369 +++
- arch/arm/dts/am64x-solidrun-r5.dts            |  267 ++
+ arch/arm/dts/Makefile                         |    6 +-
+ arch/arm/dts/k3-am642-hummingboard-t.dts      |   19 +
+ arch/arm/dts/k3-am642-hummingboard-t.dtsi     |  319 +++
+ arch/arm/dts/k3-am642-r5-hummingboard-t.dts   |   23 +
+ arch/arm/dts/k3-am642-r5-sr-som.dts           |   22 +
+ arch/arm/dts/k3-am642-r5-sr-som.dtsi          |  195 ++
+ arch/arm/dts/k3-am642-sr-som-binman.dtsi      |  513 ++++
+ .../dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi | 2189 +++++++++++++++++
+ arch/arm/dts/k3-am642-sr-som-u-boot.dtsi      |  174 ++
+ arch/arm/dts/k3-am642-sr-som.dts              |   18 +
+ arch/arm/dts/k3-am642-sr-som.dtsi             |  572 +++++
  arch/arm/mach-k3/Kconfig                      |    1 +
- board/solidrun/am64x_solidrun/Kconfig         |   62 +
- board/solidrun/am64x_solidrun/Makefile        |    1 +
- .../solidrun/am64x_solidrun/am64x_solidrun.c  |  167 ++
- board/solidrun/common/ti_board_detect.h       |  471 ++++
- configs/am64x_a53_solidrun_defconfig          |  177 ++
- configs/am64x_r5_solidrun_defconfig           |  158 ++
- include/configs/am64x_solidrun.h              |  128 +
- 12 files changed, 3993 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/dts/am64-ddr-solidrun.dtsi
- create mode 100644 arch/arm/dts/am642-solidrun.dts
- create mode 100644 arch/arm/dts/am64x-solidrun-r5.dts
- create mode 100644 board/solidrun/am64x_solidrun/Kconfig
- create mode 100644 board/solidrun/am64x_solidrun/Makefile
- create mode 100644 board/solidrun/am64x_solidrun/am64x_solidrun.c
- create mode 100644 board/solidrun/common/ti_board_detect.h
- create mode 100644 configs/am64x_a53_solidrun_defconfig
- create mode 100644 configs/am64x_r5_solidrun_defconfig
- create mode 100644 include/configs/am64x_solidrun.h
+ board/solidrun/am64som/Kconfig                |   45 +
+ board/solidrun/am64som/Makefile               |    7 +
+ board/solidrun/am64som/am64som.env            |   54 +
+ board/solidrun/am64som/id-eeprom.c            |  241 ++
+ board/solidrun/am64som/id-eeprom.h            |   16 +
+ board/solidrun/am64som/som.c                  |  352 +++
+ configs/am64som_a53_defconfig                 |  198 ++
+ configs/am64som_r5_defconfig                  |  194 ++
+ include/configs/am64som.h                     |   21 +
+ 21 files changed, 5178 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dts
+ create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dtsi
+ create mode 100644 arch/arm/dts/k3-am642-r5-hummingboard-t.dts
+ create mode 100644 arch/arm/dts/k3-am642-r5-sr-som.dts
+ create mode 100644 arch/arm/dts/k3-am642-r5-sr-som.dtsi
+ create mode 100644 arch/arm/dts/k3-am642-sr-som-binman.dtsi
+ create mode 100644 arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi
+ create mode 100644 arch/arm/dts/k3-am642-sr-som-u-boot.dtsi
+ create mode 100644 arch/arm/dts/k3-am642-sr-som.dts
+ create mode 100644 arch/arm/dts/k3-am642-sr-som.dtsi
+ create mode 100644 board/solidrun/am64som/Kconfig
+ create mode 100644 board/solidrun/am64som/Makefile
+ create mode 100644 board/solidrun/am64som/am64som.env
+ create mode 100644 board/solidrun/am64som/id-eeprom.c
+ create mode 100644 board/solidrun/am64som/id-eeprom.h
+ create mode 100644 board/solidrun/am64som/som.c
+ create mode 100644 configs/am64som_a53_defconfig
+ create mode 100644 configs/am64som_r5_defconfig
+ create mode 100644 include/configs/am64som.h
 
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index b5e73235c0..f276cdc5f2 100644
+index 3ecde2d1cc..161b3de609 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -994,7 +994,9 @@ dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
+@@ -1277,7 +1277,11 @@ dtb-$(CONFIG_SOC_K3_J784S4) +=	k3-am69-sk.dtb \
+ dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
  			      k3-am642-r5-evm.dtb \
  			      k3-am642-sk.dtb \
- 			      k3-am642-r5-sk.dtb \
--			      k3-am642-evm-nand.dtbo
-+			      k3-am642-evm-nand.dtbo \
-+			      am64x-solidrun-r5.dtb \
-+			      am642-solidrun.dtb
+-			      k3-am642-r5-sk.dtb
++			      k3-am642-r5-sk.dtb \
++			      k3-am642-sr-som.dtb \
++			      k3-am642-r5-sr-som.dtb \
++			      k3-am642-hummingboard-t.dtb \
++			      k3-am642-r5-hummingboard-t.dtb \
  
  dtb-$(CONFIG_SOC_K3_AM625) += k3-am625-sk.dtb \
  			      k3-am625-r5-sk.dtb \
-diff --git a/arch/arm/dts/am64-ddr-solidrun.dtsi b/arch/arm/dts/am64-ddr-solidrun.dtsi
+diff --git a/arch/arm/dts/k3-am642-hummingboard-t.dts b/arch/arm/dts/k3-am642-hummingboard-t.dts
+new file mode 100644
+index 0000000000..8ed191d339
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-hummingboard-t.dts
+@@ -0,0 +1,19 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ * DTS for SolidRun AM642 HummingBoard-T,
++ * running on Cortex A53.
++ *
++ */
++
++/dts-v1/;
++
++#include "k3-am642.dtsi"
++#include "k3-am642-sr-som.dtsi"
++#include "k3-am642-hummingboard-t.dtsi"
++
++/ {
++	compatible = "solidrun,am642-hummingboard-t", "solidrun,am642-som", "ti,am642";
++	model = "SolidRun AM642 HummingBoard-T";
++};
+diff --git a/arch/arm/dts/k3-am642-hummingboard-t.dtsi b/arch/arm/dts/k3-am642-hummingboard-t.dtsi
+new file mode 100644
+index 0000000000..d8712a915d
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-hummingboard-t.dtsi
+@@ -0,0 +1,319 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ */
++
++#include <dt-bindings/phy/phy.h>
++
++/ {
++	leds {
++		status = "okay";
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&leds_pins_default>;
++
++		/* D24 */
++		led1: led-1 {
++			label = "led1:green";
++			gpios = <&main_gpio0 29 GPIO_ACTIVE_HIGH>;
++		};
++
++		/* D25 */
++		led2: led-2 {
++			label = "led2:green";
++			gpios = <&main_gpio0 30 GPIO_ACTIVE_HIGH>;
++		};
++
++		/* D26 */
++		led3: led-3 {
++			label = "led3:green";
++			gpios = <&main_gpio0 33 GPIO_ACTIVE_HIGH>;
++		};
++	};
++
++	regulator-m2-3v3 {
++		compatible = "regulator-fixed";
++		pinctrl-names = "default";
++		pinctrl-0 = <&regulator_pcie_3v3_pins_default>;
++		regulator-name = "m2-3v3";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&main_gpio1 17 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		regulator-always-on;
++	};
++
++	regulator-vpp-1v8 {
++		compatible = "regulator-fixed";
++		pinctrl-names = "default";
++		pinctrl-0 = <&regulator_vpp_1v8_pins_default>;
++		regulator-name = "vpp-1v8";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		gpio = <&main_gpio1 78 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++	};
++
++	serdes_mux: serdes-mux {
++		compatible = "gpio-mux";
++		pinctrl-names = "default";
++		pinctrl-0 = <&serdes_mux_pins_default>;
++		#mux-control-cells = <0>;
++		/*
++		 * Mux has 2 IOs:
++		 * - select: 0 = USB-3 (M2); 1 = PCIE (M1)
++		 * - shutdown: 0 = active; 1 = disabled (high impedance)
++		 */
++		mux-gpios = <&main_gpio1 40 GPIO_ACTIVE_HIGH>, <&main_gpio1 41 GPIO_ACTIVE_HIGH>;
++		/* default disabled */
++		idle-state = <2>;
++	};
++};
++
++&main_gpio0 {
++	m2_reset {
++		gpio-hog;
++		gpios = <12 GPIO_ACTIVE_LOW>;
++		output-low; /* deasserted */
++		line-name = "m2-reset";
++	};
++
++	m1_m2_w_disable1 {
++		gpio-hog;
++		gpios = <32 GPIO_ACTIVE_LOW>;
++		output-low; /* deasserted */
++		line-name = "m1-m2-pcie-w-disable1";
++	};
++
++	m1_m2_w_disable2 {
++		gpio-hog;
++		gpios = <34 GPIO_ACTIVE_LOW>;
++		output-low; /* deasserted */
++		line-name = "m1-m2-pcie-w-disable2";
++	};
++};
++
++&main_gpio1 {
++	status = "okay";
++
++	m1_pcie_clkreq0 {
++		gpio-hog;
++		gpios = <11 GPIO_ACTIVE_LOW>;
++		input;
++		line-name = "m1-pcie-clkreq0";
++	};
++
++	m2_pcie_clkreq {
++		gpio-hog;
++		gpios = <35 GPIO_ACTIVE_LOW>;
++		input;
++		line-name = "m2-pcie-clkreq";
++	};
++};
++
++&main_i2c0 {
++	pinctrl-0 = <&main_i2c0_pins_default>, <&main_i2c0_int_pins_default>;
++
++	humidity-sensor@41 {
++		status = "okay";
++		compatible = "ti,hdc2010";
++		reg = <0x41>;
++		interrupt-parent = <&main_gpio0>;
++		interrupts = <37 IRQ_TYPE_EDGE_FALLING>;
++	};
++
++	light-sensor@44 {
++		status = "okay";
++		compatible = "ti,opt3001";
++		reg = <0x44>;
++		interrupt-parent = <&main_gpio0>;
++		interrupts = <37 IRQ_TYPE_EDGE_FALLING>;
++	};
++
++	battery-charger@6a {
++		status = "okay";
++		compatible = "ti,bq25713";
++		reg = <0x6a>;
++	};
++};
++
++&main_i2c1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_i2c1_pins_default>, <&main_i2c1_int_pins_default>;
++	status = "okay";
++
++	rtc: am1805aq@69 {
++		compatible = "abracon,abx80x";
++		reg = <0x69>;
++		abracon,tc-diode = "schottky";
++		abracon,tc-resistor = <3>;
++		interrupt-parent = <&main_gpio0>;
++		interrupts = <44 IRQ_TYPE_EDGE_FALLING>;
++		status = "okay";
++	};
++};
++
++&main_mcan0 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_mcan0_pins_default>;
++
++	can-transceiver {
++		max-bitrate = <8000000>;
++	};
++};
++
++&main_mcan1 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_mcan1_pins_default>;
++
++	can-transceiver {
++		max-bitrate = <8000000>;
++	};
++};
++
++&main_pmx0 {
++	leds_pins_default: leds-pins-default {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x0074, PIN_OUTPUT, 7)	/* Pad GPMC0_AD14 Mux GPIO0_29 */
++			AM64X_IOPAD(0x0078, PIN_OUTPUT, 7)	/* Pad GPMC0_AD15 Mux GPIO0_30 */
++			AM64X_IOPAD(0x0088, PIN_OUTPUT, 7)	/* Pad GPMC0_OEn_REn Mux GPIO0_33 */
++		>;
++	};
++
++	main_i2c0_int_pins_default: main-i2c0-pins-int-default {
++		pinctrl-single,pins = <
++			/* external pull-up on Carrier */
++			AM64X_IOPAD(0x0098, PIN_INPUT, 7)	/* Pad GPMC0_WAIT0 Mux GPIO0_37 */
++		>;
++	};
++
++	main_i2c1_pins_default: main-i2c1-pins-default {
++		pinctrl-single,pins = <
++			/* external pull-up on SoM */
++			AM64X_IOPAD(0x0268, PIN_INPUT, 0)	/* Pad I2C1_SCL Mux I2C1_SCL */
++			AM64X_IOPAD(0x026c, PIN_INPUT, 0)	/* Pad I2C1_SDA Mux I2C1_SDA */
++		>;
++	};
++
++	main_i2c1_int_pins_default: main-i2c1-int-pins-default {
++		pinctrl-single,pins = <
++			/* external pull-up on Carrier */
++			AM64X_IOPAD(0x00b4, PIN_INPUT, 7)	/* Pad GPMC0_CSn3 Mux GPIO0_44 */
++		>;
++	};
++
++	main_mcan0_pins_default: main-mcan0-pins-default {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x0254, PIN_INPUT, 0)	/* Pad MCAN0_RX Mux MCAN0_RX */
++			AM64X_IOPAD(0x0250, PIN_OUTPUT, 0)	/* Pad MCAN0_TX Mux MCAN0_TX */
++		>;
++	};
++
++	main_mcan1_pins_default: main-mcan1-pins-default {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x025c, PIN_INPUT, 0)	/* Pad MCAN1_RX Mux MCAN1_RX */
++			AM64X_IOPAD(0x0258, PIN_OUTPUT, 0)	/* Pad MCAN1_TX Mux MCAN1_TX */
++		>;
++	};
++
++	main_uart3_pins_default: main-uart3-pins-default {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x016c, PIN_INPUT, 10)	/* Pad PRG0_PRU0_GPO3 Mux UART3_CTSn */
++			AM64X_IOPAD(0x0170, PIN_OUTPUT, 10)	/* Pad PRG0_PRU0_GPO4 Mux UART3_TXD */
++			AM64X_IOPAD(0x0174, PIN_OUTPUT, 10)	/* Pad PRG0_PRU0_GPO5 Mux UART3_RTSn */
++			AM64X_IOPAD(0x01ac, PIN_INPUT, 10)	/* Pad PRG0_PRU0_GPO19 Mux UART3_RXD */
++		>;
++	};
++
++	pcie0_pins_default: pcie0-pins-default {
++		pinctrl-single,pins = <
++			/* connector M2 RESET */
++			AM64X_IOPAD(0x0030, PIN_OUTPUT, 7)	/* Pad OSPI0_CSn1 Mux GPIO0_12 */
++			/* connectors M1 & M2 W_DISABLE1 */
++			AM64X_IOPAD(0x0084, PIN_OUTPUT, 7)	/* Pad GPMC0_ADVN_ALE Mux GPIO0_32 */
++			/* connectors M1 & M2 W_DISABLE2 */
++			AM64X_IOPAD(0x008c, PIN_OUTPUT, 7)	/* Pad GPMC0_WEN Mux GPIO0_34 */
++			/* connectors M1 & M2 PERST0 (PCI Reset) */
++			AM64X_IOPAD(0x019c, PIN_OUTPUT, 7)	/* Pad PRG0_PRU0_GPO15 Mux GPIO1_15 */
++			/* connector M1 CLKREQ0 */
++			AM64X_IOPAD(0x018c, PIN_INPUT, 7)	/* Pad PRG0_PRU0_GPO11 Mux GPIO1_11 */
++			/* connector M2 CLKREQ0 */
++			AM64X_IOPAD(0x01ec, PIN_INPUT, 7)	/* Pad PRG0_PRU1_GPO15 Mux GPIO1_35 */
++		>;
++	};
++
++	regulator_pcie_3v3_pins_default: regulator-pcie-3v3-pins-default {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x01a4, PIN_OUTPUT, 7)	/* Pad PRG0_PRU0_GPO17 Mux GPIO1_17 */
++		>;
++	};
++
++	regulator_vpp_1v8_pins_default: regulator-vpp-1v8-pins-default {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x029c, PIN_OUTPUT, 7)	/* Pad MMC1_SDWP Mux GPIO1_78 */
++		>;
++	};
++
++	serdes_mux_pins_default: serdes-mux-pins-default {
++		pinctrl-single,pins = <
++			/* SEL, 10k pull-down on carrier, 2.2k pullup on SoM */
++			AM64X_IOPAD(0x0200, PIN_OUTPUT, 7)	/* Pad PRG0_MDIO0_MDIO Mux GPIO1_40 */
++			/* EN */
++			AM64X_IOPAD(0x0204, PIN_OUTPUT, 7)	/* Pad PRG0_MDIO0_MDC Mux GPIO1_41 */
++		>;
++	};
++};
++
++&main_uart3 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_uart3_pins_default>;
++	uart-has-rtscts;
++	rs485-rts-active-low;
++	linux,rs485-enabled-at-boot-time;
++
++	/* THVD1400DR Transceiver */
++};
++
++&pcie0_rc {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pcie0_pins_default>;
++	reset-gpios = <&main_gpio1 15 GPIO_ACTIVE_HIGH>;
++	phys = <&serdes0_link>;
++	phy-names = "pcie-phy";
++	num-lanes = <1>;
++	mux-controls = <&serdes_mux>;
++	mux-control-names = "serdes";
++	ranges = <0x01000000 0x00 0x68001000  0x00 0x68001000  0x00 0x0010000>,
++		 <0x82000000 0x00 0x68011000  0x00 0x68011000  0x00 0x7fef000>,
++		 <0xc3000000 0x06 0x00000000  0x06 0x00000000  0x01 0x0000000>;
++	status = "disabled";
++};
++
++&pcie0_ep {
++	phys = <&serdes0_link>;
++	phy-names = "pcie-phy";
++	num-lanes = <1>;
++	status = "disabled";
++};
++
++&serdes0 {
++	/*
++	 * Serdes Signals are routed via mux to either m.2 connectors:
++	 * - M1: USB-3.1
++	 * - M2: PCI-E
++	 */
++	 status = "okay";
++
++	serdes0_link: phy@0 {
++		reg = <0>;
++		cdns,num-lanes = <1>;
++		#phy-cells = <0>;
++		cdns,phy-type = <PHY_NONE>;
++		resets = <&serdes_wiz0 1>;
++		status = "okay";
++	};
++};
+diff --git a/arch/arm/dts/k3-am642-r5-hummingboard-t.dts b/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
+new file mode 100644
+index 0000000000..92646e405b
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
+@@ -0,0 +1,23 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ * DTS for SolidRun AM642 HummingBoard-T,
++ * running on Cortex R5.
++ *
++ */
++
++/dts-v1/;
++
++#include "k3-am642.dtsi"
++#include "k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi"
++#include "k3-am64-ddr.dtsi"
++#include "k3-am64x-binman.dtsi"
++#include "k3-am642-sr-som.dtsi"
++#include "k3-am642-r5-sr-som.dtsi"
++#include "k3-am642-hummingboard-t.dtsi"
++
++/ {
++	compatible = "solidrun,am642-hummingboard-t", "solidrun,am642-som", "ti,am642";
++	model = "SolidRun AM642 HummingBoard-T";
++};
+diff --git a/arch/arm/dts/k3-am642-r5-sr-som.dts b/arch/arm/dts/k3-am642-r5-sr-som.dts
+new file mode 100644
+index 0000000000..39bcdb3ac6
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-r5-sr-som.dts
+@@ -0,0 +1,22 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ * Minimal DTS for SolidRun AM642 SoM on generic carrier,
++ * running on Cortex R5.
++ *
++ */
++
++/dts-v1/;
++
++#include "k3-am642.dtsi"
++#include "k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi"
++#include "k3-am64-ddr.dtsi"
++#include "k3-am642-sr-som-binman.dtsi"
++#include "k3-am642-sr-som.dtsi"
++#include "k3-am642-r5-sr-som.dtsi"
++
++/ {
++	compatible = "solidrun,am642-som", "ti,am642";
++	model = "SolidRun AM642 SoM";
++};
+diff --git a/arch/arm/dts/k3-am642-r5-sr-som.dtsi b/arch/arm/dts/k3-am642-r5-sr-som.dtsi
+new file mode 100644
+index 0000000000..a29886367b
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-r5-sr-som.dtsi
+@@ -0,0 +1,195 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ */
++
++/ {
++	chosen {
++		tick-timer = &timer1;
++	};
++
++	a53_0: a53@0 {
++		compatible = "ti,am654-rproc";
++		reg = <0x00 0x00a90000 0x00 0x10>;
++		power-domains = <&k3_pds 61 TI_SCI_PD_EXCLUSIVE>,
++				<&k3_pds 135 TI_SCI_PD_EXCLUSIVE>,
++				<&k3_pds 137 TI_SCI_PD_EXCLUSIVE>;
++		resets = <&k3_reset 135 0>;
++		clocks = <&k3_clks 61 0>;
++		assigned-clocks = <&k3_clks 61 0>, <&k3_clks 135 0>;
++		assigned-clock-parents = <&k3_clks 61 2>;
++		assigned-clock-rates = <200000000>, <1000000000>;
++		ti,sci = <&dmsc>;
++		ti,sci-proc-id = <32>;
++		ti,sci-host-id = <10>;
++		bootph-pre-ram;
++	};
++
++	aliases {
++		remoteproc0 = &sysctrler;
++		remoteproc1 = &a53_0;
++	};
++
++	clk_200mhz: dummy-clock-200mhz {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <200000000>;
++		bootph-pre-ram;
++	};
++
++	memory@80000000 {
++		bootph-pre-ram;
++	};
++};
++
++&cbass_main {
++	bootph-pre-ram;
++
++	main_esm: esm@420000 {
++		compatible = "ti,j721e-esm";
++		reg = <0x0 0x420000 0x0 0x1000>;
++		ti,esm-pins = <160>, <161>;
++		bootph-pre-ram;
++	};
++
++	sysctrler: sysctrler {
++		compatible = "ti,am654-system-controller";
++		mboxes= <&secure_proxy_main 1>, <&secure_proxy_main 0>;
++		mbox-names = "tx", "rx";
++		bootph-pre-ram;
++	};
++
++	timer1: timer@2400000 {
++		compatible = "ti,omap5430-timer";
++		reg = <0x0 0x2400000 0x0 0x80>;
++		ti,timer-alwon;
++		clock-frequency = <200000000>;
++		bootph-pre-ram;
++	};
++};
++
++&cbass_mcu {
++	bootph-pre-ram;
++	mcu_esm: esm@4100000 {
++		compatible = "ti,j721e-esm";
++		reg = <0x0 0x4100000 0x0 0x1000>;
++		ti,esm-pins = <0>, <1>;
++		bootph-pre-ram;
++	};
++};
++
++&dmsc {
++	mboxes= <&secure_proxy_main 0>,
++		<&secure_proxy_main 1>,
++		<&secure_proxy_main 0>;
++	mbox-names = "rx", "tx", "notify";
++	ti,host-id = <35>;
++	ti,secure-host;
++	bootph-pre-ram;
++
++	k3_sysreset: sysreset-controller {
++		compatible = "ti,sci-sysreset";
++		bootph-pre-ram;
++	};
++};
++
++&dmss {
++	bootph-pre-ram;
++};
++
++&fss {
++	bootph-pre-ram;
++};
++
++&k3_clks {
++	bootph-pre-ram;
++};
++
++&k3_pds {
++	bootph-pre-ram;
++};
++
++&k3_reset {
++	bootph-pre-ram;
++};
++
++&main_conf {
++	bootph-pre-ram;
++
++	chipid@14 {
++		bootph-pre-ram;
++	};
++};
++
++&main_gpio0 {
++	/delete-property/ power-domains;
++	bootph-pre-ram;
++};
++
++&main_i2c0 {
++	/delete-property/ power-domains;
++	bootph-pre-ram;
++};
++
++&main_i2c0_pins_default {
++	bootph-pre-ram;
++};
++
++&main_mmc1_pins_default {
++	bootph-pre-ram;
++};
++
++&main_pmx0 {
++	bootph-pre-ram;
++};
++
++&main_uart0 {
++	/delete-property/ power-domains;
++	/delete-property/ clocks;
++	/delete-property/ clock-names;
++	bootph-pre-ram;
++};
++
++&main_uart0_pins_default {
++	bootph-pre-ram;
++};
++
++&ospi0 {
++	bootph-pre-ram;
++};
++
++&ospi0_pins_default {
++	bootph-pre-ram;
++};
++
++&sdhci0 {
++	/delete-property/ power-domains;
++	clocks = <&clk_200mhz>;
++	clock-names = "clk_xin";
++	bootph-pre-ram;
++};
++
++&sdhci1 {
++	/delete-property/ power-domains;
++	clocks = <&clk_200mhz>;
++	clock-names = "clk_xin";
++	bootph-pre-ram;
++};
++
++&secure_proxy_main {
++	bootph-pre-ram;
++};
++
++&som_eeprom {
++	bootph-pre-ram;
++};
++
++&usb0 {
++	dr_mode = "peripheral";
++	bootph-pre-ram;
++};
++
++&usb0_pins_default {
++	bootph-pre-ram;
++};
+diff --git a/arch/arm/dts/k3-am642-sr-som-binman.dtsi b/arch/arm/dts/k3-am642-sr-som-binman.dtsi
+new file mode 100644
+index 0000000000..31fb95e2c6
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-sr-som-binman.dtsi
+@@ -0,0 +1,513 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (C) 2022 Texas Instruments Incorporated - https://www.ti.com/
++
++#include "k3-binman.dtsi"
++
++#ifdef CONFIG_TARGET_AM64_SR_SOM_R5
++
++&binman {
++	tiboot3-am64x_sr2-hs-sr-som.bin {
++		filename = "tiboot3-am64x_sr2-hs-sr-som.bin";
++		ti-secure-rom {
++			content = <&u_boot_spl>, <&ti_sci_enc>,
++				<&combined_sysfw_cfg>, <&sysfw_inner_cert>;
++			combined;
++			sysfw-inner-cert;
++			keyfile = "custMpk.pem";
++			sw-rev = <1>;
++			content-sbl = <&u_boot_spl>;
++			content-sysfw = <&ti_sci_enc>;
++			content-sysfw-data = <&combined_sysfw_cfg>;
++			content-sysfw-inner-cert = <&sysfw_inner_cert>;
++			load = <0x70000000>;
++			load-sysfw = <0x44000>;
++			load-sysfw-data = <0x7b000>;
++		};
++		u_boot_spl: u-boot-spl {
++			no-expanded;
++		};
++		ti_sci_enc: ti-fs-enc.bin {
++			filename = "ti-sysfw/ti-sci-firmware-am64x_sr2-hs-enc.bin";
++			type = "blob-ext";
++			optional;
++		};
++		combined_sysfw_cfg: combined-sysfw-cfg.bin {
++			filename = "combined-sysfw-cfg.bin";
++			type = "blob-ext";
++		};
++		sysfw_inner_cert: sysfw-inner-cert {
++			filename = "ti-sysfw/ti-sci-firmware-am64x_sr2-hs-cert.bin";
++			type = "blob-ext";
++			optional;
++		};
++
++	};
++};
++
++&binman {
++	tiboot3-am64x_sr2-hs-fs-sr-som.bin {
++		filename = "tiboot3-am64x_sr2-hs-fs-sr-som.bin";
++		symlink = "tiboot3.bin";
++		ti-secure-rom {
++			content = <&u_boot_spl_fs>, <&ti_sci_enc_fs>,
++				<&combined_sysfw_cfg_fs>, <&sysfw_inner_cert_fs>;
++			combined;
++			sysfw-inner-cert;
++			keyfile = "custMpk.pem";
++			sw-rev = <1>;
++			content-sbl = <&u_boot_spl_fs>;
++			content-sysfw = <&ti_sci_enc_fs>;
++			content-sysfw-data = <&combined_sysfw_cfg_fs>;
++			content-sysfw-inner-cert = <&sysfw_inner_cert_fs>;
++			load = <0x70000000>;
++			load-sysfw = <0x44000>;
++			load-sysfw-data = <0x7b000>;
++		};
++		u_boot_spl_fs: u-boot-spl {
++			no-expanded;
++		};
++		ti_sci_enc_fs: ti-fs-enc.bin {
++			filename = "ti-sysfw/ti-sci-firmware-am64x_sr2-hs-fs-enc.bin";
++			type = "blob-ext";
++			optional;
++		};
++		combined_sysfw_cfg_fs: combined-sysfw-cfg.bin {
++			filename = "combined-sysfw-cfg.bin";
++			type = "blob-ext";
++		};
++		sysfw_inner_cert_fs: sysfw-inner-cert {
++			filename = "ti-sysfw/ti-sci-firmware-am64x_sr2-hs-fs-cert.bin";
++			type = "blob-ext";
++			optional;
++		};
++
++	};
++};
++
++&binman {
++	tiboot3-am64x-gp-sr-som.bin {
++		filename = "tiboot3-am64x-gp-sr-som.bin";
++		ti-secure-rom {
++			content = <&u_boot_spl_unsigned>, <&ti_sci_gp>, <&combined_sysfw_cfg_gp>;
++			combined;
++			content-sbl = <&u_boot_spl_unsigned>;
++			load = <0x70000000>;
++			content-sysfw = <&ti_sci_gp>;
++			load-sysfw = <0x44000>;
++			content-sysfw-data = <&combined_sysfw_cfg_gp>;
++			load-sysfw-data = <0x7b000>;
++			sw-rev = <1>;
++			keyfile = "ti-degenerate-key.pem";
++		};
++		u_boot_spl_unsigned: u-boot-spl {
++			no-expanded;
++		};
++		ti_sci_gp: ti-sci-gp.bin {
++			filename = "ti-sysfw/ti-sci-firmware-am64x-gp.bin";
++			type = "blob-ext";
++			optional;
++		};
++		combined_sysfw_cfg_gp: combined-sysfw-cfg-gp.bin {
++			filename = "combined-sysfw-cfg.bin";
++			type = "blob-ext";
++		};
++	};
++};
++
++#endif
++
++#ifdef CONFIG_TARGET_AM64_SR_SOM_A53
++#define SPL_NODTB "spl/u-boot-spl-nodtb.bin"
++#define SPL_AM642_SR_SOM_DTB "spl/dts/k3-am642-sr-som.dtb"
++#define SPL_AM642_HUMMINGBOARD_DTB "spl/dts/k3-am642-hummingboard-t.dtb"
++#define UBOOT_NODTB "u-boot-nodtb.bin"
++#define AM642_SR_SOM_DTB "u-boot.dtb"
++#define AM642_HUMMINGBOARD_DTB "arch/arm/dts/k3-am642-hummingboard-t.dtb"
++
++&binman {
++	ti-spl {
++		filename = "tispl.bin";
++		pad-byte = <0xff>;
++
++		fit {
++			description = "Configuration to load ATF and SPL";
++			#address-cells = <1>;
++
++			images {
++
++				atf {
++					description = "ARM Trusted Firmware";
++					type = "firmware";
++					arch = "arm64";
++					compression = "none";
++					os = "arm-trusted-firmware";
++					load = <CONFIG_K3_ATF_LOAD_ADDR>;
++					entry = <CONFIG_K3_ATF_LOAD_ADDR>;
++					ti-secure {
++						content = <&atf>;
++						keyfile = "custMpk.pem";
++					};
++					atf: atf-bl31 {
++					};
++				};
++
++				tee {
++					description = "OPTEE";
++					type = "tee";
++					arch = "arm64";
++					compression = "none";
++					os = "tee";
++					load = <0x9e800000>;
++					entry = <0x9e800000>;
++					ti-secure {
++						content = <&tee>;
++						keyfile = "custMpk.pem";
++					};
++					tee: tee-os {
++					};
++				};
++
++				dm {
++					description = "DM binary";
++					type = "firmware";
++					arch = "arm32";
++					compression = "none";
++					os = "DM";
++					load = <0x89000000>;
++					entry = <0x89000000>;
++					blob-ext {
++						filename = "/dev/null";
++					};
++				};
++
++				spl {
++					description = "SPL (64-bit)";
++					type = "standalone";
++					os = "U-Boot";
++					arch = "arm64";
++					compression = "none";
++					load = <CONFIG_SPL_TEXT_BASE>;
++					entry = <CONFIG_SPL_TEXT_BASE>;
++					ti-secure {
++						content = <&u_boot_spl_nodtb>;
++						keyfile = "custMpk.pem";
++
++					};
++					u_boot_spl_nodtb: blob-ext {
++						filename = SPL_NODTB;
++					};
++				};
++
++				fdt-0 {
++					description = "k3-am642-sr-som";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++					ti-secure {
++						content = <&spl_am64x_sr_som_dtb>;
++						keyfile = "custMpk.pem";
++					};
++					spl_am64x_sr_som_dtb: blob-ext {
++						filename = SPL_AM642_SR_SOM_DTB;
++					};
++
++				};
++
++				fdt-1 {
++					description = "k3-am642-hummingboard-t";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++					ti-secure {
++						content = <&spl_am64x_sk_dtb>;
++						keyfile = "custMpk.pem";
++					};
++					spl_am64x_sk_dtb: blob-ext {
++						filename = SPL_AM642_HUMMINGBOARD_DTB;
++					};
++
++				};
++			};
++
++			configurations {
++				default = "conf-0";
++
++				conf-0 {
++					description = "k3-am642-sr-som";
++					firmware = "atf";
++					loadables = "tee", "dm", "spl";
++					fdt = "fdt-0";
++				};
++
++				conf-1 {
++					description = "k3-am642-hummingboard-t";
++					firmware = "atf";
++					loadables = "tee", "dm", "spl";
++					fdt = "fdt-1";
++				};
++			};
++		};
++	};
++};
++
++&binman {
++	u-boot {
++		filename = "u-boot.img";
++		pad-byte = <0xff>;
++
++		fit {
++			description = "FIT image with multiple configurations";
++
++			images {
++				uboot {
++					description = "U-Boot for AM64 board";
++					type = "firmware";
++					os = "u-boot";
++					arch = "arm";
++					compression = "none";
++					load = <CONFIG_TEXT_BASE>;
++					ti-secure {
++						content = <&u_boot_nodtb>;
++						keyfile = "custMpk.pem";
++					};
++					u_boot_nodtb: u-boot-nodtb {
++					};
++					hash {
++						algo = "crc32";
++					};
++				};
++
++				fdt-0 {
++					description = "k3-am642-sr-som";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++					ti-secure {
++						content = <&am64x_sr_som_dtb>;
++						keyfile = "custMpk.pem";
++
++					};
++					am64x_sr_som_dtb: blob-ext {
++						filename = AM642_SR_SOM_DTB;
++					};
++					hash {
++						algo = "crc32";
++					};
++				};
++
++				fdt-1 {
++					description = "k3-am642-hummingboard-t";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++					ti-secure {
++						content = <&am64x_hummingboard_dtb>;
++						keyfile = "custMpk.pem";
++
++					};
++					am64x_hummingboard_dtb: blob-ext {
++						filename = AM642_HUMMINGBOARD_DTB;
++					};
++					hash {
++						algo = "crc32";
++					};
++				};
++
++			};
++
++			configurations {
++				default = "conf-0";
++
++				conf-0 {
++					description = "k3-am642-sr-som";
++					firmware = "uboot";
++					loadables = "uboot";
++					fdt = "fdt-0";
++				};
++
++				conf-1 {
++					description = "k3-am642-hummingboard-t";
++					firmware = "uboot";
++					loadables = "uboot";
++					fdt = "fdt-1";
++				};
++			};
++		};
++	};
++};
++
++&binman {
++	ti-spl_unsigned {
++		filename = "tispl.bin_unsigned";
++		pad-byte = <0xff>;
++
++		fit {
++			description = "Configuration to load ATF and SPL";
++			#address-cells = <1>;
++
++			images {
++
++				atf {
++					description = "ARM Trusted Firmware";
++					type = "firmware";
++					arch = "arm64";
++					compression = "none";
++					os = "arm-trusted-firmware";
++					load = <CONFIG_K3_ATF_LOAD_ADDR>;
++					entry = <CONFIG_K3_ATF_LOAD_ADDR>;
++					atf-bl31 {
++					};
++				};
++
++				tee {
++					description = "OPTEE";
++					type = "tee";
++					arch = "arm64";
++					compression = "none";
++					os = "tee";
++					load = <0x9e800000>;
++					entry = <0x9e800000>;
++					tee-os {
++					};
++				};
++
++				dm {
++					description = "DM binary";
++					type = "firmware";
++					arch = "arm32";
++					compression = "none";
++					os = "DM";
++					load = <0x89000000>;
++					entry = <0x89000000>;
++					blob-ext {
++						filename = "/dev/null";
++					};
++				};
++
++				spl {
++					description = "SPL (64-bit)";
++					type = "standalone";
++					os = "U-Boot";
++					arch = "arm64";
++					compression = "none";
++					load = <CONFIG_SPL_TEXT_BASE>;
++					entry = <CONFIG_SPL_TEXT_BASE>;
++					blob {
++						filename = "spl/u-boot-spl-nodtb.bin";
++					};
++				};
++
++				fdt-0 {
++					description = "k3-am642-sr-som";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++					blob {
++						filename = SPL_AM642_SR_SOM_DTB;
++					};
++				};
++
++				fdt-1 {
++					description = "k3-am642-hummingboard-t";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++					blob {
++						filename = SPL_AM642_HUMMINGBOARD_DTB;
++					};
++				};
++			};
++
++			configurations {
++				default = "conf-0";
++
++				conf-0 {
++					description = "k3-am642-sr-som";
++					firmware = "atf";
++					loadables = "tee", "dm", "spl";
++					fdt = "fdt-0";
++				};
++
++				conf-1 {
++					description = "k3-am642-hummingboard-t";
++					firmware = "atf";
++					loadables = "tee", "dm", "spl";
++					fdt = "fdt-1";
++				};
++			};
++		};
++	};
++};
++
++&binman {
++	u-boot_unsigned {
++		filename = "u-boot.img_unsigned";
++		pad-byte = <0xff>;
++
++		fit {
++			description = "FIT image with multiple configurations";
++
++			images {
++				uboot {
++					description = "U-Boot for AM64 board";
++					type = "firmware";
++					os = "u-boot";
++					arch = "arm";
++					compression = "none";
++					load = <CONFIG_TEXT_BASE>;
++					blob {
++						filename = UBOOT_NODTB;
++					};
++					hash {
++						algo = "crc32";
++					};
++				};
++
++				fdt-0 {
++					description = "k3-am642-sr-som";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++					blob {
++						filename = AM642_SR_SOM_DTB;
++					};
++					hash {
++						algo = "crc32";
++					};
++				};
++
++				fdt-1 {
++					description = "k3-am642-hummingboard-t";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++					blob {
++						filename = AM642_HUMMINGBOARD_DTB;
++					};
++					hash {
++						algo = "crc32";
++					};
++				};
++			};
++
++			configurations {
++				default = "conf-0";
++
++				conf-0 {
++					description = "k3-am642-sr-som";
++					firmware = "uboot";
++					loadables = "uboot";
++					fdt = "fdt-0";
++				};
++
++				conf-1 {
++					description = "k3-am642-hummingboard-t";
++					firmware = "uboot";
++					loadables = "uboot";
++					fdt = "fdt-1";
++				};
++			};
++		};
++	};
++};
++#endif
+diff --git a/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi b/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi
 new file mode 100644
 index 0000000000..fc99650943
 --- /dev/null
-+++ b/arch/arm/dts/am64-ddr-solidrun.dtsi
++++ b/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi
 @@ -0,0 +1,2189 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
@@ -2238,38 +3391,247 @@ index 0000000000..fc99650943
 +#define DDRSS_PHY_1403_DATA 0x300D3F11
 +#define DDRSS_PHY_1404_DATA 0x01990000
 +#define DDRSS_PHY_1405_DATA 0x20040001
-diff --git a/arch/arm/dts/am642-solidrun.dts b/arch/arm/dts/am642-solidrun.dts
+diff --git a/arch/arm/dts/k3-am642-sr-som-u-boot.dtsi b/arch/arm/dts/k3-am642-sr-som-u-boot.dtsi
 new file mode 100644
-index 0000000000..0731c08a46
+index 0000000000..dfa8f8af28
 --- /dev/null
-+++ b/arch/arm/dts/am642-solidrun.dts
-@@ -0,0 +1,369 @@
++++ b/arch/arm/dts/k3-am642-sr-som-u-boot.dtsi
+@@ -0,0 +1,174 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) 2020-2021 Texas Instruments Incorporated - https://www.ti.com/
 + */
 +
-+/dts-v1/;
-+
-+#include <dt-bindings/gpio/gpio.h>
-+#include <dt-bindings/leds/common.h>
-+#include <dt-bindings/net/ti-dp83867.h>
-+#include "k3-am642.dtsi"
++#include "k3-am642-sr-som-binman.dtsi"
 +
 +/ {
-+	compatible =  "ti,am642-evm", "ti,am642";
-+	model = "Texas Instruments AM642 EVM";
-+
 +	chosen {
-+		stdout-path = "serial2:115200n8";
-+		bootargs = "console=ttyS2,115200n8 earlycon=ns16550a,mmio32,0x02800000";
++		tick-timer = &timer1;
 +	};
 +
 +	memory@80000000 {
-+		device_type = "memory";
-+		/* 1G RAM */
-+		reg = <0x00000000 0x40000000 0x00000000 0x40000000>;
++		bootph-pre-ram;
++	};
++};
 +
++&cbass_main{
++	bootph-pre-ram;
++
++	timer1: timer@2400000 {
++		compatible = "ti,omap5430-timer";
++		reg = <0x0 0x2400000 0x0 0x80>;
++		ti,timer-alwon;
++		clock-frequency = <200000000>;
++		bootph-pre-ram;
++	};
++};
++
++&cpsw3g {
++	/delete-property/ ranges;
++	/* repeat mdio subnode pinctrl here, driver does not support DM */
++	pinctrl-names = "default";
++	pinctrl-0 = <&rgmii1_pins_default>, <&mdio0_pins_default>;
++	/* add mac address efuse register address */
++	reg = <0x0 0x8000000 0x0 0x200000>,
++	      <0x0 0x43000200 0x0 0x8>;
++	reg-names = "cpsw_nuss", "mac_efuse";
++
++	cpsw-phy-sel@04044 {
++		compatible = "ti,am64-phy-gmii-sel";
++		reg = <0x0 0x43004044 0x0 0x8>;
++	};
++};
++
++&dmsc {
++	bootph-pre-ram;
++
++	k3_sysreset: sysreset-controller {
++		compatible = "ti,sci-sysreset";
++		bootph-pre-ram;
++	};
++};
++
++&dmss {
++	bootph-pre-ram;
++};
++
++&fss {
++	bootph-pre-ram;
++};
++
++&k3_clks {
++	bootph-pre-ram;
++};
++
++&k3_pds {
++	bootph-pre-ram;
++};
++
++&k3_reset {
++	bootph-pre-ram;
++};
++
++&main_bcdma {
++	bootph-pre-ram;
++	reg = <0x00 0x485c0100 0x00 0x100>,
++	      <0x00 0x4c000000 0x00 0x20000>,
++	      <0x00 0x4a820000 0x00 0x20000>,
++	      <0x00 0x4aa40000 0x00 0x20000>,
++	      <0x00 0x4bc00000 0x00 0x100000>,
++	      <0x00 0x48600000 0x00 0x8000>,
++	      <0x00 0x484a4000 0x00 0x2000>,
++	      <0x00 0x484c2000 0x00 0x2000>;
++	reg-names = "gcfg", "bchanrt", "rchanrt", "tchanrt", "ringrt",
++		    "cfg", "tchan", "rchan";
++};
++
++&main_conf {
++	bootph-pre-ram;
++
++	chipid@14 {
++		bootph-pre-ram;
++	};
++};
++
++&main_gpio0 {
++	bootph-pre-ram;
++};
++
++&main_i2c0 {
++	bootph-pre-ram;
++};
++
++&main_i2c0_pins_default {
++	bootph-pre-ram;
++};
++
++&main_mmc1_pins_default {
++	bootph-pre-ram;
++};
++
++&main_pktdma {
++	bootph-pre-ram;
++	reg = <0x00 0x485c0000 0x00 0x100>,
++	      <0x00 0x4a800000 0x00 0x20000>,
++	      <0x00 0x4aa00000 0x00 0x40000>,
++	      <0x00 0x4b800000 0x00 0x400000>,
++	      <0x00 0x485e0000 0x00 0x20000>,
++	      <0x00 0x484a0000 0x00 0x4000>,
++	      <0x00 0x484c0000 0x00 0x2000>,
++	      <0x00 0x48430000 0x00 0x4000>;
++	reg-names = "gcfg", "rchanrt", "tchanrt", "ringrt", "cfg",
++		    "tchan", "rchan", "rflow";
++};
++
++&main_pmx0 {
++	bootph-pre-ram;
++};
++
++&main_uart0 {
++	bootph-pre-ram;
++};
++
++&ospi0 {
++	bootph-pre-ram;
++
++	flash@0 {
++		bootph-pre-ram;
++	};
++};
++
++&ospi0_pins_default {
++	bootph-pre-ram;
++};
++
++&sdhci0 {
++	bootph-pre-ram;
++};
++
++&sdhci1 {
++	bootph-pre-ram;
++};
++
++&secure_proxy_main {
++	bootph-pre-ram;
++};
++
++&som_eeprom {
++	bootph-pre-ram;
++};
++
++&usb0 {
++	dr_mode = "peripheral";
++	bootph-pre-ram;
++};
++
++&usb0_pins_default {
++	bootph-pre-ram;
++};
++
++&usbss0 {
++	bootph-pre-ram;
++};
+diff --git a/arch/arm/dts/k3-am642-sr-som.dts b/arch/arm/dts/k3-am642-sr-som.dts
+new file mode 100644
+index 0000000000..c9df215dd5
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-sr-som.dts
+@@ -0,0 +1,18 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ * Minimal DTS for SolidRun AM642 SoM on generic carrier,
++ * running on Cortex A53.
++ *
++ */
++
++/dts-v1/;
++
++#include "k3-am642.dtsi"
++#include "k3-am642-sr-som.dtsi"
++
++/ {
++	compatible = "solidrun,am642-som", "ti,am642";
++	model = "SolidRun AM642 SoM";
++};
+diff --git a/arch/arm/dts/k3-am642-sr-som.dtsi b/arch/arm/dts/k3-am642-sr-som.dtsi
+new file mode 100644
+index 0000000000..2a87304adb
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-sr-som.dtsi
+@@ -0,0 +1,572 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ */
++
++#include <dt-bindings/net/ti-dp83869.h>
++
++/ {
++	aliases {
++		ethernet0 = &cpsw_port1;
++		mmc0 = &sdhci0;
++		mmc1 = &sdhci1;
++	};
++
++	chosen {
++		/* SoC default UART console */
++		stdout-path = "serial2:115200n8";
++		bootargs = "earlycon=ns16550a,mmio32,0x02800000";
++	};
++
++	/* DDR16SS0:
++	 * - Bank 1 @ 0x080000000-0x0FFFFFFFF: max. 2GB in low memory
++	 * - Bank 2 @ 0x880000000-0x9FFFFFFFF: max. 6GB in high memory
++	 */
++	memory@80000000 {
++		/* reg = <0x00000000 0x80000000 0x00000000 0x80000000>,
++		 *       <0x00000008 0x80000000 0x00000001 0x80000000>;
++		 */
++		reg = <0x00000000 0x80000000 0x00000000 0x40000000>; // declare just 1GB for now ...
++		device_type = "memory";
 +	};
 +
 +	reserved-memory {
@@ -2282,724 +3644,964 @@ index 0000000000..0731c08a46
 +			alignment = <0x1000>;
 +			no-map;
 +		};
-+	};
 +
-+	evm_12v0: fixedregulator-evm12v0 {
-+		/* main DC jack */
-+		compatible = "regulator-fixed";
-+		regulator-name = "evm_12v0";
-+		regulator-min-microvolt = <12000000>;
-+		regulator-max-microvolt = <12000000>;
-+		regulator-always-on;
-+		regulator-boot-on;
-+	};
-+
-+	vsys_5v0: fixedregulator-vsys5v0 {
-+		/* output of LM5140 */
-+		compatible = "regulator-fixed";
-+		regulator-name = "vsys_5v0";
-+		regulator-min-microvolt = <5000000>;
-+		regulator-max-microvolt = <5000000>;
-+		vin-supply = <&evm_12v0>;
-+		regulator-always-on;
-+		regulator-boot-on;
-+	};
-+
-+	vsys_3v3: fixedregulator-vsys3v3 {
-+		/* output of LM5140 */
-+		compatible = "regulator-fixed";
-+		regulator-name = "vsys_3v3";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		vin-supply = <&evm_12v0>;
-+		regulator-always-on;
-+		regulator-boot-on;
-+	};
-+
-+	vdd_mmc1: fixed-regulator-sd {
-+		/* TPS2051BD */
-+		compatible = "regulator-fixed";
-+		regulator-name = "vdd_mmc1";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		regulator-boot-on;
-+		enable-active-high;
-+		vin-supply = <&vsys_3v3>;
-+		gpio = <&exp1 6 GPIO_ACTIVE_HIGH>;
-+	};
-+
-+	vddb: fixedregulator-vddb {
-+		compatible = "regulator-fixed";
-+		regulator-name = "vddb_3v3_display";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		vin-supply = <&vsys_3v3>;
-+		regulator-always-on;
-+		regulator-boot-on;
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+
-+		led-0 {
-+			label = "am64-evm:red:heartbeat";
-+			gpios = <&exp1 16 GPIO_ACTIVE_HIGH>;
-+			linux,default-trigger = "heartbeat";
-+			function = LED_FUNCTION_HEARTBEAT;
-+			default-state = "off";
++		main_r5fss0_core0_dma_memory_region: r5f-dma-memory@a0000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa0000000 0x00 0x100000>;
++			no-map;
 +		};
++
++		main_r5fss0_core0_memory_region: r5f-memory@a0100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa0100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		main_r5fss0_core1_dma_memory_region: r5f-dma-memory@a1000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa1000000 0x00 0x100000>;
++			no-map;
++		};
++
++		main_r5fss0_core1_memory_region: r5f-memory@a1100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa1100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		main_r5fss1_core0_dma_memory_region: r5f-dma-memory@a2000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa2000000 0x00 0x100000>;
++			no-map;
++		};
++
++		main_r5fss1_core0_memory_region: r5f-memory@a2100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa2100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		main_r5fss1_core1_dma_memory_region: r5f-dma-memory@a3000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa3000000 0x00 0x100000>;
++			no-map;
++		};
++
++		main_r5fss1_core1_memory_region: r5f-memory@a3100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa3100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		mcu_m4fss_dma_memory_region: m4f-dma-memory@a4000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa4000000 0x00 0x100000>;
++			no-map;
++		};
++
++		mcu_m4fss_memory_region: m4f-memory@a4100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa4100000 0x00 0xf00000>;
++			no-map;
++		};
++	};
++
++	vdd_mmc0: regulator-vdd-mmc0 {
++		compatible = "regulator-fixed";
++		regulator-name = "vdd-mmc0";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		regulator-always-on;
++		regulator-boot-on;
++	};
++};
++
++&cpsw3g {
++	pinctrl-names = "default";
++	pinctrl-0 = <&rgmii1_pins_default>;
++	status = "okay";
++};
++
++&cpsw3g_mdio {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mdio0_pins_default>, <&ethernet_phy0_pins_default>;
++	status = "okay";
++
++	ethernet_phy0: ethernet-phy@0 {
++		compatible = "ethernet-phy-id2000.a0f1";
++		reg = <0>;
++		ti,clk-output-sel = <DP83869_CLK_O_SEL_REF_CLK>;
++		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
++		/*
++		 * Disable interrupts because ISR never clears 0x0040
++		 *
++		 * interrupt-parent = <&main_gpio1>;
++		 * interrupts = <70 IRQ_TYPE_LEVEL_LOW>;
++		 */
++		/*
++		 * Disable HW Reset because clock signal is daisy-chained
++		 *
++		 * reset-gpios = <&main_gpio0 84 GPIO_ACTIVE_LOW>;
++		 * reset-assert-us = <1>;
++		 * reset-deassert-us = <30>;
++		 */
++		 status = "okay";
++	};
++};
++
++&cpsw_port1 {
++	phy-mode = "rgmii-id";
++	phy-handle = <&ethernet_phy0>;
++	status = "okay";
++};
++
++&cpsw_port2 {
++	status = "disabled";
++};
++
++&icssg1_mdio {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pru1_mdio0_pins_default>,
++		    <&ethernet_phy1_pins_default>, <&ethernet_phy2_pins_default>;
++	status = "okay";
++
++	ethernet_phy1: ethernet-phy@3 {
++		compatible = "ethernet-phy-id2000.a0f1";
++		reg = <3>;
++		ti,clk-output-sel = <DP83869_CLK_O_SEL_REF_CLK>;
++		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
++		/*
++		 * Disable interrupts because ISR never clears 0x0040
++		 *
++		 * interrupt-parent = <&main_gpio1>;
++		 * interrupts = <70 IRQ_TYPE_LEVEL_LOW>;
++		 */
++		/*
++		 * Disable HW Reset because clock signal is daisy-chained
++		 *
++		 * reset-gpios = <&main_gpio0 20 GPIO_ACTIVE_LOW>;
++		 * reset-assert-us = <1>;
++		 * reset-deassert-us = <30>;
++		 */
++		 status = "okay";
++	};
++
++	ethernet_phy2: ethernet-phy@f {
++		compatible = "ethernet-phy-id2000.a0f1";
++		reg = <0xf>;
++		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
++		/*
++		 * Disable interrupts because ISR never clears 0x0040
++		 *
++		 * interrupt-parent = <&main_gpio1>;
++		 * interrupts = <70 IRQ_TYPE_LEVEL_LOW>;
++		 */
++		/*
++		 * Disable HW Reset because clock signal is daisy-chained
++		 *
++		 * reset-gpios = <&main_gpio0 52 GPIO_ACTIVE_LOW>;
++		 * reset-assert-us = <1>;
++		 * reset-deassert-us = <30>;
++		 */
++		 status = "okay";
++	};
++};
++
++&mailbox0_cluster2 {
++	status = "okay";
++
++	mbox_main_r5fss0_core0: mbox-main-r5fss0-core0 {
++		ti,mbox-rx = <0 0 2>;
++		ti,mbox-tx = <1 0 2>;
++	};
++
++	mbox_main_r5fss0_core1: mbox-main-r5fss0-core1 {
++		ti,mbox-rx = <2 0 2>;
++		ti,mbox-tx = <3 0 2>;
++	};
++};
++
++&mailbox0_cluster3 {
++	status = "disabled";
++};
++
++&mailbox0_cluster4 {
++	status = "okay";
++
++	mbox_main_r5fss1_core0: mbox-main-r5fss1-core0 {
++		ti,mbox-rx = <0 0 2>;
++		ti,mbox-tx = <1 0 2>;
++	};
++
++	mbox_main_r5fss1_core1: mbox-main-r5fss1-core1 {
++		ti,mbox-rx = <2 0 2>;
++		ti,mbox-tx = <3 0 2>;
++	};
++};
++
++&mailbox0_cluster5 {
++	status = "disabled";
++};
++
++&mailbox0_cluster6 {
++	status = "okay";
++
++	mbox_m4_0: mbox-m4-0 {
++		ti,mbox-rx = <0 0 2>;
++		ti,mbox-tx = <1 0 2>;
++	};
++};
++
++&mailbox0_cluster7 {
++	status = "disabled";
++};
++
++&main_gpio0 {
++	status = "okay";
++};
++
++&main_i2c0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_i2c0_pins_default>;
++	status = "okay";
++
++	som_eeprom: eeprom@50 {
++		compatible = "atmel,24c01";
++		reg = <0x50>;
++		pagesize = <8>;
 +	};
 +};
 +
 +&main_pmx0 {
++	/* hog functions without u-boot driver */
++	pinctrl-0 = <&ethernet_phy_pins_default>,
++		    <&pru_rgmii1_pins_default>,
++		    <&pru_rgmii2_pins_default>;
++
++	ethernet_phy_pins_default: ethernet-phy-pins-default {
++		pinctrl-single,pins = <
++			/* interrupt / power-down, external pull-up on SoM */
++			AM64X_IOPAD(0x0278, PIN_INPUT, 7)	/* Pad EXTINTn Mux GPIO1_70 */
++		>;
++	};
++
++	ethernet_phy0_pins_default: ethernet-phy0-pins-default {
++		pinctrl-single,pins = <
++			/* reset */
++			AM64X_IOPAD(0x0154, PIN_OUTPUT, 7)	/* Pad PRG1_PRU1_GPO19 Mux GPIO0_84 */
++			/* reference clock */
++			AM64X_IOPAD(0x0274, PIN_OUTPUT, 5)	/* Pad EXT_REFCLK1 Mux CLKOUT0 */
++		>;
++	};
++
++	ethernet_phy1_pins_default: ethernet-phy1-pins-default {
++		pinctrl-single,pins = <
++			/* reset */
++			AM64X_IOPAD(0x0150, PIN_OUTPUT, 7)	/* Pad PRG1_PRU1_GPO18 Mux GPIO0_20 */
++			/* led0, external pull-down on SoM */
++			AM64X_IOPAD(0x0128, PIN_INPUT, 7)	/* Pad PRG1_PRU1_GPO8 Mux GPIO0_73 */
++			/* led1/rxer */
++			AM64X_IOPAD(0x011c, PIN_INPUT, 7)	/* Pad PRG1_PRU1_GPO5 Mux GPIO0_70 */
++		>;
++	};
++
++	ethernet_phy2_pins_default: ethernet-phy2-pins-default {
++		pinctrl-single,pins = <
++			/* reset */
++			AM64X_IOPAD(0x00d4, PIN_OUTPUT, 7)	/* Pad PRG1_PRU0_GPO7 Mux GPIO0_52 */
++			/* led0, external pull-down on SoM */
++			AM64X_IOPAD(0x00d8, PIN_INPUT, 7)	/* Pad PRG1_PRU0_GPO8 Mux GPIO0_53 */
++			/* led1/rxer */
++			AM64X_IOPAD(0x00cc, PIN_INPUT, 7)	/* Pad PRG1_PRU0_GPO5 Mux GPIO0_50 */
++		>;
++	};
++
++	main_i2c0_pins_default: main-i2c0-pins-default {
++		pinctrl-single,pins = <
++			/* external pull-up on SoM */
++			AM64X_IOPAD(0x0260, PIN_INPUT, 0)	/* Pad I2C0_SCL Mux I2C0_SCL */
++			AM64X_IOPAD(0x0264, PIN_INPUT, 0)	/* Pad I2C0_SDA Mux I2C0_SDA */
++		>;
++	};
++
++	/*
++	 * main_mmc0_pins_default: main-mmc0-pins-default
++	 *
++	 * MMC0_CMD: no padconfig
++	 * MMC0_CLK: no padconfig, external pull-up on SoM
++	 * MMC0_DAT0: no padconfig
++	 * MMC0_DAT1: no padconfig
++	 * MMC0_DAT2: no padconfig
++	 * MMC0_DAT3: no padconfig
++	 * MMC0_DAT4: no padconfig
++	 * MMC0_DAT5: no padconfig
++	 * MMC0_DAT6: no padconfig
++	 * MMC0_DAT7: no padconfig
++	 * MMC0_DS: no padconfig, external pull-down on SoM
++	 */
++
 +	main_mmc1_pins_default: main-mmc1-pins-default {
 +		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x0294, PIN_INPUT_PULLUP, 0) /* (J19) MMC1_CMD */
-+			AM64X_IOPAD(0x028c, PIN_INPUT_PULLDOWN, 0) /* (L20) MMC1_CLK */
-+			AM64X_IOPAD(0x0288, PIN_INPUT_PULLUP, 0) /* (K21) MMC1_DAT0 */
-+			AM64X_IOPAD(0x0284, PIN_INPUT_PULLUP, 0) /* (L21) MMC1_DAT1 */
-+			AM64X_IOPAD(0x0280, PIN_INPUT_PULLUP, 0) /* (K19) MMC1_DAT2 */
-+			AM64X_IOPAD(0x027c, PIN_INPUT_PULLUP, 0) /* (K18) MMC1_DAT3 */
-+			AM64X_IOPAD(0x0298, PIN_INPUT_PULLUP, 0) /* (D19) MMC1_SDCD */
-+			AM64X_IOPAD(0x029c, PIN_INPUT, 0) /* (C20) MMC1_SDWP */
-+			AM64X_IOPAD(0x0290, PIN_INPUT, 0) /* MMC1_CLKLB */
++			AM64X_IOPAD(0x0294, PIN_INPUT_PULLUP, 0)	/* (J19) MMC1_CMD */
++			AM64X_IOPAD(0x028c, PIN_INPUT, 0)		/* Pad MMC1_CLK Mux MMC1_CLK */
++			AM64X_IOPAD(0x0288, PIN_INPUT_PULLUP, 0)	/* Pad MMC1_DAT0 Mux MMC1_DAT0 */
++			AM64X_IOPAD(0x0284, PIN_INPUT_PULLUP, 0)	/* Pad MMC1_DAT1 Mux MMC1_DAT1 */
++			AM64X_IOPAD(0x0280, PIN_INPUT_PULLUP, 0)	/* Pad MMC1_DAT2 Mux MMC1_DAT2 */
++			AM64X_IOPAD(0x027c, PIN_INPUT_PULLUP, 0)	/* Pad MMC1_DAT3 Mux MMC1_DAT3 */
++			/* external pull-down on SoM & Carrier - should be up or DNP */
++			AM64X_IOPAD(0x0298, PIN_INPUT_PULLUP, 0)	/* Pad MMC1_SDCD Mux MMC1_SDCD */
++			AM64X_IOPAD(0x0290, PIN_INPUT, 0)		/* MMC1_CLKLB: Undocumented clock loopback */
 +		>;
 +	};
 +
 +	main_uart0_pins_default: main-uart0-pins-default {
 +		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x0238, PIN_INPUT, 0) /* (B16) UART0_CTSn */
-+			AM64X_IOPAD(0x023c, PIN_OUTPUT, 0) /* (A16) UART0_RTSn */
-+			AM64X_IOPAD(0x0230, PIN_INPUT, 0) /* (D15) UART0_RXD */
-+			AM64X_IOPAD(0x0234, PIN_OUTPUT, 0) /* (C16) UART0_TXD */
++			AM64X_IOPAD(0x0230, PIN_INPUT, 0)		/* Pad UART0_RXD Mux UART0_RXD */
++			AM64X_IOPAD(0x0234, PIN_OUTPUT, 0)		/* Pad UART0_TXD Mux UART0_TXD */
 +		>;
 +	};
 +
-+	main_i2c1_pins_default: main-i2c1-pins-default {
++	mdio0_pins_default: mdio0-pins-default {
 +		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x0268, PIN_INPUT_PULLUP, 0) /* (C18) I2C1_SCL */
-+			AM64X_IOPAD(0x026c, PIN_INPUT_PULLUP, 0) /* (B19) I2C1_SDA */
++			AM64X_IOPAD(0x01fc, PIN_OUTPUT, 4)	/* Pad PRG0_PRU1_GPO19 Mux MDIO0_MDC */
++			AM64X_IOPAD(0x01f8, PIN_INPUT, 4)	/* Pad PRG0_PRU1_GPO18 Mux MDIO0_MDIO */
 +		>;
 +	};
 +
-+	main_usb0_pins_default: main-usb0-pins-default {
++	ospi0_pins_default: ospi0-pins-default {
 +		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x02a8, PIN_OUTPUT, 0) /* (E19) USB0_DRVVBUS */
++			/* external pull-down on SoM */
++			AM64X_IOPAD(0x0000, PIN_OUTPUT, 0)		/* Pad OSPI0_CLK Mux OSPI0_CLK */
++			AM64X_IOPAD(0x0008, PIN_OUTPUT, 0)		/* Pad OSPI0_DQS Mux OSPI0_DQS */
++			/* external pull-up on SoM */
++			AM64X_IOPAD(0x002c, PIN_OUTPUT, 0)		/* Pad OSPI0_CSn0 Mux OSPI0_CSn0 */
++			AM64X_IOPAD(0x000c, PIN_INPUT, 0)		/* Pad OSPI0_D0 Mux OSPI0_D0 */
++			AM64X_IOPAD(0x0010, PIN_INPUT, 0)		/* Pad OSPI0_D1 Mux OSPI0_D1 */
++			AM64X_IOPAD(0x0014, PIN_INPUT, 0)		/* Pad OSPI0_D2 Mux OSPI0_D2 */
++			AM64X_IOPAD(0x0018, PIN_INPUT, 0)		/* Pad OSPI0_D3 Mux OSPI0_D3 */
++			AM64X_IOPAD(0x001c, PIN_INPUT, 0)		/* Pad OSPI0_D4 Mux OSPI0_D4 */
++			AM64X_IOPAD(0x0020, PIN_INPUT, 0)		/* Pad OSPI0_D5 Mux OSPI0_D5 */
++			AM64X_IOPAD(0x0024, PIN_INPUT, 0)		/* Pad OSPI0_D6 Mux OSPI0_D6 */
++			AM64X_IOPAD(0x0028, PIN_INPUT, 0)		/* Pad OSPI0_D7 Mux OSPI0_D7 */
 +		>;
 +	};
 +
-+	mdio1_pins_default: mdio1-pins-default {
++	ospi0_flash0_pins_default: ospi0-flash0-pins-default {
 +		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x01fc, PIN_OUTPUT, 4) /* (R2) PRG0_PRU1_GPO19.MDIO0_MDC */
-+			AM64X_IOPAD(0x01f8, PIN_INPUT, 4) /* (P5) PRG0_PRU1_GPO18.MDIO0_MDIO */
++			AM64X_IOPAD(0x0034, PIN_OUTPUT, 7)		/* Pad OSPI0_CSn2 Mux GPIO0_13 */
++			AM64X_IOPAD(0x0038, PIN_INPUT, 7)		/* Pad OSPI0_CSn3 Mux GPIO0_14 */
++		>;
++	};
++
++	pru1_mdio0_pins_default: pru1-mdio0-pins-default {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x015c, PIN_OUTPUT, 0)	/* Pad PRG1_MDIO0_MDC Mux PRG1_MDIO0_MDC */
++			AM64X_IOPAD(0x0158, PIN_INPUT, 0)	/* Pad PRG1_MDIO0_MDIO Mux PRG1_MDIO0_MDIO */
++		>;
++	};
++
++	pru_rgmii1_pins_default: pru-rgmii1-pins-default {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x00b8, PIN_INPUT, 2)	/* (Y7) PRG1_PRU0_GPO0.PRG1_RGMII1_RD0 */
++			AM64X_IOPAD(0x00bc, PIN_INPUT, 2)	/* (U8) PRG1_PRU0_GPO1.PRG1_RGMII1_RD1 */
++			AM64X_IOPAD(0x00c0, PIN_INPUT, 2)	/* (W8) PRG1_PRU0_GPO2.PRG1_RGMII1_RD2 */
++			AM64X_IOPAD(0x00c4, PIN_INPUT, 2)	/* (V8) PRG1_PRU0_GPO3.PRG1_RGMII1_RD3 */
++			AM64X_IOPAD(0x00d0, PIN_INPUT, 2)	/* (AA7) PRG1_PRU0_GPO6.PRG1_RGMII1_RXC */
++			AM64X_IOPAD(0x00c8, PIN_INPUT, 2)	/* (Y8) PRG1_PRU0_GPO4.PRG1_RGMII1_RX_CTL */
++			AM64X_IOPAD(0x00e4, PIN_OUTPUT, 2)	/* (AA8) PRG1_PRU0_GPO11.PRG1_RGMII1_TD0 */
++			AM64X_IOPAD(0x00e8, PIN_OUTPUT, 2)	/* (U9) PRG1_PRU0_GPO12.PRG1_RGMII1_TD1 */
++			AM64X_IOPAD(0x00ec, PIN_OUTPUT, 2)	/* (W9) PRG1_PRU0_GPO13.PRG1_RGMII1_TD2 */
++			AM64X_IOPAD(0x00f0, PIN_OUTPUT, 2)	/* (AA9) PRG1_PRU0_GPO14.PRG1_RGMII1_TD3 */
++			AM64X_IOPAD(0x00f8, PIN_INPUT, 2)	/* (V9) PRG1_PRU0_GPO16.PRG1_RGMII1_TXC */
++			AM64X_IOPAD(0x00f4, PIN_OUTPUT, 2)	/* (Y9) PRG1_PRU0_GPO15.PRG1_RGMII1_TX_CTL */
++		>;
++	};
++
++	pru_rgmii2_pins_default: pru-rgmii2-pins-default {
++		pinctrl-single,pins = <
++			AM64X_IOPAD(0x0108, PIN_INPUT, 2)	/* Pad PRG1_PRU1_GPO0 Mux RGMII2_RD0 */
++			AM64X_IOPAD(0x010c, PIN_INPUT, 2)	/* PadPRG1_PRU1_GPO1 Mux RGMII2_RD1 */
++			AM64X_IOPAD(0x0110, PIN_INPUT, 2)	/* Pad PRG1_PRU1_GPO2 Mux RGMII2_RD2 */
++			AM64X_IOPAD(0x0114, PIN_INPUT, 2)	/* Pad PRG1_PRU1_GPO3 Mux RGMII2_RD3 */
++			AM64X_IOPAD(0x0120, PIN_INPUT, 2)	/* Pad PRG1_PRU1_GPO6 Mux RGMII2_RXC */
++			AM64X_IOPAD(0x0118, PIN_INPUT, 2)	/* Pad PRG1_PRU1_GPO4 Mux RGMII2_RX_CTL */
++			AM64X_IOPAD(0x0134, PIN_OUTPUT, 2)	/* Pad PRG1_PRU1_GPO11 Mux RGMII2_TD0 */
++			AM64X_IOPAD(0x0138, PIN_OUTPUT, 2)	/* Pad PRG1_PRU1_GPO12 Mux RGMII2_TD1 */
++			AM64X_IOPAD(0x013c, PIN_OUTPUT, 2)	/* Pad PRG1_PRU1_GPO13 Mux RGMII2_TD2 */
++			AM64X_IOPAD(0x0140, PIN_OUTPUT, 2)	/* Pad PRG1_PRU1_GPO14 Mux RGMII2_TD3 */
++			AM64X_IOPAD(0x0148, PIN_INPUT, 2)	/* Pad PRG1_PRU1_GPO16 Mux RGMII2_TXC */
++			AM64X_IOPAD(0x0144, PIN_OUTPUT, 2)	/* Pad PRG1_PRU1_GPO15 Mux RGMII2_TX_CTL */
 +		>;
 +	};
 +
 +	rgmii1_pins_default: rgmii1-pins-default {
 +		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x01cc, PIN_INPUT, 4) /* (W5) PRG0_PRU1_GPO7.RGMII1_RD0 */
-+			AM64X_IOPAD(0x01d4, PIN_INPUT, 4) /* (Y5) PRG0_PRU1_GPO9.RGMII1_RD1 */
-+			AM64X_IOPAD(0x01d8, PIN_INPUT, 4) /* (V6) PRG0_PRU1_GPO10.RGMII1_RD2 */
-+			AM64X_IOPAD(0x01f4, PIN_INPUT, 4) /* (V5) PRG0_PRU1_GPO17.RGMII1_RD3 */
-+			AM64X_IOPAD(0x0188, PIN_INPUT, 4) /* (AA5) PRG0_PRU0_GPO10.RGMII1_RXC */
-+			AM64X_IOPAD(0x0184, PIN_INPUT, 4) /* (W6) PRG0_PRU0_GPO9.RGMII1_RX_CTL */
-+			AM64X_IOPAD(0x0124, PIN_OUTPUT, 4) /* (V15) PRG1_PRU1_GPO7.RGMII1_TD0 */
-+			AM64X_IOPAD(0x012c, PIN_OUTPUT, 4) /* (V14) PRG1_PRU1_GPO9.RGMII1_TD1 */
-+			AM64X_IOPAD(0x0130, PIN_OUTPUT, 4) /* (W14) PRG1_PRU1_GPO10.RGMII1_TD2 */
-+			AM64X_IOPAD(0x014c, PIN_OUTPUT, 4) /* (AA14) PRG1_PRU1_GPO17.RGMII1_TD3 */
-+			AM64X_IOPAD(0x00e0, PIN_OUTPUT, 4) /* (U14) PRG1_PRU0_GPO10.RGMII1_TXC */
-+			AM64X_IOPAD(0x00dc, PIN_OUTPUT, 4) /* (U15) PRG1_PRU0_GPO9.RGMII1_TX_CTL */
++			AM64X_IOPAD(0x01cc, PIN_INPUT, 4)	/* Pad PRG0_PRU1_GPO7 Mux RGMII1_RD0 */
++			AM64X_IOPAD(0x01d4, PIN_INPUT, 4)	/* Pad PRG0_PRU1_GPO9 Mux RGMII1_RD1 */
++			AM64X_IOPAD(0x01d8, PIN_INPUT, 4)	/* Pad PRG0_PRU1_GPO10 Mux RGMII1_RD2 */
++			AM64X_IOPAD(0x01f4, PIN_INPUT, 4)	/* Pad PRG0_PRU1_GPO17 Mux RGMII1_RD3 */
++			AM64X_IOPAD(0x0188, PIN_INPUT, 4)	/* Pad PRG0_PRU0_GPO10 Mux RGMII1_RXC */
++			AM64X_IOPAD(0x0184, PIN_INPUT, 4)	/* Pad PRG0_PRU0_GPO9 Mux RGMII1_RX_CTL */
++			AM64X_IOPAD(0x0124, PIN_OUTPUT, 4)	/* Pad PRG1_PRU1_GPO7 Mux RGMII1_TD0 */
++			AM64X_IOPAD(0x012c, PIN_OUTPUT, 4)	/* Pad PRG1_PRU1_GPO9 Mux RGMII1_TD1 */
++			AM64X_IOPAD(0x0130, PIN_OUTPUT, 4)	/* Pad PRG1_PRU1_GPO10 Mux RGMII1_TD2 */
++			AM64X_IOPAD(0x014c, PIN_OUTPUT, 4)	/* Pad PRG1_PRU1_GPO17 Mux RGMII1_TD3 */
++			AM64X_IOPAD(0x00e0, PIN_INPUT, 4)	/* Pad PRG1_PRU0_GPO10 Mux RGMII1_TXC */
++			AM64X_IOPAD(0x00dc, PIN_OUTPUT, 4)	/* Pad PRG1_PRU0_GPO9 Mux RGMII1_TX_CTL */
 +		>;
 +	};
 +
-+       rgmii2_pins_default: rgmii2-pins-default {
++	usb0_pins_default: usb0-pins-default {
 +		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x0108, PIN_INPUT, 4) /* (W11) PRG1_PRU1_GPO0.RGMII2_RD0 */
-+			AM64X_IOPAD(0x010c, PIN_INPUT, 4) /* (V11) PRG1_PRU1_GPO1.RGMII2_RD1 */
-+			AM64X_IOPAD(0x0110, PIN_INPUT, 4) /* (AA12) PRG1_PRU1_GPO2.RGMII2_RD2 */
-+			AM64X_IOPAD(0x0114, PIN_INPUT, 4) /* (Y12) PRG1_PRU1_GPO3.RGMII2_RD3 */
-+			AM64X_IOPAD(0x0120, PIN_INPUT, 4) /* (U11) PRG1_PRU1_GPO6.RGMII2_RXC */
-+			AM64X_IOPAD(0x0118, PIN_INPUT, 4) /* (W12) PRG1_PRU1_GPO4.RGMII2_RX_CTL */
-+			AM64X_IOPAD(0x0134, PIN_OUTPUT, 4) /* (AA10) PRG1_PRU1_GPO11.RGMII2_TD0 */
-+			AM64X_IOPAD(0x0138, PIN_OUTPUT, 4) /* (V10) PRG1_PRU1_GPO12.RGMII2_TD1 */
-+			AM64X_IOPAD(0x013c, PIN_OUTPUT, 4) /* (U10) PRG1_PRU1_GPO13.RGMII2_TD2 */
-+			AM64X_IOPAD(0x0140, PIN_OUTPUT, 4) /* (AA11) PRG1_PRU1_GPO14.RGMII2_TD3 */
-+			AM64X_IOPAD(0x0148, PIN_OUTPUT, 4) /* (Y10) PRG1_PRU1_GPO16.RGMII2_TXC */
-+			AM64X_IOPAD(0x0144, PIN_OUTPUT, 4) /* (Y11) PRG1_PRU1_GPO15.RGMII2_TX_CTL */
-+		>;
-+	};
-+
-+	ospi0_pins_default: ospi0-pins-default {
-+		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x0000, PIN_OUTPUT, 0) /* (N20) OSPI0_CLK */
-+			AM64X_IOPAD(0x002c, PIN_OUTPUT, 0) /* (L19) OSPI0_CSn0 */
-+			AM64X_IOPAD(0x000c, PIN_INPUT, 0) /* (M19) OSPI0_D0 */
-+			AM64X_IOPAD(0x0010, PIN_INPUT, 0) /* (M18) OSPI0_D1 */
-+			AM64X_IOPAD(0x0014, PIN_INPUT, 0) /* (M20) OSPI0_D2 */
-+			AM64X_IOPAD(0x0018, PIN_INPUT, 0) /* (M21) OSPI0_D3 */
-+			AM64X_IOPAD(0x001c, PIN_INPUT, 0) /* (P21) OSPI0_D4 */
-+			AM64X_IOPAD(0x0020, PIN_INPUT, 0) /* (P20) OSPI0_D5 */
-+			AM64X_IOPAD(0x0024, PIN_INPUT, 0) /* (N18) OSPI0_D6 */
-+			AM64X_IOPAD(0x0028, PIN_INPUT, 0) /* (M17) OSPI0_D7 */
-+			AM64X_IOPAD(0x0008, PIN_INPUT, 0) /* (N19) OSPI0_DQS */
++			AM64X_IOPAD(0x02a8, PIN_OUTPUT, 0)		/* Pad USB0_DRVVBUS Mux USB0_DRVVBUS */
 +		>;
 +	};
 +};
 +
++&main_r5fss0_core0 {
++	mboxes = <&mailbox0_cluster2 &mbox_main_r5fss0_core0>;
++	memory-region = <&main_r5fss0_core0_dma_memory_region>,
++			<&main_r5fss0_core0_memory_region>;
++	status = "okay";
++};
++
++&main_r5fss0_core1 {
++	mboxes = <&mailbox0_cluster2 &mbox_main_r5fss0_core1>;
++	memory-region = <&main_r5fss0_core1_dma_memory_region>,
++			<&main_r5fss0_core1_memory_region>;
++	status = "okay";
++};
++
++&main_r5fss1_core0 {
++	mboxes = <&mailbox0_cluster4 &mbox_main_r5fss1_core0>;
++	memory-region = <&main_r5fss1_core0_dma_memory_region>,
++			<&main_r5fss1_core0_memory_region>;
++	status = "okay";
++};
++
++&main_r5fss1_core1 {
++	mboxes = <&mailbox0_cluster4 &mbox_main_r5fss1_core1>;
++	memory-region = <&main_r5fss1_core1_dma_memory_region>,
++			<&main_r5fss1_core1_memory_region>;
++	status = "okay";
++};
++
++/* SoC default UART console */
 +&main_uart0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&main_uart0_pins_default>;
-+};
-+
-+/* main_uart1 is reserved for firmware usage */
-+&main_uart1 {
-+	status = "reserved";
-+};
-+
-+&main_uart2 {
-+	status = "disabled";
-+};
-+
-+&main_uart3 {
-+	status = "disabled";
-+};
-+
-+&main_uart4 {
-+	status = "disabled";
-+};
-+
-+&main_uart5 {
-+	status = "disabled";
-+};
-+
-+&main_uart6 {
-+	status = "disabled";
-+};
-+
-+&mcu_uart0 {
-+	status = "disabled";
-+};
-+
-+&mcu_uart1 {
-+	status = "disabled";
-+};
-+
-+&main_i2c1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&main_i2c1_pins_default>;
-+	clock-frequency = <400000>;
-+
-+	exp1: gpio@22 {
-+		compatible = "ti,tca6424";
-+		reg = <0x22>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+		gpio-line-names = "GPIO_eMMC_RSTn", "CAN_MUX_SEL",
-+				  "GPIO_CPSW1_RST", "GPIO_RGMII1_RST",
-+				  "GPIO_RGMII2_RST", "GPIO_PCIe_RST_OUT",
-+				  "MMC1_SD_EN", "FSI_FET_SEL",
-+				  "MCAN0_STB_3V3", "MCAN1_STB_3V3",
-+				  "CPSW_FET_SEL", "CPSW_FET2_SEL",
-+				  "PRG1_RGMII2_FET_SEL", "TEST_GPIO2",
-+				  "GPIO_OLED_RESETn", "VPP_LDO_EN",
-+				  "TEST_LED1", "TP92", "TP90", "TP88",
-+				  "TP87", "TP86", "TP89", "TP91";
-+	};
-+
-+	/* osd9616p0899-10 */
-+	display@3c {
-+		compatible = "solomon,ssd1306fb-i2c";
-+		reg = <0x3c>;
-+		reset-gpios = <&exp1 14 GPIO_ACTIVE_LOW>;
-+		vbat-supply = <&vddb>;
-+		solomon,height = <16>;
-+		solomon,width = <96>;
-+		solomon,com-seq;
-+		solomon,com-invdir;
-+		solomon,page-offset = <0>;
-+		solomon,prechargep1 = <2>;
-+		solomon,prechargep2 = <13>;
-+	};
-+};
-+
-+&mcu_i2c0 {
-+	status = "disabled";
-+};
-+
-+&mcu_i2c1 {
-+	status = "disabled";
-+};
-+
-+&mcu_spi0 {
-+	status = "disabled";
-+};
-+
-+&mcu_spi1 {
-+	status = "disabled";
-+};
-+
-+&sdhci0 {
-+	/* emmc */
-+	bus-width = <8>;
-+	non-removable;
-+	ti,driver-strength-ohm = <50>;
-+	disable-wp;
-+};
-+
-+&sdhci1 {
-+	/* SD/MMC */
-+	vmmc-supply = <&vdd_mmc1>;
-+	pinctrl-names = "default";
-+	bus-width = <4>;
-+	pinctrl-0 = <&main_mmc1_pins_default>;
-+	ti,driver-strength-ohm = <50>;
-+	disable-wp;
-+};
-+
-+&usbss0 {
-+	ti,vbus-divider;
-+	ti,usb2-only;
-+};
-+
-+&usb0 {
-+	dr_mode = "otg";
-+	maximum-speed = "high-speed";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&main_usb0_pins_default>;
-+};
-+
-+&cpsw3g {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&mdio1_pins_default
-+		     &rgmii1_pins_default
-+		     &rgmii2_pins_default>;
-+};
-+
-+&cpsw_port1 {
-+	phy-mode = "rgmii-rxid";
-+	phy-handle = <&cpsw3g_phy0>;
-+};
-+
-+&cpsw3g_mdio {
-+	cpsw3g_phy0: ethernet-phy@0 {
-+		reg = <0>;
-+		ti,rx-internal-delay = <DP83867_RGMIIDCTL_2_00_NS>;
-+		ti,fifo-depth = <DP83867_PHYCR_FIFO_DEPTH_4_B_NIB>;
-+	};
-+};
-+
-+&ospi0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&ospi0_pins_default>;
-+
-+	flash@0{
-+		compatible = "jedec,spi-nor";
-+		reg = <0x0>;
-+		spi-tx-bus-width = <8>;
-+		spi-rx-bus-width = <8>;
-+		spi-max-frequency = <25000000>;
-+		cdns,tshsl-ns = <60>;
-+		cdns,tsd2d-ns = <60>;
-+		cdns,tchsh-ns = <60>;
-+		cdns,tslch-ns = <60>;
-+		cdns,read-delay = <4>;
-+		cdns,phy-mode;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		partition@3fc0000 {
-+			label = "ospi.phypattern";
-+			reg = <0x3fc0000 0x40000>;
-+		};
-+	};
-+};
-diff --git a/arch/arm/dts/am64x-solidrun-r5.dts b/arch/arm/dts/am64x-solidrun-r5.dts
-new file mode 100644
-index 0000000000..7246fb1f8d
---- /dev/null
-+++ b/arch/arm/dts/am64x-solidrun-r5.dts
-@@ -0,0 +1,267 @@
-+// SPDX-License-Identifier: GPL-2.0
-+/*
-+ * Copyright (C) 2020 Texas Instruments Incorporated - https://www.ti.com/
-+ */
-+
-+/dts-v1/;
-+
-+#include "k3-am642.dtsi"
-+#include "am64-ddr-solidrun.dtsi"
-+#include "k3-am64-ddr.dtsi"
-+
-+/ {
-+	chosen {
-+		stdout-path = "serial2:115200n8";
-+		tick-timer = &timer1;
-+	};
-+
-+	aliases {
-+		remoteproc0 = &sysctrler;
-+		remoteproc1 = &a53_0;
-+	};
-+
-+	memory@80000000 {
-+		device_type = "memory";
-+		/* 1G RAM */
-+		reg = <0x00000000 0x40000000 0x00000000 0x40000000>;
-+
-+	};
-+
-+	a53_0: a53@0 {
-+		compatible = "ti,am654-rproc";
-+		reg = <0x00 0x00a90000 0x00 0x10>;
-+		power-domains = <&k3_pds 61 TI_SCI_PD_EXCLUSIVE>,
-+				<&k3_pds 135 TI_SCI_PD_EXCLUSIVE>;
-+		resets = <&k3_reset 135 0>;
-+		clocks = <&k3_clks 61 0>;
-+		assigned-clocks = <&k3_clks 61 0>, <&k3_clks 135 0>;
-+		assigned-clock-parents = <&k3_clks 61 2>;
-+		assigned-clock-rates = <200000000>, <1000000000>;
-+		ti,sci = <&dmsc>;
-+		ti,sci-proc-id = <32>;
-+		ti,sci-host-id = <10>;
-+		u-boot,dm-spl;
-+	};
-+
-+	reserved-memory {
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		ranges;
-+
-+		secure_ddr: optee@9e800000 {
-+			reg = <0x00 0x9e800000 0x00 0x01800000>; /* for OP-TEE */
-+			alignment = <0x1000>;
-+			no-map;
-+		};
-+	};
-+
-+	clk_200mhz: dummy-clock-200mhz {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <200000000>;
-+		u-boot,dm-spl;
-+	};
-+
-+	vtt_supply: vtt-supply {
-+		compatible = "regulator-gpio";
-+		regulator-name = "vtt";
-+		regulator-min-microvolt = <0>;
-+		regulator-max-microvolt = <3300000>;
-+		gpios = <&main_gpio0 12 GPIO_ACTIVE_HIGH>;
-+		states = <0 0x0 3300000 0x1>;
-+		u-boot,dm-spl;
-+	};
-+};
-+
-+&cbass_main {
-+	sysctrler: sysctrler {
-+		compatible = "ti,am654-system-controller";
-+		mboxes= <&secure_proxy_main 1>, <&secure_proxy_main 0>;
-+		mbox-names = "tx", "rx";
-+		u-boot,dm-spl;
-+	};
-+};
-+
-+&main_pmx0 {
-+	u-boot,dm-spl;
-+	main_uart0_pins_default: main-uart0-pins-default {
-+		u-boot,dm-spl;
-+		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x0238, PIN_INPUT, 0)		/* (B16) UART0_CTSn */
-+			AM64X_IOPAD(0x023c, PIN_OUTPUT, 0)		/* (A16) UART0_RTSn */
-+			AM64X_IOPAD(0x0230, PIN_INPUT, 0)		/* (D15) UART0_RXD */
-+			AM64X_IOPAD(0x0234, PIN_OUTPUT, 0)		/* (C16) UART0_TXD */
-+		>;
-+	};
-+
-+	main_uart1_pins_default: main-uart1-pins-default {
-+		u-boot,dm-spl;
-+		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x0248, PIN_INPUT, 0)		/* (D16) UART1_CTSn */
-+			AM64X_IOPAD(0x024c, PIN_OUTPUT, 0) 		/* (E16) UART1_RTSn */
-+			AM64X_IOPAD(0x0240, PIN_INPUT, 0) 		/* (E15) UART1_RXD */
-+			AM64X_IOPAD(0x0244, PIN_OUTPUT, 0)		/* (E14) UART1_TXD */
-+		>;
-+	};
-+
-+	main_mmc0_pins_default: main-mmc0-pins-default {
-+		u-boot,dm-spl;
-+		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x01a8, PIN_INPUT_PULLDOWN, 0)	/* (B25) MMC0_CLK */
-+			AM64X_IOPAD(0x01aC, PIN_INPUT_PULLUP, 0)	/* (B27) MMC0_CMD */
-+			AM64X_IOPAD(0x01a4, PIN_INPUT_PULLUP, 0)	/* (A26) MMC0_DAT0 */
-+			AM64X_IOPAD(0x01a0, PIN_INPUT_PULLUP, 0)	/* (E25) MMC0_DAT1 */
-+			AM64X_IOPAD(0x019c, PIN_INPUT_PULLUP, 0)	/* (C26) MMC0_DAT2 */
-+			AM64X_IOPAD(0x0198, PIN_INPUT_PULLUP, 0)	/* (A25) MMC0_DAT3 */
-+			AM64X_IOPAD(0x0194, PIN_INPUT_PULLUP, 0)	/* (E24) MMC0_DAT4 */
-+			AM64X_IOPAD(0x0190, PIN_INPUT_PULLUP, 0)	/* (A24) MMC0_DAT5 */
-+			AM64X_IOPAD(0x018c, PIN_INPUT_PULLUP, 0)	/* (B26) MMC0_DAT6 */
-+			AM64X_IOPAD(0x0188, PIN_INPUT_PULLUP, 0)	/* (D25) MMC0_DAT7 */
-+			AM64X_IOPAD(0x01b0, PIN_INPUT, 0)		/* (C25) MMC0_DS */
-+		>;
-+	};
-+
-+	main_mmc1_pins_default: main-mmc1-pins-default {
-+		u-boot,dm-spl;
-+		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x0294, PIN_INPUT_PULLUP, 0)	/* (J19) MMC1_CMD */
-+			AM64X_IOPAD(0x028c, PIN_INPUT_PULLDOWN, 0)	/* (L20) MMC1_CLK */
-+			AM64X_IOPAD(0x0288, PIN_INPUT_PULLUP, 0)	/* (K21) MMC1_DAT0 */
-+			AM64X_IOPAD(0x0284, PIN_INPUT_PULLUP, 0)	/* (L21) MMC1_DAT1 */
-+			AM64X_IOPAD(0x0280, PIN_INPUT_PULLUP, 0)	/* (K19) MMC1_DAT2 */
-+			AM64X_IOPAD(0x027c, PIN_INPUT_PULLUP, 0)	/* (K18) MMC1_DAT3 */
-+			AM64X_IOPAD(0x0298, PIN_INPUT_PULLUP, 0)	/* (D19) MMC1_SDCD */
-+			AM64X_IOPAD(0x029c, PIN_INPUT_PULLUP, 0)	/* (C20) MMC1_SDWP */
-+		>;
-+	};
-+
-+	ddr_vtt_pins_default: ddr-vtt-pins-default {
-+		u-boot,dm-spl;
-+		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x0030, PIN_OUTPUT_PULLUP, 7)	/* (L18) OSPI0_CSN1.GPIO0_12 */
-+		>;
-+	};
-+
-+	main_usb0_pins_default: main-usb0-pins-default {
-+		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x02a8, PIN_OUTPUT, 0) /* (E19) USB0_DRVVBUS */
-+		>;
-+	};
-+
-+	ospi0_pins_default: ospi0-pins-default {
-+		pinctrl-single,pins = <
-+			AM64X_IOPAD(0x0000, PIN_OUTPUT, 0) /* (N20) OSPI0_CLK */
-+			AM64X_IOPAD(0x002c, PIN_OUTPUT, 0) /* (L19) OSPI0_CSn0 */
-+			AM64X_IOPAD(0x000c, PIN_INPUT, 0) /* (M19) OSPI0_D0 */
-+			AM64X_IOPAD(0x0010, PIN_INPUT, 0) /* (M18) OSPI0_D1 */
-+			AM64X_IOPAD(0x0014, PIN_INPUT, 0) /* (M20) OSPI0_D2 */
-+			AM64X_IOPAD(0x0018, PIN_INPUT, 0) /* (M21) OSPI0_D3 */
-+			AM64X_IOPAD(0x001c, PIN_INPUT, 0) /* (P21) OSPI0_D4 */
-+			AM64X_IOPAD(0x0020, PIN_INPUT, 0) /* (P20) OSPI0_D5 */
-+			AM64X_IOPAD(0x0024, PIN_INPUT, 0) /* (N18) OSPI0_D6 */
-+			AM64X_IOPAD(0x0028, PIN_INPUT, 0) /* (M17) OSPI0_D7 */
-+			AM64X_IOPAD(0x0008, PIN_INPUT, 0) /* (N19) OSPI0_DQS */
-+		>;
-+	};
-+};
-+
-+&dmsc {
-+	mboxes= <&secure_proxy_main 0>,
-+		<&secure_proxy_main 1>,
-+		<&secure_proxy_main 0>;
-+	mbox-names = "rx", "tx", "notify";
-+	ti,host-id = <35>;
-+	ti,secure-host;
-+};
-+
-+&main_uart0 {
-+	/delete-property/ power-domains;
-+	/delete-property/ clocks;
-+	/delete-property/ clock-names;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&main_uart0_pins_default>;
 +	status = "okay";
 +};
 +
-+&main_uart1 {
-+	u-boot,dm-spl;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&main_uart1_pins_default>;
-+};
-+
-+&memorycontroller {
-+	vtt-supply = <&vtt_supply>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&ddr_vtt_pins_default>;
-+};
-+
-+&sdhci0 {
-+	/delete-property/ power-domains;
-+	clocks = <&clk_200mhz>;
-+	clock-names = "clk_xin";
-+	ti,driver-strength-ohm = <50>;
-+	disable-wp;
-+	pinctrl-0 = <&main_mmc0_pins_default>;
-+};
-+
-+&sdhci1 {
-+	/delete-property/ power-domains;
-+	clocks = <&clk_200mhz>;
-+	clock-names = "clk_xin";
-+	ti,driver-strength-ohm = <50>;
-+	disable-wp;
-+	pinctrl-0 = <&main_mmc1_pins_default>;
-+};
-+
-+&main_gpio0 {
-+	u-boot,dm-spl;
-+	/delete-property/ power-domains;
-+};
-+
-+&usbss0 {
-+	ti,vbus-divider;
-+	ti,usb2-only;
-+};
-+
-+&usb0 {
-+	dr_mode = "otg";
-+	maximum-speed = "high-speed";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&main_usb0_pins_default>;
-+};
-+
 +&ospi0 {
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&ospi0_pins_default>;
++	ti,pindir-d0-out-d1-in = <1>;
++	ti,spi-num-cs = <1>;
++	status = "okay";
 +
-+	reg = <0x00 0x0fc40000 0x00 0x100>,
-+	      <0x00 0x60000000 0x00 0x8000000>;
-+
-+	flash@0{
++	/* SoM: sh28hs512t */
++	flash@0 {
 +		compatible = "jedec,spi-nor";
-+		reg = <0x0>;
++		reg = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&ospi0_flash0_pins_default>;
 +		spi-tx-bus-width = <8>;
 +		spi-rx-bus-width = <8>;
-+		spi-max-frequency = <25000000>;
-+		cdns,tshsl-ns = <60>;
-+		cdns,tsd2d-ns = <60>;
-+		cdns,tchsh-ns = <60>;
-+		cdns,tslch-ns = <60>;
-+		cdns,read-delay = <4>;
-+		cdns,phy-mode;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		partition@3fc0000 {
-+			label = "ospi.phypattern";
-+			reg = <0x3fc0000 0x40000>;
-+		};
++		spi-max-frequency = <200000000>;
++		cdns,tshsl-ns = <50>;
++		cdns,tsd2d-ns = <50>;
++		cdns,tchsh-ns = <4>;
++		cdns,tslch-ns = <4>;
++		cdns,read-delay = <0>;
++		interrupt-parent = <&main_gpio0>;
++		interrupts = <14 IRQ_TYPE_EDGE_FALLING>;
++		reset-gpios = <&main_gpio0 13 GPIO_ACTIVE_LOW>;
++		status = "okay";
 +	};
 +};
 +
-+/* EEPROM might be read before SYSFW is available */
-+&main_i2c0 {
-+	/delete-property/ power-domains;
++&sdhci0 {
++	/* mmc0 pins have no padconfig */
++	bus-width = <8>;
++	ti,driver-strength-ohm = <50>;
++	disable-wp;
++	non-removable;
++	cap-mmc-hw-reset;
++	no-sd;
++	/*
++	 * MMC controller supports switching between 1.8V and 3.3V signalling.
++	 * However MMC0 (unlike MMC1) does not integrate an LDO.
++	 * Explicitly link a regulator node for indicating to the driver which
++	 * voltages are actually usable.
++	 */
++	vqmmc-supply = <&vdd_mmc0>;
++	status = "okay";
 +};
 +
-+#include "k3-am642-evm-u-boot.dtsi"
++/*
++ * microSD is on carrier - however since SoC can boot from it,
++ * configure it just in case.
++ */
++&sdhci1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_mmc1_pins_default>;
++	bus-width = <4>;
++	ti,driver-strength-ohm = <50>;
++	disable-wp;
++	status = "okay";
++};
++
++&tscadc0 {
++	status = "disabled";
++};
++
++/*
++ * USB settings are a carrier choice - however since SoC can boot from it,
++ * configure as USB-2.0 OTG here, peeing USB-3 serdes disabled.
++ */
++&usb0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&usb0_pins_default>;
++	dr_mode = "otg";
++	maximum-speed = "high-speed";
++	status = "okay";
++};
++
++&usbss0 {
++	status = "okay";
++	ti,vbus-divider;
++	ti,usb2-only;
++};
 diff --git a/arch/arm/mach-k3/Kconfig b/arch/arm/mach-k3/Kconfig
-index 9c0572597f..32d8e5eee9 100644
+index 34f1eff7d8..1cdd941157 100644
 --- a/arch/arm/mach-k3/Kconfig
 +++ b/arch/arm/mach-k3/Kconfig
-@@ -201,6 +201,7 @@ config K3_X509_SWRV
+@@ -191,6 +191,7 @@ config K3_X509_SWRV
  	help
  	  SWRV for X509 certificate used for boot images
  
-+source "board/solidrun/am64x_solidrun/Kconfig"
++source "board/solidrun/am64som/Kconfig"
  source "board/ti/am65x/Kconfig"
  source "board/ti/am64x/Kconfig"
  source "board/ti/am62x/Kconfig"
-diff --git a/board/solidrun/am64x_solidrun/Kconfig b/board/solidrun/am64x_solidrun/Kconfig
+diff --git a/board/solidrun/am64som/Kconfig b/board/solidrun/am64som/Kconfig
 new file mode 100644
-index 0000000000..2987ca005c
+index 0000000000..d0a2555fb5
 --- /dev/null
-+++ b/board/solidrun/am64x_solidrun/Kconfig
-@@ -0,0 +1,62 @@
++++ b/board/solidrun/am64som/Kconfig
+@@ -0,0 +1,45 @@
 +# SPDX-License-Identifier: GPL-2.0+
 +#
-+# Copyright (C) 2020 Texas Instruments Incorporated - https://www.ti.com/
++# Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++#
 +
 +choice
-+	prompt "K3 AM64 SolidRun based boards"
++	prompt "SolidRun AM64 based boards"
 +	optional
 +
-+config TARGET_AM642_A53_SOLIDRUN
-+	bool "SolidRun K3 based AM642 SOM running on A53"
++config TARGET_AM64_SR_SOM_A53
++	bool "SolidRun AM64 SoM running on A53"
 +	select ARM64
-+	select SOC_K3_AM642
++	select BINMAN
++	select SPL_I2C_EEPROM
++	select SPL_EEPROM_TLV_LIB
 +	imply BOARD
 +	imply SPL_BOARD
-+	imply TI_I2C_BOARD_DETECT
 +
-+config TARGET_AM642_R5_SOLIDRUN
-+	bool "Solidrun K3 based AM642 SOM running on R5"
++config TARGET_AM64_SR_SOM_R5
++	bool "SolidRun AM64 SoM running on R5"
 +	select CPU_V7R
 +	select SYS_THUMB_BUILD
 +	select K3_LOAD_SYSFW
-+	select SOC_K3_AM642
 +	select RAM
 +	select SPL_RAM
 +	select K3_DDRSS
++	select BINMAN
++	select SPL_I2C_EEPROM
++	select SPL_EEPROM_TLV_LIB
 +	imply SYS_K3_SPL_ATF
-+	imply TI_I2C_BOARD_DETECT
 +
 +endchoice
 +
-+if TARGET_AM642_A53_SOLIDRUN
++if TARGET_AM64_SR_SOM_A53 || TARGET_AM64_SR_SOM_R5
 +
 +config SYS_BOARD
-+       default "am64x_solidrun"
++	default "am64som"
 +
 +config SYS_VENDOR
-+       default "solidrun"
++	default "solidrun"
 +
 +config SYS_CONFIG_NAME
-+       default "am64x_solidrun"
-+
-+source "board/ti/common/Kconfig"
++	default "am64som"
 +
 +endif
-+
-+if TARGET_AM642_R5_SOLIDRUN
-+
-+config SYS_BOARD
-+       default "am64x_solidrun"
-+
-+config SYS_VENDOR
-+       default "solidrun"
-+
-+config SYS_CONFIG_NAME
-+       default "am64x_solidrun"
-+
-+config SPL_LDSCRIPT
-+	default "arch/arm/mach-omap2/u-boot-spl.lds"
-+
-+source "board/ti/common/Kconfig"
-+
-+endif
-diff --git a/board/solidrun/am64x_solidrun/Makefile b/board/solidrun/am64x_solidrun/Makefile
+diff --git a/board/solidrun/am64som/Makefile b/board/solidrun/am64som/Makefile
 new file mode 100644
-index 0000000000..31353f3175
+index 0000000000..4e520ddc52
 --- /dev/null
-+++ b/board/solidrun/am64x_solidrun/Makefile
-@@ -0,0 +1 @@
-+obj-y	+= am64x_solidrun.o
-diff --git a/board/solidrun/am64x_solidrun/am64x_solidrun.c b/board/solidrun/am64x_solidrun/am64x_solidrun.c
++++ b/board/solidrun/am64som/Makefile
+@@ -0,0 +1,7 @@
++# SPDX-License-Identifier: GPL-2.0+
++#
++# Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++#
++
++obj-y	+= id-eeprom.o
++obj-y	+= som.o
+diff --git a/board/solidrun/am64som/am64som.env b/board/solidrun/am64som/am64som.env
 new file mode 100644
-index 0000000000..4ba18507f7
+index 0000000000..a2d6327ce8
 --- /dev/null
-+++ b/board/solidrun/am64x_solidrun/am64x_solidrun.c
-@@ -0,0 +1,167 @@
++++ b/board/solidrun/am64som/am64som.env
+@@ -0,0 +1,54 @@
++#include <environment/ti/ti_armv7_common.env>
++#include <environment/ti/mmc.env>
++#include <environment/ti/k3_dfu_combined.env>
++
++board_m2_function=
++findfdt=
++	if test $board_name = hummingboard-t; then if test $board_m2_function = pcie; then
++		setenv name_fdt ti/k3-am642-hummingboard-t-pcie.dtb; fi; fi;
++	if test $board_name = hummingboard-t; then if test $board_m2_function = usb3; then
++		setenv name_fdt ti/k3-am642-hummingboard-t-usb3.dtb; fi; fi;
++	if test $board_name = hummingboard-t; then if test $board_m2_function = undefined; then
++		setenv name_fdt ti/k3-am642-hummingboard-t.dtb; fi; fi;
++	if test $board_name = sr-som; then
++		setenv name_fdt ti/k3-am642-sr-som.dtb; fi;
++	if test $name_fdt = undefined; then
++		echo WARNING: Could not determine device tree to use; fi;
++	setenv fdtfile ${name_fdt}
++name_kern=Image
++console=ttyS2,115200n8
++args_all=setenv optargs earlycon=ns16550a,mmio32,0x02800000 ${mtdparts}
++run_kern=booti ${loadaddr} ${rd_spec} ${fdtaddr}
++
++boot=mmc
++mmcdev=1
++bootpart=1:2
++bootdir=/boot
++rd_spec=-
++
++args_usb=run finduuid;setenv bootargs console=${console}
++	${optargs}
++	root=PARTUUID=${uuid} rw
++	rootfstype=${mmcrootfstype}
++init_usb=run args_all args_usb
++get_fdt_usb=load usb ${bootpart} ${fdtaddr} ${bootdir}/${name_fdt}
++get_overlay_usb=
++	fdt address ${fdtaddr};
++	fdt resize 0x100000;
++	for overlay in $name_overlays;
++	do;
++	load usb ${bootpart} ${dtboaddr} ${bootdir}/${overlay} && fdt apply
++	${dtboaddr};
++	done;
++get_kern_usb=load usb ${bootpart} ${loadaddr}
++	${bootdir}/${name_kern}
++get_fit_usb=load usb ${bootpart} ${addr_fit}
++	${bootdir}/${name_fit}
++usbboot=setenv boot usb;
++	setenv bootpart 0:2;
++	usb start;
++	run findfdt;
++	run init_usb;
++	run get_kern_usb;
++	run get_fdt_usb;
++	run run_kern;
+diff --git a/board/solidrun/am64som/id-eeprom.c b/board/solidrun/am64som/id-eeprom.c
+new file mode 100644
+index 0000000000..708e0cef19
+--- /dev/null
++++ b/board/solidrun/am64som/id-eeprom.c
+@@ -0,0 +1,241 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
-+ * Board specific initialization for AM642 EVM
++ * SolidRun AM64 SoM - ID EEPROM Parsing
 + *
-+ * Copyright (C) 2020 Texas Instruments Incorporated - https://www.ti.com/
-+ *	Keerthy <j-keerthy@ti.com>
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
 + *
 + */
 +
 +#include <common.h>
++#include <dm/uclass.h>
++#include <linux/err.h>
++#include <tlv_eeprom.h>
++
++#include "id-eeprom.h"
++
++// SolidRun TLV vendor extension data codes
++enum sr_tlv_code {
++	SR_TLV_CODE_KIT_NUMBER	= 0x10,
++	SR_TLV_CODE_RAM_SIZE	= 0x81,
++};
++
++static u8 som_eeprom[TLV_INFO_MAX_LEN];
++static struct tlvinfo_priv *som_tlv;
++
++static int am64som_read_eeprom(void)
++{
++	struct udevice *dev;
++	int ret;
++
++	// avoid running twice
++	if (IS_ERR(som_tlv))
++		return PTR_ERR(som_tlv);
++	else if (som_tlv)
++		return 0;
++
++	/* find som eeprom */
++	ret = uclass_get_device_by_name(UCLASS_I2C_EEPROM, "eeprom@50", &dev);
++	if (ret) {
++		printf("Warning: Couldn't find SoM EEPROM: %i\n", ret);
++		goto err;
++	}
++
++	/* read TLV data */
++	som_tlv = tlv_eeprom_read(dev, 0, som_eeprom, ARRAY_SIZE(som_eeprom));
++	if (IS_ERR(som_tlv)) {
++		ret  = PTR_ERR(som_tlv);
++		printf("Warning: Failed to read TLV Data from SoM EEPROM: %i\n", ret);
++		goto err;
++	}
++
++	return ret;
++err:
++	printf("Fall-back to generic configuration, system might not function well.\n");
++	som_tlv = ERR_PTR(ret);
++	return ret;
++}
++
++int am64som_get_sku(char *buffer, size_t size)
++{
++	const struct tlvinfo_tlv *entry;
++	int ret;
++
++	ret = am64som_read_eeprom();
++	if (ret)
++		return ret;
++
++	/* find SKU entry */
++	entry = tlv_entry_next_by_code(som_tlv, NULL, TLV_CODE_PART_NUMBER);
++	if (IS_ERR(entry)) {
++		ret  = PTR_ERR(entry);
++		printf("Warning: Failed to read SKU from SoM EEPROM: %i\n", ret);
++		return ret;
++	}
++
++	/* copy data */
++	if (entry->length >= size)
++		return -ENOBUFS;
++
++	memcpy(buffer, entry->value, entry->length);
++	buffer[entry->length] = '\0';
++
++	return entry->length;
++}
++
++int am64som_get_kit_sku(char *buffer, size_t size)
++{
++	const struct tlvinfo_tlv_ext *ext;
++	u8 length;
++	int ret;
++
++	ret = am64som_read_eeprom();
++	if (ret)
++		return ret;
++
++	/* find SolidRun vendor extensions */
++	ext = tlv_entry_ext_next_by_vendor(som_tlv, NULL, 0xFFFFFFFF);
++	while (!IS_ERR(ext)) {
++		// check for solidrun code field
++		if (ext->length < 5)
++			continue;
++
++		switch (ext->value[0]) {
++		case SR_TLV_CODE_KIT_NUMBER:
++			/* copy data */
++			length = ext->length - 5;
++			if (length >= size)
++				return -ENOBUFS;
++
++			memcpy(buffer, &ext->value[1], length);
++			buffer[length] = '\0';
++			return length;
++		}
++
++		ext = tlv_entry_ext_next_by_vendor(som_tlv, (void *)ext, 0xFFFFFFFF);
++	}
++
++	return PTR_ERR(ext);
++}
++
++enum am64som_carrier_type am64som_carrier_type(void)
++{
++	char kit_sku[24];
++	int ret;
++
++	/* find kit SKU on SoM EEPROM */
++	ret = am64som_get_kit_sku(kit_sku, ARRAY_SIZE(kit_sku));
++	if (ret < 0)
++		return UNKNOWN;
++
++	/*
++	 * identify carrier at index 18,
++	 * e.g. "SRT6442W00D01GE008P02IH".
++	 *                         ^
++	 */
++	switch(kit_sku[18])
++	{
++	case 'P':
++		return HUMMINGBOARD;
++	default:
++		return UNKNOWN;
++	}
++}
++
++int am64som_mac(char *buffer, int index)
++{
++	struct tlvinfo_tlv *entry;
++	u16 macsize;
++	u8 macbase[6];
++	int i, ret;
++
++	ret = am64som_read_eeprom();
++	if (ret)
++		return ret;
++
++	/* find mac size entry */
++	entry = tlv_entry_next_by_code(som_tlv, NULL, TLV_CODE_MAC_SIZE);
++	if (IS_ERR(entry)) {
++		ret  = PTR_ERR(entry);
++		printf("Warning: Failed to read mac size from SoM EEPROM: %i\n", ret);
++		return ret;
++	}
++
++	/* extract u16 value */
++	ret = tlv_entry_get_uint16(entry, &macsize);
++	if (ret) {
++		printf("Warning: Failed to read mac size from SoM EEPROM: %i\n", ret);
++		return ret;
++	}
++
++	/* find mac base entry */
++	entry = tlv_entry_next_by_code(som_tlv, NULL, TLV_CODE_MAC_BASE);
++	if (IS_ERR(entry)) {
++		ret  = PTR_ERR(entry);
++		printf("Warning: Failed to read mac base from SoM EEPROM: %i\n", ret);
++		return ret;
++	}
++
++	/* extract mac base */
++	ret = tlv_entry_get_raw(entry, macbase, ARRAY_SIZE(macbase));
++	if (ret) {
++		printf("Warning: Failed to read mac base from SoM EEPROM: %i\n", ret);
++		return ret;
++	}
++
++	/* check if mac is available */
++	if (index >= macsize)
++		return -ENOENT;
++
++	/* calculate index mac */
++	for (i = 0; i < index; i++) {
++		macbase[5]++;
++		if (macbase[5] == 0) {
++			macbase[4]++;
++			if (macbase[4] == 0) {
++				macbase[3]++;
++				if (macbase[3] == 0) {
++					macbase[2]++;
++					if (macbase[2] == 0) {
++						macbase[1]++;
++						if (macbase[1] == 0) {
++							macbase[0]++;
++						}
++					}
++				}
++			}
++		}
++	}
++
++	/* copy mac */
++	memcpy(buffer, macbase, ARRAY_SIZE(macbase));
++
++	return 0;
++}
++
++phys_size_t am64som_ram_size(void)
++{
++	char som_sku[24];
++	int ret;
++
++	/* find SKU on SoM EEPROM */
++	ret = am64som_get_sku(som_sku, ARRAY_SIZE(som_sku));
++	if (ret < 0) {
++		/* fall-back to smallest known configuration */
++		return SZ_1G;
++	}
++
++	/*
++	 * identify size at index 12,
++	 * e.g. "SRT6442W00D01GE008V11I0".
++	 *                   ^
++	 */
++	switch (som_sku[12])
++	{
++	default:
++		printf("Warning: Unsupported memory size \'%c\' configured, "
++		       "fall-back to 1GB", som_sku[12]);
++		fallthrough;
++	case '1':
++		return SZ_1G;
++	}
++}
+diff --git a/board/solidrun/am64som/id-eeprom.h b/board/solidrun/am64som/id-eeprom.h
+new file mode 100644
+index 0000000000..17c50c46ae
+--- /dev/null
++++ b/board/solidrun/am64som/id-eeprom.h
+@@ -0,0 +1,16 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * SolidRun AM64 SoM - ID EEPROM Parsing
++ *
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ */
++
++enum am64som_carrier_type {
++	HUMMINGBOARD = 0,
++	UNKNOWN
++};
++
++enum am64som_carrier_type am64som_carrier_type(void);
++int am64som_mac(char *buffer, int index);
++phys_size_t am64som_ram_size(void);
+diff --git a/board/solidrun/am64som/som.c b/board/solidrun/am64som/som.c
+new file mode 100644
+index 0000000000..fac5c7f555
+--- /dev/null
++++ b/board/solidrun/am64som/som.c
+@@ -0,0 +1,352 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * SolidRun AM64 SoM initialization
++ *
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ */
++
 +#include <asm/io.h>
++#include <common.h>
++#include <dm/device.h>
++#include <dm/uclass.h>
 +#include <env.h>
++#include <env_internal.h>
++#include <k3-ddrss.h>
 +#include <spl.h>
-+#include <asm/arch/hardware.h>
-+#include <asm/arch/sys_proto.h>
 +
-+
-+#include "../common/ti_board_detect.h"
-+
-+#define board_is_am64x_gpevm()	board_ti_k3_is("AM64-GPEVM")
-+#define board_is_am64x_skevm()	board_ti_k3_is("AM64-SKEVM")
++#include "id-eeprom.h"
 +
 +DECLARE_GLOBAL_DATA_PTR;
 +
@@ -3010,710 +4612,442 @@ index 0000000000..4ba18507f7
 +
 +int dram_init(void)
 +{
-+	gd->ram_size = 0x40000000;
++	s32 ret;
++
++	/* setup first bank maximum size, according to device-tree */
++	ret = fdtdec_setup_mem_size_base();
++	if (ret) {
++		printf("Error setting up mem size and base. %d\n", ret);
++		return ret;
++	}
++
++	/*
++	 * TODO: clamp at actual size based on EEPROM e.g.
++	 *
++	 * Note: reading eeprom here locks up the device at "DRAM: " :(
++	 */
++
 +	return 0;
 +}
 +
 +int dram_init_banksize(void)
 +{
-+	/* Bank 0 declares the memory available in the DDR low region */
-+	gd->bd->bi_dram[0].start = CONFIG_SYS_SDRAM_BASE;
-+	gd->bd->bi_dram[0].size = 0x40000000;
-+	gd->ram_size = 0x40000000;
++	s32 ret;
++
++	/* setup all banks maximum sizes, according to device-tree */
++	ret = fdtdec_setup_memory_banksize();
++	if (ret) {
++		printf("Error setting up memory banksize. %d\n", ret);
++		return ret;
++	}
++
++	/*
++	 * TODO: clamp at actual size based on EEPROM e.g.
++	 *
++	 * Note: reading eeprom here locks up the device at "DRAM: " :(
++	 */
++	// am64som_ram_size();
 +
 +	return 0;
 +}
-+#ifdef CONFIG_SPL_LOAD_FIT
++
++/* partition 2 registers (8000h to 9FFFh) write lock */
++#define CTRLMMR_LOCK2_KICK0		0x43009008
++#define CTRLMMR_LOCK2_KICK0_UNLOCKED	BIT(0)
++#define CTRLMMR_LOCK2_KICK0_KEY_MASK	GENMASK(31,1)
++#define CTRLMMR_LOCK2_KICK0_KEY		0x68EF3490
++#define CTRLMMR_LOCK2_KICK0_LOCK	0xFFFFFFFF
++#define CTRLMMR_LOCK2_KICK1		0x4300900C
++#define CTRLMMR_LOCK2_KICK1_KEY_MASK	0xFFFFFFFF
++#define CTRLMMR_LOCK2_KICK1_KEY		0xD172BC5A
++#define CTRLMMR_LOCK2_KICK1_LOCK	0xFFFFFFFF
++
++/* query the write lock on partition 2 registers (8000h to 9FFFh) */
++static int am64_get_p2_regs_lock(void)
++{
++	u32 val = 0;
++
++	val = readl(CTRLMMR_LOCK2_KICK0);
++	if (val < 0)
++		return val;
++
++	return val & CTRLMMR_LOCK2_KICK0_UNLOCKED;
++}
++
++/* apply the write lock on partition 2 registers (8000h to 9FFFh) */
++static int am64_set_p2_regs_locked(void)
++{
++	int ret;
++
++	/* return when already locked */
++	ret = am64_get_p2_regs_lock();
++	if (ret < 0)
++		return ret;
++	else if (ret)
++		return 0;
++
++	/* write 1's to lock */
++	writel(CTRLMMR_LOCK2_KICK0_LOCK, CTRLMMR_LOCK2_KICK0);
++	writel(CTRLMMR_LOCK2_KICK1_LOCK, CTRLMMR_LOCK2_KICK1);
++
++	/* validate lock */
++	ret = am64_get_p2_regs_lock();
++	if (!ret)
++		return -EPERM;
++	else
++		return ret;
++}
++
++/* release the write lock on partition 2 registers (8000h to 9FFFh) */
++static int am64_set_p2_regs_unlocked(void)
++{
++	int ret;
++
++	/* return when already unlocked */
++	ret = am64_get_p2_regs_lock();
++	if (ret < 0)
++		return ret;
++	else if (!ret)
++		return 0;
++
++	/* write key to unlock */
++	writel(CTRLMMR_LOCK2_KICK0_KEY, CTRLMMR_LOCK2_KICK0);
++	writel(CTRLMMR_LOCK2_KICK1_KEY, CTRLMMR_LOCK2_KICK1);
++
++	/* validate unlock */
++	ret = am64_get_p2_regs_lock();
++	if (ret < 0 || !ret)
++		return ret;
++	else
++		return -EPERM;
++}
++
++#define CTRLMMR_CLKOUT_CTRL		0x43008010
++/* CLK_SEL: 0=50MHz, 1=25MHz */
++#define CTRLMMR_CLKOUT_CTRL_CLK_SEL	BIT(0)
++#define CTRLMMR_CLKOUT_CTRL_CLK_EN	BIT(4)
++
++static int set_am64_clkout0(int is25mhz)
++{
++	u32 val = 0;
++
++	/* release the write lock on partition 2 registers (8000h to 9FFFh) */
++	am64_set_p2_regs_unlocked();
++
++	/* configure clkout control register */
++	val = readl(CTRLMMR_CLKOUT_CTRL);
++	val |= CTRLMMR_CLKOUT_CTRL_CLK_EN;
++	if (is25mhz)
++		val |= CTRLMMR_CLKOUT_CTRL_CLK_SEL;
++	else
++		val &= ~CTRLMMR_CLKOUT_CTRL_CLK_SEL;
++	writel(val, CTRLMMR_CLKOUT_CTRL);
++
++	return 0;
++}
++
++#ifdef CONFIG_BOARD_LATE_INIT
++/*
++ * HACK: set MAC addresses for interfaces without uboot driver
++ * in environment so that they can be passed on to Linux.
++ */
++static void fixup_macs_eth1_eth2() {
++	char mac[6];
++	int ret;
++
++	ret = am64som_mac(mac, 1);
++	if (!ret)
++		eth_env_set_enetaddr("eth1addr", mac);
++
++	ret = am64som_mac(mac, 2);
++	if (!ret)
++		eth_env_set_enetaddr("eth2addr", mac);
++}
++
++int board_late_init(void)
++{
++	/* enable 25MHz reference clkout for ethernet phys */
++	set_am64_clkout0(1);
++
++#ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
++	switch (am64som_carrier_type())
++	{
++	case HUMMINGBOARD:
++		env_set("board_name", "hummingboard-t");
++		break;
++	case UNKNOWN:
++		fallthrough;
++	default:
++		env_set("board_name", "sr-som");
++	}
++
++	/* Note: currently there is just one SoM */
++	env_set("som_name", "k3-am642");
++#endif
++
++	/* HACK: set MAC addresses for interfaces without uboot driver */
++	fixup_macs_eth1_eth2();
++
++	return 0;
++}
++#endif
++
++#define CTRLMMR_USB0_PHY_CTRL			0x43004008
++#define CTRLMMR_USB0_PHY_CTRL_CORE_VOLTAGE	(1 << 31)
++
++/*
++ * Configure USB PHY Voltage:
++ * Bit 31 = 1: 0.80V
++ * Bit 31 = 0: 0.85V
++ */
++static void usbphy_set_voltage(int is080v) {
++	u32 val;
++	val = readl(CTRLMMR_USB0_PHY_CTRL);
++	if (is080v)
++		val &= CTRLMMR_USB0_PHY_CTRL_CORE_VOLTAGE;
++	else
++		val &= ~CTRLMMR_USB0_PHY_CTRL_CORE_VOLTAGE;
++	writel(val, CTRLMMR_USB0_PHY_CTRL);
++}
++
++#ifdef CONFIG_SPL_BOARD_INIT
++void spl_board_init(void)
++{
++	/* Set USB PHY voltage 0.85V (0.6V * (R124 + R127) / R127) */
++	usbphy_set_voltage(0);
++
++	/* Init DRAM size for R5/A53 SPL */
++	dram_init_banksize();
++}
++#endif
++
++#if defined(CONFIG_SPL_LOAD_FIT)
 +int board_fit_config_name_match(const char *name)
 +{
-+	bool eeprom_read = board_ti_was_eeprom_read();
-+
-+	if (!eeprom_read || board_is_am64x_gpevm()) {
-+		if (!strcmp(name, "k3-am642-r5-evm") || !strcmp(name, "k3-am642-evm"))
-+			return 0;
-+	} else if (board_is_am64x_skevm()) {
-+		if (!strcmp(name, "k3-am642-r5-sk") || !strcmp(name, "k3-am642-sk"))
-+			return 0;
-+	}
++	/*
++	 * TODO: detect board from eeprom here
++	 * currently dram_init locks up later, if eeprom is read here ... ... :(
++	 *
++	 * switch (am64som_carrier_type())
++	 * {
++	 * case HUMMINGBOARD:
++	 * 	if (!strcmp(name, "k3-am642-r5-hummingboard-t") || !strcmp(name, "k3-am642-hummingboard-t"))
++	 * 		return 0;
++	 * 	break;
++	 * case UNKNOWN:
++	 * 	fallthrough;
++	 * default:
++	 * 	if (!strcmp(name, "k3-am642-r5-sr-som") || !strcmp(name, "k3-am642-sr-som"))
++	 * 		return 0;
++	 * }
++	 */
++	if (!strcmp(name, "k3-am642-r5-sr-som") || !strcmp(name, "k3-am642-sr-som"))
++		return 0;
 +
 +	return -1;
 +}
 +#endif
 +
-+#ifdef CONFIG_TI_I2C_BOARD_DETECT
-+int do_board_detect(void)
++#if defined(CONFIG_SPL_BUILD)
++#if defined(CONFIG_K3_AM64_DDRSS)
++static void fixup_ddr_driver_for_ecc(struct spl_image_info *spl_image)
 +{
++	struct udevice *dev;
 +	int ret;
 +
-+	ret = ti_i2c_eeprom_am6_get_base(CONFIG_EEPROM_BUS_ADDRESS,
-+					 CONFIG_EEPROM_CHIP_ADDRESS);
-+	if (ret) {
-+		printf("EEPROM not available at %d, trying to read at %d\n",
-+			CONFIG_EEPROM_CHIP_ADDRESS, CONFIG_EEPROM_CHIP_ADDRESS + 1);
-+		ret = ti_i2c_eeprom_am6_get_base(CONFIG_EEPROM_BUS_ADDRESS,
-+						 CONFIG_EEPROM_CHIP_ADDRESS + 1);
-+		if (ret)
-+			pr_err("Reading on-board EEPROM at 0x%02x failed %d\n",
-+			       CONFIG_EEPROM_CHIP_ADDRESS + 1, ret);
++	dram_init_banksize();
++
++	ret = uclass_get_device(UCLASS_RAM, 0, &dev);
++	if (ret)
++		panic("Cannot get RAM device for ddr size fixup: %d\n", ret);
++
++	ret = k3_ddrss_ddr_fdt_fixup(dev, spl_image->fdt_addr, gd->bd);
++	if (ret)
++		printf("Error fixing up ddr node for ECC use! %d\n", ret);
++}
++#endif
++
++void spl_perform_fixups(struct spl_image_info *spl_image)
++{
++#if defined(CONFIG_K3_AM64_DDRSS)
++	/* Note: ECC must still be enabled via ti,ecc-enable device-tree property */
++	fixup_ddr_driver_for_ecc(spl_image);
++#endif
++}
++#endif
++
++/*
++ * select environment driver by boot source:
++ * - eMMC: raw sector
++ * -   SD: fat partition
++ */
++enum env_location env_get_location(enum env_operation op, int prio)
++{
++	u32 bootdevice = spl_boot_device();
++
++	/* only support prio 0 (one location) */
++	if (prio > 0)
++		return ENVL_UNKNOWN;
++
++	switch(bootdevice) {
++#ifdef CONFIG_ENV_IS_IN_MMC
++		case BOOT_DEVICE_EMMC:
++			/* eMMC (sdhci0): raw sector */
++			return ENVL_MMC;
++#endif
++#ifdef CONFIG_ENV_IS_IN_FAT
++		case BOOT_DEVICE_MMC2:
++			/* SD (sdhci1): data partition */
++			return ENVL_FAT;
++#endif
 +	}
 +
-+	return ret;
++	printf("warning: boot device 0x%x does not (yet) support environment storage\n", bootdevice);
++	return ENVL_NOWHERE;
 +}
 +
-+int checkboard(void)
-+{
-+	struct ti_am6_eeprom *ep = TI_AM6_EEPROM_DATA;
-+
-+	if (!do_board_detect())
-+		printf("Board: %s rev %s\n", ep->name, ep->version);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_BOARD_LATE_INIT
-+static void setup_board_eeprom_env(void)
-+{
-+	char *name = "am64x_gpevm";
-+
-+	if (do_board_detect())
-+		goto invalid_eeprom;
-+
-+	if (board_is_am64x_gpevm())
-+		name = "am64x_gpevm";
-+	else if (board_is_am64x_skevm())
-+		name = "am64x_skevm";
-+	else
-+		printf("Unidentified board claims %s in eeprom header\n",
-+		       board_ti_get_name());
-+
-+invalid_eeprom:
-+	set_board_info_env_am6(name);
-+}
-+
-+static void setup_serial(void)
-+{
-+	struct ti_am6_eeprom *ep = TI_AM6_EEPROM_DATA;
-+	unsigned long board_serial;
-+	char *endp;
-+	char serial_string[17] = { 0 };
-+
-+	if (env_get("serial#"))
-+		return;
-+
-+	board_serial = simple_strtoul(ep->serial, &endp, 16);
-+	if (*endp != '\0') {
-+		pr_err("Error: Can't set serial# to %s\n", ep->serial);
-+		return;
++/*
++ * Select environment storage mmc device by boot source
++ * - eMMC: sdhci0
++ * -   SD: sdhci1
++ */
++int mmc_get_env_dev(void) {
++	u32 bootdevice = spl_boot_device();
++	switch(bootdevice) {
++#ifdef CONFIG_ENV_IS_IN_MMC
++		case BOOT_DEVICE_EMMC:
++			/* eMMC (sdhci0): raw sector */
++			return 0;
++#endif
++#ifdef CONFIG_ENV_IS_IN_FAT
++		case BOOT_DEVICE_MMC2:
++			/* SD (sdhci1): data partition */
++			return 1;
++#endif
 +	}
 +
-+	snprintf(serial_string, sizeof(serial_string), "%016lx", board_serial);
-+	env_set("serial#", serial_string);
++	return -ENODEV;
 +}
-+#endif
-+#endif
 +
-+#ifdef CONFIG_BOARD_LATE_INIT
-+int board_late_init(void)
-+{
-+	if (IS_ENABLED(CONFIG_TI_I2C_BOARD_DETECT)) {
-+		struct ti_am6_eeprom *ep = TI_AM6_EEPROM_DATA;
++int board_get_mac_address(struct udevice *dev, char *mac) {
++	/* match interfaces by name */
++	if (strcmp("ethernet@8000000port@1", dev->name) == 0)
++		return am64som_mac(mac, 0);
 +
-+		setup_board_eeprom_env();
-+		setup_serial();
-+		/*
-+		 * The first MAC address for ethernet a.k.a. ethernet0 comes from
-+		 * efuse populated via the am654 gigabit eth switch subsystem driver.
-+		 * All the other ones are populated via EEPROM, hence continue with
-+		 * an index of 1.
-+		 */
-+		board_ti_am6_set_ethaddr(1, ep->mac_addr_cnt);
-+	}
-+
-+	return 0;
++	return -ENOENT;
 +}
-+#endif
-+
-+#define CTRLMMR_USB0_PHY_CTRL	0x43004008
-+#define CORE_VOLTAGE		0x80000000
-+
-+#ifdef CONFIG_SPL_BOARD_INIT
-+void spl_board_init(void)
-+{
-+	u32 val;
-+	/* Set USB PHY core voltage to 0.85V */
-+	val = readl(CTRLMMR_USB0_PHY_CTRL);
-+	val &= ~(CORE_VOLTAGE);
-+	writel(val, CTRLMMR_USB0_PHY_CTRL);
-+}
-+#endif
-diff --git a/board/solidrun/common/ti_board_detect.h b/board/solidrun/common/ti_board_detect.h
+diff --git a/configs/am64som_a53_defconfig b/configs/am64som_a53_defconfig
 new file mode 100644
-index 0000000000..de7cb52dfc
+index 0000000000..3df1143580
 --- /dev/null
-+++ b/board/solidrun/common/ti_board_detect.h
-@@ -0,0 +1,471 @@
-+/* SPDX-License-Identifier: GPL-2.0+ */
-+/*
-+ * Library to support early TI EVM EEPROM handling
-+ *
-+ * Copyright (C) 2015-2016 Texas Instruments Incorporated - http://www.ti.com
-+ */
-+
-+#ifndef __BOARD_DETECT_H
-+#define __BOARD_DETECT_H
-+
-+/* TI EEPROM MAGIC Header identifier */
-+#include <linux/bitops.h>
-+#define TI_EEPROM_HEADER_MAGIC	0xEE3355AA
-+#define TI_DEAD_EEPROM_MAGIC	0xADEAD12C
-+
-+#define TI_EEPROM_HDR_NAME_LEN		8
-+#define TI_EEPROM_HDR_REV_LEN		4
-+#define TI_EEPROM_HDR_SERIAL_LEN	12
-+#define TI_EEPROM_HDR_CONFIG_LEN	32
-+#define TI_EEPROM_HDR_NO_OF_MAC_ADDR	3
-+#define TI_EEPROM_HDR_ETH_ALEN		6
-+
-+/**
-+ * struct ti_am_eeprom - This structure holds data read in from the
-+ *                     AM335x, AM437x, AM57xx TI EVM EEPROMs.
-+ * @header: This holds the magic number
-+ * @name: The name of the board
-+ * @version: Board revision
-+ * @serial: Board serial number
-+ * @config: Reserved
-+ * @mac_addr: Any MAC addresses written in the EEPROM
-+ *
-+ * The data is this structure is read from the EEPROM on the board.
-+ * It is used for board detection which is based on name. It is used
-+ * to configure specific TI boards. This allows booting of multiple
-+ * TI boards with a single MLO and u-boot.
-+ */
-+struct ti_am_eeprom {
-+	unsigned int header;
-+	char name[TI_EEPROM_HDR_NAME_LEN];
-+	char version[TI_EEPROM_HDR_REV_LEN];
-+	char serial[TI_EEPROM_HDR_SERIAL_LEN];
-+	char config[TI_EEPROM_HDR_CONFIG_LEN];
-+	char mac_addr[TI_EEPROM_HDR_NO_OF_MAC_ADDR][TI_EEPROM_HDR_ETH_ALEN];
-+} __attribute__ ((__packed__));
-+
-+/* AM6x TI EVM EEPROM Definitions */
-+#define TI_AM6_EEPROM_RECORD_BOARD_ID		0x01
-+#define TI_AM6_EEPROM_RECORD_BOARD_INFO		0x10
-+#define TI_AM6_EEPROM_RECORD_DDR_INFO		0x11
-+#define TI_AM6_EEPROM_RECORD_DDR_SPD		0x12
-+#define TI_AM6_EEPROM_RECORD_MAC_INFO		0x13
-+#define TI_AM6_EEPROM_RECORD_END_LIST		0xFE
-+
-+/*
-+ * Common header for AM6x TI EVM EEPROM records. Used to encapsulate the config
-+ * EEPROM in its entirety as well as for individual records contained within.
-+ */
-+struct ti_am6_eeprom_record_header {
-+	u8 id;
-+	u16 len;
-+} __attribute__ ((__packed__));
-+
-+/* AM6x TI EVM EEPROM board ID structure */
-+struct ti_am6_eeprom_record_board_id {
-+	u32 magic_number;
-+	struct ti_am6_eeprom_record_header header;
-+} __attribute__ ((__packed__));
-+
-+/* AM6x TI EVM EEPROM board info structure */
-+#define AM6_EEPROM_HDR_NAME_LEN			16
-+#define AM6_EEPROM_HDR_VERSION_LEN		2
-+#define AM6_EEPROM_HDR_PROC_NR_LEN		4
-+#define AM6_EEPROM_HDR_VARIANT_LEN		2
-+#define AM6_EEPROM_HDR_PCB_REV_LEN		2
-+#define AM6_EEPROM_HDR_SCH_BOM_REV_LEN		2
-+#define AM6_EEPROM_HDR_SW_REV_LEN		2
-+#define AM6_EEPROM_HDR_VID_LEN			2
-+#define AM6_EEPROM_HDR_BLD_WK_LEN		2
-+#define AM6_EEPROM_HDR_BLD_YR_LEN		2
-+#define AM6_EEPROM_HDR_4P_NR_LEN		6
-+#define AM6_EEPROM_HDR_SERIAL_LEN		4
-+
-+struct ti_am6_eeprom_record_board_info {
-+	char name[AM6_EEPROM_HDR_NAME_LEN];
-+	char version[AM6_EEPROM_HDR_VERSION_LEN];
-+	char proc_number[AM6_EEPROM_HDR_PROC_NR_LEN];
-+	char variant[AM6_EEPROM_HDR_VARIANT_LEN];
-+	char pcb_revision[AM6_EEPROM_HDR_PCB_REV_LEN];
-+	char schematic_bom_revision[AM6_EEPROM_HDR_SCH_BOM_REV_LEN];
-+	char software_revision[AM6_EEPROM_HDR_SW_REV_LEN];
-+	char vendor_id[AM6_EEPROM_HDR_VID_LEN];
-+	char build_week[AM6_EEPROM_HDR_BLD_WK_LEN];
-+	char build_year[AM6_EEPROM_HDR_BLD_YR_LEN];
-+	char board_4p_number[AM6_EEPROM_HDR_4P_NR_LEN];
-+	char serial[AM6_EEPROM_HDR_SERIAL_LEN];
-+} __attribute__ ((__packed__));
-+
-+/* Memory location to keep a copy of the AM6 board info record */
-+#define TI_AM6_EEPROM_BD_INFO_DATA ((struct ti_am6_eeprom_record_board_info *) \
-+					     TI_SRAM_SCRATCH_BOARD_EEPROM_START)
-+
-+/* AM6x TI EVM EEPROM DDR info structure */
-+#define TI_AM6_EEPROM_DDR_CTRL_INSTANCE_MASK		GENMASK(1, 0)
-+#define TI_AM6_EEPROM_DDR_CTRL_INSTANCE_SHIFT		0
-+#define TI_AM6_EEPROM_DDR_CTRL_SPD_DATA_LOC_MASK	GENMASK(3, 2)
-+#define TI_AM6_EEPROM_DDR_CTRL_SPD_DATA_LOC_NA		(0 << 2)
-+#define TI_AM6_EEPROM_DDR_CTRL_SPD_DATA_LOC_BOARDID	(2 << 2)
-+#define TI_AM6_EEPROM_DDR_CTRL_SPD_DATA_LOC_I2C51	(3 << 2)
-+#define TI_AM6_EEPROM_DDR_CTRL_MEM_TYPE_MASK		GENMASK(5, 4)
-+#define TI_AM6_EEPROM_DDR_CTRL_MEM_TYPE_DDR3		(0 << 4)
-+#define TI_AM6_EEPROM_DDR_CTRL_MEM_TYPE_DDR4		(1 << 4)
-+#define TI_AM6_EEPROM_DDR_CTRL_MEM_TYPE_LPDDR4		(2 << 4)
-+#define TI_AM6_EEPROM_DDR_CTRL_IF_DATA_WIDTH_MASK	GENMASK(7, 6)
-+#define TI_AM6_EEPROM_DDR_CTRL_IF_DATA_WIDTH_16		(0 << 6)
-+#define TI_AM6_EEPROM_DDR_CTRL_IF_DATA_WIDTH_32		(1 << 6)
-+#define TI_AM6_EEPROM_DDR_CTRL_IF_DATA_WIDTH_64		(2 << 6)
-+#define TI_AM6_EEPROM_DDR_CTRL_DEV_DATA_WIDTH_MASK	GENMASK(9, 8)
-+#define TI_AM6_EEPROM_DDR_CTRL_DEV_DATA_WIDTH_8		(0 << 8)
-+#define TI_AM6_EEPROM_DDR_CTRL_DEV_DATA_WIDTH_16	(1 << 8)
-+#define TI_AM6_EEPROM_DDR_CTRL_DEV_DATA_WIDTH_32	(2 << 8)
-+#define TI_AM6_EEPROM_DDR_CTRL_RANKS_2			BIT(10)
-+#define TI_AM6_EEPROM_DDR_CTRL_DENS_MASK		GENMASK(13, 11)
-+#define TI_AM6_EEPROM_DDR_CTRL_DENS_1GB			(0 << 11)
-+#define TI_AM6_EEPROM_DDR_CTRL_DENS_2GB			(1 << 11)
-+#define TI_AM6_EEPROM_DDR_CTRL_DENS_4GB			(2 << 11)
-+#define TI_AM6_EEPROM_DDR_CTRL_DENS_8GB			(3 << 11)
-+#define TI_AM6_EEPROM_DDR_CTRL_DENS_12GB		(4 << 11)
-+#define TI_AM6_EEPROM_DDR_CTRL_DENS_16GB		(5 << 11)
-+#define TI_AM6_EEPROM_DDR_CTRL_DENS_24GB		(6 << 11)
-+#define TI_AM6_EEPROM_DDR_CTRL_DENS_32GB		(7 << 11)
-+#define TI_AM6_EEPROM_DDR_CTRL_ECC			BIT(14)
-+
-+struct ti_am6_eeprom_record_ddr_info {
-+	u16 ddr_control;
-+} __attribute__ ((__packed__));
-+
-+/* AM6x TI EVM EEPROM DDR SPD structure */
-+#define TI_AM6_EEPROM_DDR_SPD_INSTANCE_MASK		GENMASK(1, 0)
-+#define TI_AM6_EEPROM_DDR_SPD_INSTANCE_SHIFT		0
-+#define TI_AM6_EEPROM_DDR_SPD_MEM_TYPE_MASK		GENMASK(4, 3)
-+#define TI_AM6_EEPROM_DDR_SPD_MEM_TYPE_DDR3		(0 << 3)
-+#define TI_AM6_EEPROM_DDR_SPD_MEM_TYPE_DDR4		(1 << 3)
-+#define TI_AM6_EEPROM_DDR_SPD_MEM_TYPE_LPDDR4		(2 << 3)
-+#define TI_AM6_EEPROM_DDR_SPD_DATA_LEN			512
-+
-+struct ti_am6_eeprom_record_ddr_spd {
-+	u16 spd_control;
-+	u8 data[TI_AM6_EEPROM_DDR_SPD_DATA_LEN];
-+} __attribute__ ((__packed__));
-+
-+/* AM6x TI EVM EEPROM MAC info structure */
-+#define TI_AM6_EEPROM_MAC_INFO_INSTANCE_MASK		GENMASK(2, 0)
-+#define TI_AM6_EEPROM_MAC_INFO_INSTANCE_SHIFT		0
-+#define TI_AM6_EEPROM_MAC_ADDR_COUNT_MASK		GENMASK(7, 3)
-+#define TI_AM6_EEPROM_MAC_ADDR_COUNT_SHIFT		3
-+#define TI_AM6_EEPROM_MAC_ADDR_MAX_COUNT		32
-+
-+struct ti_am6_eeprom_record_mac_info {
-+	u16 mac_control;
-+	u8 mac_addr[TI_AM6_EEPROM_MAC_ADDR_MAX_COUNT][TI_EEPROM_HDR_ETH_ALEN];
-+} __attribute__ ((__packed__));
-+
-+struct ti_am6_eeprom_record {
-+	struct ti_am6_eeprom_record_header header;
-+	union {
-+		struct ti_am6_eeprom_record_board_info board_info;
-+		struct ti_am6_eeprom_record_ddr_info ddr_info;
-+		struct ti_am6_eeprom_record_ddr_spd ddr_spd;
-+		struct ti_am6_eeprom_record_mac_info mac_info;
-+	} data;
-+} __attribute__ ((__packed__));
-+
-+/* DRA7 EEPROM MAGIC Header identifier */
-+#define DRA7_EEPROM_HEADER_MAGIC	0xAA5533EE
-+#define DRA7_EEPROM_HDR_NAME_LEN	16
-+#define DRA7_EEPROM_HDR_CONFIG_LEN	4
-+
-+/**
-+ * struct dra7_eeprom - This structure holds data read in from the DRA7 EVM
-+ *			EEPROMs.
-+ * @header: This holds the magic number
-+ * @name: The name of the board
-+ * @version_major: Board major version
-+ * @version_minor: Board minor version
-+ * @config: Board specific config options
-+ * @emif1_size: Size of DDR attached to EMIF1
-+ * @emif2_size: Size of DDR attached to EMIF2
-+ *
-+ * The data is this structure is read from the EEPROM on the board.
-+ * It is used for board detection which is based on name. It is used
-+ * to configure specific DRA7 boards. This allows booting of multiple
-+ * DRA7 boards with a single MLO and u-boot.
-+ */
-+struct dra7_eeprom {
-+	u32 header;
-+	char name[DRA7_EEPROM_HDR_NAME_LEN];
-+	u16 version_major;
-+	u16 version_minor;
-+	char config[DRA7_EEPROM_HDR_CONFIG_LEN];
-+	u32 emif1_size;
-+	u32 emif2_size;
-+} __attribute__ ((__packed__));
-+
-+/**
-+ * struct ti_common_eeprom - Null terminated, usable EEPROM contents.
-+ * header:	Magic number
-+ * @name:	NULL terminated name
-+ * @version:	NULL terminated version
-+ * @serial:	NULL terminated serial number
-+ * @config:	NULL terminated Board specific config options
-+ * @mac_addr:	MAC addresses
-+ * @emif1_size:	Size of the ddr available on emif1
-+ * @emif2_size:	Size of the ddr available on emif2
-+ */
-+struct ti_common_eeprom {
-+	u32 header;
-+	char name[TI_EEPROM_HDR_NAME_LEN + 1];
-+	char version[TI_EEPROM_HDR_REV_LEN + 1];
-+	char serial[TI_EEPROM_HDR_SERIAL_LEN + 1];
-+	char config[TI_EEPROM_HDR_CONFIG_LEN + 1];
-+	char mac_addr[TI_EEPROM_HDR_NO_OF_MAC_ADDR][TI_EEPROM_HDR_ETH_ALEN];
-+	u64 emif1_size;
-+	u64 emif2_size;
-+};
-+
-+#define TI_EEPROM_DATA ((struct ti_common_eeprom *)\
-+				TI_SRAM_SCRATCH_BOARD_EEPROM_START)
-+
-+/*
-+ * Maximum number of Ethernet MAC addresses extracted from the AM6x on-board
-+ * EEPROM during the initial probe and carried forward in SRAM.
-+ */
-+#define AM6_EEPROM_HDR_NO_OF_MAC_ADDR	8
-+
-+/**
-+ * struct ti_am6_eeprom - Null terminated, usable EEPROM contents, as extracted
-+ *	from the AM6 on-board EEPROM. Note that we only carry a subset of data
-+ *	at this time to be considerate about memory consumption.
-+ * @header:		Magic number for data validity indication
-+ * @name:		NULL terminated name
-+ * @version:		NULL terminated version
-+ * @software_revision:	NULL terminated software revision
-+ * @serial:		Board serial number
-+ * @mac_addr_cnt:	Number of MAC addresses stored in this object
-+ * @mac_addr:		MAC addresses
-+ */
-+struct ti_am6_eeprom {
-+	u32 header;
-+	char name[AM6_EEPROM_HDR_NAME_LEN + 1];
-+	char version[AM6_EEPROM_HDR_VERSION_LEN + 1];
-+	char software_revision[AM6_EEPROM_HDR_SW_REV_LEN + 1];
-+	char serial[AM6_EEPROM_HDR_SERIAL_LEN + 1];
-+	u8 mac_addr_cnt;
-+	char mac_addr[AM6_EEPROM_HDR_NO_OF_MAC_ADDR][TI_EEPROM_HDR_ETH_ALEN];
-+};
-+
-+#define TI_AM6_EEPROM_DATA ((struct ti_am6_eeprom *) \
-+				TI_SRAM_SCRATCH_BOARD_EEPROM_START)
-+
-+/**
-+ * ti_i2c_eeprom_am_get() - Consolidated eeprom data collection for AM* TI EVMs
-+ * @bus_addr:	I2C bus address
-+ * @dev_addr:	I2C slave address
-+ *
-+ * ep in SRAM is populated by the this AM generic function that consolidates
-+ * the basic initialization logic common across all AM* platforms.
-+ */
-+int ti_i2c_eeprom_am_get(int bus_addr, int dev_addr);
-+
-+/**
-+ * ti_emmc_boardid_get() - Fetch board ID information from eMMC
-+ *
-+ * ep in SRAM is populated by the this function that is currently
-+ * based on BeagleBone AI, but could be made more general across AM*
-+ * platforms.
-+ */
-+int __maybe_unused ti_emmc_boardid_get(void);
-+
-+/**
-+ * ti_i2c_eeprom_dra7_get() - Consolidated eeprom data for DRA7 TI EVMs
-+ * @bus_addr:	I2C bus address
-+ * @dev_addr:	I2C slave address
-+ */
-+int ti_i2c_eeprom_dra7_get(int bus_addr, int dev_addr);
-+
-+/**
-+ * ti_i2c_eeprom_am6_get() - Consolidated eeprom data for AM6x TI EVMs and
-+ *			     associated daughter cards, parsed into user-
-+ *			     provided data structures
-+ * @bus_addr:	I2C bus address
-+ * @dev_addr:	I2C slave address
-+ * @ep:		Pointer to structure receiving AM6-specific header data
-+ * @mac_addr:	Pointer to memory receiving parsed MAC addresses. May be
-+ *		NULL to skip MAC parsing.
-+ * @mac_addr_max_cnt: Maximum number of MAC addresses that can be stored into
-+ *		      mac_addr. May be NULL to skip MAC parsing.
-+ * @mac_addr_cnt: Pointer to a location returning how many MAC addressed got
-+ *		  actually parsed.
-+ */
-+int __maybe_unused ti_i2c_eeprom_am6_get(int bus_addr, int dev_addr,
-+					 struct ti_am6_eeprom *ep,
-+					 char **mac_addr,
-+					 u8 mac_addr_max_cnt,
-+					 u8 *mac_addr_cnt);
-+
-+/**
-+ * ti_i2c_eeprom_am6_get_base() - Consolidated eeprom data for AM6x TI EVMs
-+ * @bus_addr:	I2C bus address
-+ * @dev_addr:	I2C slave address
-+ */
-+int __maybe_unused ti_i2c_eeprom_am6_get_base(int bus_addr, int dev_addr);
-+
-+#ifdef CONFIG_TI_I2C_BOARD_DETECT
-+/**
-+ * board_ti_is() - Board detection logic for TI EVMs
-+ * @name_tag:	Tag used in eeprom for the board
-+ *
-+ * Return: false if board information does not match OR eeprom wasn't read.
-+ *	   true otherwise
-+ */
-+bool board_ti_is(char *name_tag);
-+
-+/**
-+ * board_ti_k3_is() - Board detection logic for TI K3 EVMs
-+ * @name_tag:	Tag used in eeprom for the board
-+ *
-+ * Return: false if board information does not match OR eeprom wasn't read.
-+ *	   true otherwise
-+ */
-+bool board_ti_k3_is(char *name_tag);
-+
-+/**
-+ * board_ti_rev_is() - Compare board revision for TI EVMs
-+ * @rev_tag:	Revision tag to check in eeprom
-+ * @cmp_len:	How many chars to compare?
-+ *
-+ * NOTE: revision information is often messed up (hence the str len match) :(
-+ *
-+ * Return: false if board information does not match OR eeprom wasn't read.
-+ *	   true otherwise
-+ */
-+bool board_ti_rev_is(char *rev_tag, int cmp_len);
-+
-+/**
-+ * board_ti_get_rev() - Get board revision for TI EVMs
-+ *
-+ * Return: Empty string if eeprom wasn't read.
-+ *	   Board revision otherwise
-+ */
-+char *board_ti_get_rev(void);
-+
-+/**
-+ * board_ti_get_config() - Get board config for TI EVMs
-+ *
-+ * Return: Empty string if eeprom wasn't read.
-+ *	   Board config otherwise
-+ */
-+char *board_ti_get_config(void);
-+
-+/**
-+ * board_ti_get_name() - Get board name for TI EVMs
-+ *
-+ * Return: Empty string if eeprom wasn't read.
-+ *	   Board name otherwise
-+ */
-+char *board_ti_get_name(void);
-+
-+/**
-+ * board_ti_get_eth_mac_addr() - Get Ethernet MAC address from EEPROM MAC list
-+ * @index:	0 based index within the list of MAC addresses
-+ * @mac_addr:	MAC address contained at the index is returned here
-+ *
-+ * Does not sanity check the mac_addr. Whatever is stored in EEPROM is returned.
-+ */
-+void board_ti_get_eth_mac_addr(int index, u8 mac_addr[TI_EEPROM_HDR_ETH_ALEN]);
-+
-+/**
-+ * board_ti_get_emif1_size() - Get size of the DDR on emif1 for TI EVMs
-+ *
-+ * Return: NULL if eeprom wasn't read or emif1_size is not available.
-+ */
-+u64 board_ti_get_emif1_size(void);
-+
-+/**
-+ * board_ti_get_emif2_size() - Get size of the DDR on emif2 for TI EVMs
-+ *
-+ * Return: NULL if eeprom wasn't read or emif2_size is not available.
-+ */
-+u64 board_ti_get_emif2_size(void);
-+
-+/**
-+ * set_board_info_env() - Setup commonly used board information environment vars
-+ * @name:	Name of the board
-+ *
-+ * If name is NULL, default_name is used.
-+ */
-+void set_board_info_env(char *name);
-+
-+/**
-+ * set_board_info_env_am6() - Setup commonly used board information environment
-+ *			      vars for AM6-type boards
-+ * @name:	Name of the board
-+ *
-+ * If name is NULL, default_name is used.
-+ */
-+void set_board_info_env_am6(char *name);
-+
-+/**
-+ * board_ti_set_ethaddr- Sets the ethaddr environment from EEPROM
-+ * @index: The first eth<index>addr environment variable to set
-+ *
-+ * EEPROM should be already read before calling this function.
-+ * The EEPROM contains 2 MAC addresses which define the MAC address
-+ * range (i.e. first and last MAC address).
-+ * This function sets the ethaddr environment variable for all
-+ * the available MAC addresses starting from eth<index>addr.
-+ */
-+void board_ti_set_ethaddr(int index);
-+
-+/**
-+ * board_ti_am6_set_ethaddr- Sets the ethaddr environment from EEPROM
-+ * @index: The first eth<index>addr environment variable to set
-+ * @count: The number of MAC addresses to process
-+ *
-+ * EEPROM should be already read before calling this function. The EEPROM
-+ * contains n dedicated MAC addresses. This function sets the ethaddr
-+ * environment variable for all the available MAC addresses starting
-+ * from eth<index>addr.
-+ */
-+void board_ti_am6_set_ethaddr(int index, int count);
-+
-+/**
-+ * board_ti_was_eeprom_read() - Check to see if the eeprom contents have been read
-+ *
-+ * This function is useful to determine if the eeprom has already been read and
-+ * its contents have already been loaded into memory. It utiltzes the magic
-+ * number that the header value is set to upon successful eeprom read.
-+ */
-+bool board_ti_was_eeprom_read(void);
-+
-+/**
-+ * ti_i2c_eeprom_am_set() - Setup the eeprom data with predefined values
-+ * @name:	Name of the board
-+ * @rev:	Revision of the board
-+ *
-+ * In some cases such as in RTC-only mode, we are able to skip reading eeprom
-+ * and wasting i2c based initialization time by using predefined flags for
-+ * detecting what platform we are booting on. For those platforms, provide
-+ * a handy function to pre-program information.
-+ *
-+ * NOTE: many eeprom information such as serial number, mac address etc is not
-+ * available.
-+ *
-+ * Return: 0 if all went fine, else return error.
-+ */
-+int ti_i2c_eeprom_am_set(const char *name, const char *rev);
-+#else
-+static inline bool board_ti_is(char *name_tag) { return false; };
-+static inline bool board_ti_k3_is(char *name_tag) { return false; };
-+static inline bool board_ti_rev_is(char *rev_tag, int cmp_len)
-+{ return false; };
-+static inline char *board_ti_get_rev(void) { return NULL; };
-+static inline char *board_ti_get_config(void) { return NULL; };
-+static inline char *board_ti_get_name(void) { return NULL; };
-+static inline bool board_ti_was_eeprom_read(void) { return false; };
-+static inline int ti_i2c_eeprom_am_set(const char *name, const char *rev)
-+{ return -EINVAL; };
-+#endif
-+
-+#endif	/* __BOARD_DETECT_H */
-diff --git a/configs/am64x_a53_solidrun_defconfig b/configs/am64x_a53_solidrun_defconfig
-new file mode 100644
-index 0000000000..1c9306fd9b
---- /dev/null
-+++ b/configs/am64x_a53_solidrun_defconfig
-@@ -0,0 +1,177 @@
++++ b/configs/am64som_a53_defconfig
+@@ -0,0 +1,198 @@
 +CONFIG_ARM=y
++CONFIG_SKIP_LOWLEVEL_INIT=y
 +CONFIG_ARCH_K3=y
-+CONFIG_SPL_GPIO_SUPPORT=y
++CONFIG_TI_SECURE_DEVICE=y
++CONFIG_SYS_MALLOC_F_LEN=0x8000
++CONFIG_SPL_GPIO=y
 +CONFIG_SPL_LIBCOMMON_SUPPORT=y
 +CONFIG_SPL_LIBGENERIC_SUPPORT=y
-+CONFIG_SYS_MALLOC_F_LEN=0x8000
 +CONFIG_NR_DRAM_BANKS=2
 +CONFIG_SOC_K3_AM642=y
-+CONFIG_K3_ATF_LOAD_ADDR=0x701a0000
-+CONFIG_TARGET_AM642_A53_SOLIDRUN=y
-+CONFIG_ENV_SIZE=0x20000
-+CONFIG_ENV_OFFSET=0x680000
-+CONFIG_SYS_SPI_U_BOOT_OFFS=0x280000
++CONFIG_K3_ATF_LOAD_ADDR=0x701c0000
++CONFIG_TARGET_AM64_SR_SOM_A53=y
++CONFIG_HAS_CUSTOM_SYS_INIT_SP_ADDR=y
++CONFIG_CUSTOM_SYS_INIT_SP_ADDR=0x80480000
++CONFIG_ENV_SIZE=0x80000
++CONFIG_ENV_OFFSET=0x380000
++CONFIG_DM_GPIO=y
 +CONFIG_SPL_DM_SPI=y
++CONFIG_DEFAULT_DEVICE_TREE="k3-am642-sr-som"
 +CONFIG_SPL_TEXT_BASE=0x80080000
-+CONFIG_SPL_MMC_SUPPORT=y
-+CONFIG_SPL_SERIAL_SUPPORT=y
-+CONFIG_SPL_DRIVERS_MISC_SUPPORT=y
++CONFIG_DM_RESET=y
++CONFIG_SPL_MMC=y
++CONFIG_SPL_SERIAL=y
 +CONFIG_SPL_STACK_R_ADDR=0x82000000
 +CONFIG_SPL_FS_FAT=y
 +CONFIG_SPL_LIBDISK_SUPPORT=y
 +CONFIG_SPL_SPI_FLASH_SUPPORT=y
-+CONFIG_SPL_SPI_SUPPORT=y
-+CONFIG_DEFAULT_DEVICE_TREE="am642-solidrun"
-+CONFIG_DISTRO_DEFAULTS=y
++CONFIG_SPL_SPI=y
 +# CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
 +CONFIG_SPL_LOAD_FIT=y
 +CONFIG_SPL_LOAD_FIT_ADDRESS=0x81000000
-+CONFIG_BOOTCOMMAND="run findfdt; run envboot; run init_${boot}; run get_kern_${boot}; run get_fdt_${boot}; run run_kern"
++CONFIG_DISTRO_DEFAULTS=y
++CONFIG_BOOTCOMMAND="run envboot; run distro_bootcmd;"
 +CONFIG_BOARD_LATE_INIT=y
++CONFIG_SPL_MAX_SIZE=0x180000
++CONFIG_SPL_HAS_BSS_LINKER_SECTION=y
++CONFIG_SPL_BSS_START_ADDR=0x80a00000
++CONFIG_SPL_BSS_MAX_SIZE=0x80000
++CONFIG_SPL_BOARD_INIT=y
 +CONFIG_SPL_SYS_MALLOC_SIMPLE=y
 +CONFIG_SPL_STACK_R=y
-+CONFIG_SPL_SEPARATE_BSS=y
++CONFIG_SYS_SPL_MALLOC=y
++CONFIG_SYS_SPL_MALLOC_SIZE=0x800000
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR=y
-+CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x1400
++CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0xC00
 +CONFIG_SPL_DMA=y
 +CONFIG_SPL_ENV_SUPPORT=y
-+CONFIG_SPL_I2C_SUPPORT=y
++CONFIG_SPL_ETH=y
++CONFIG_SPL_FS_LOAD_PAYLOAD_NAME="u-boot.img"
++CONFIG_SPL_I2C=y
 +CONFIG_SPL_DM_MAILBOX=y
 +CONFIG_SPL_DM_SPI_FLASH=y
++CONFIG_SPL_NET=y
++CONFIG_SPL_NET_VCI_STRING="AM64X U-Boot A53 SPL"
 +CONFIG_SPL_POWER_DOMAIN=y
 +CONFIG_SPL_RAM_SUPPORT=y
 +CONFIG_SPL_RAM_DEVICE=y
 +# CONFIG_SPL_SPI_FLASH_TINY is not set
 +CONFIG_SPL_SPI_FLASH_SFDP_SUPPORT=y
 +CONFIG_SPL_SPI_LOAD=y
++CONFIG_SYS_SPI_U_BOOT_OFFS=0x300000
 +CONFIG_SPL_THERMAL=y
-+CONFIG_SPL_USB_HOST_SUPPORT=y
++CONFIG_SPL_USB_HOST=y
 +CONFIG_SPL_USB_STORAGE=y
 +CONFIG_SPL_USB_GADGET=y
 +CONFIG_SPL_DFU=y
 +CONFIG_SPL_YMODEM_SUPPORT=y
++CONFIG_SYS_MAXARGS=64
++CONFIG_CMD_TLV_EEPROM=y
 +CONFIG_CMD_ASKENV=y
 +CONFIG_CMD_DFU=y
 +CONFIG_CMD_DM=y
++CONFIG_CMD_GPIO=y
 +CONFIG_CMD_GPT=y
 +CONFIG_CMD_I2C=y
 +CONFIG_CMD_MMC=y
-+CONFIG_CMD_MTD=y
 +CONFIG_CMD_USB=y
++CONFIG_CMD_RTC=y
 +CONFIG_CMD_TIME=y
-+CONFIG_MTDIDS_DEFAULT="nor0=fc40000.spi.0"
-+CONFIG_MTDPARTS_DEFAULT="mtdparts=fc40000.spi.0:512k(ospi.tiboot3),2m(ospi.tispl),4m(ospi.u-boot),256k(ospi.env),256k(ospi.env.backup),57088k@8m(ospi.rootfs),256k(ospi.phypattern)"
-+CONFIG_CMD_UBI=y
++CONFIG_CMD_PMIC=y
++CONFIG_CMD_REGULATOR=y
 +CONFIG_OF_CONTROL=y
 +CONFIG_SPL_OF_CONTROL=y
-+CONFIG_OF_LIST="k3-am642-evm k3-am642-sk"
++CONFIG_OF_LIST="k3-am642-sr-som k3-am642-hummingboard-t"
 +CONFIG_MULTI_DTB_FIT=y
 +CONFIG_SPL_MULTI_DTB_FIT=y
 +CONFIG_SPL_MULTI_DTB_FIT_NO_COMPRESSION=y
 +CONFIG_ENV_IS_NOWHERE=y
 +CONFIG_ENV_IS_IN_FAT=y
-+CONFIG_ENV_FAT_DEVICE_AND_PART="1:1"
++CONFIG_ENV_IS_IN_MMC=y
++CONFIG_ENV_FAT_DEVICE_AND_PART=":1"
++CONFIG_SYS_MMC_ENV_PART=1
++CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
 +CONFIG_NET_RANDOM_ETHADDR=y
-+CONFIG_DM=y
 +CONFIG_SPL_DM=y
 +CONFIG_SPL_DM_SEQ_ALIAS=y
 +CONFIG_REGMAP=y
-+CONFIG_SYSCON=y
 +CONFIG_SPL_REGMAP=y
++CONFIG_SYSCON=y
++CONFIG_SPL_SYSCON=y
 +CONFIG_SPL_OF_TRANSLATE=y
 +CONFIG_CLK=y
 +CONFIG_SPL_CLK=y
-+CONFIG_CLK_TI_SCI=y
++CONFIG_SPL_CLK_CCF=y
 +CONFIG_CLK_CCF=y
++CONFIG_CLK_TI_SCI=y
 +CONFIG_DFU_MMC=y
 +CONFIG_DFU_RAM=y
 +CONFIG_DFU_SF=y
@@ -3722,12 +5056,15 @@ index 0000000000..1c9306fd9b
 +CONFIG_DMA_CHANNELS=y
 +CONFIG_TI_K3_NAVSS_UDMA=y
 +CONFIG_TI_SCI_PROTOCOL=y
++CONFIG_DM_PCA953X=y
++CONFIG_SPL_DM_PCA953X=y
 +CONFIG_DM_I2C=y
++CONFIG_I2C_SET_DEFAULT_BUS_NUM=y
++CONFIG_DM_I2C_GPIO=y
 +CONFIG_SYS_I2C_OMAP24XX=y
-+CONFIG_DM_GPIO=y
 +CONFIG_DM_MAILBOX=y
 +CONFIG_K3_SEC_PROXY=y
-+CONFIG_DM_MMC=y
++CONFIG_I2C_EEPROM=y
 +CONFIG_SUPPORT_EMMC_BOOT=y
 +CONFIG_MMC_HS400_SUPPORT=y
 +CONFIG_SPL_MMC_HS400_SUPPORT=y
@@ -3735,42 +5072,40 @@ index 0000000000..1c9306fd9b
 +CONFIG_MMC_SDHCI_ADMA=y
 +CONFIG_SPL_MMC_SDHCI_ADMA=y
 +CONFIG_MMC_SDHCI_AM654=y
-+CONFIG_MTD=y
-+CONFIG_DM_MTD=y
 +CONFIG_DM_SPI_FLASH=y
 +CONFIG_SF_DEFAULT_MODE=0
++CONFIG_SF_DEFAULT_SPEED=25000000
 +CONFIG_SPI_FLASH_SFDP_SUPPORT=y
 +CONFIG_SPI_FLASH_SOFT_RESET=y
 +CONFIG_SPI_FLASH_SOFT_RESET_ON_BOOT=y
 +CONFIG_SPI_FLASH_SPANSION=y
-+CONFIG_SPI_FLASH_S28HS512T=y
++CONFIG_SPI_FLASH_S28HX_T=y
 +CONFIG_SPI_FLASH_STMICRO=y
 +CONFIG_SPI_FLASH_MT35XU=y
 +# CONFIG_SPI_FLASH_USE_4K_SECTORS is not set
-+CONFIG_SPI_FLASH_MTD=y
 +CONFIG_MULTIPLEXER=y
 +CONFIG_MUX_MMIO=y
 +CONFIG_PHY_TI_DP83867=y
 +CONFIG_PHY_FIXED=y
-+CONFIG_DM_ETH=y
 +CONFIG_TI_AM65_CPSW_NUSS=y
 +CONFIG_PHY=y
 +CONFIG_SPL_PHY=y
-+CONFIG_PHY_CADENCE_SIERRA=y
-+CONFIG_SPL_PHY_CADENCE_SIERRA=y
 +CONFIG_PHY_CADENCE_TORRENT=y
-+CONFIG_SPL_PHY_CADENCE_TORRENT=y
 +CONFIG_PHY_J721E_WIZ=y
-+CONFIG_SPL_PHY_J721E_WIZ=y
 +CONFIG_PINCTRL=y
 +CONFIG_SPL_PINCTRL=y
 +CONFIG_PINCTRL_SINGLE=y
 +CONFIG_POWER_DOMAIN=y
 +CONFIG_TI_SCI_POWER_DOMAIN=y
++CONFIG_DM_PMIC=y
++CONFIG_PMIC_TPS65219=y
++CONFIG_DM_REGULATOR=y
++CONFIG_DM_REGULATOR_TPS65219=y
 +CONFIG_K3_SYSTEM_CONTROLLER=y
 +CONFIG_REMOTEPROC_TI_K3_ARM64=y
-+CONFIG_DM_RESET=y
 +CONFIG_RESET_TI_SCI=y
++CONFIG_DM_RTC=y
++CONFIG_RTC_ABX80X=y
 +CONFIG_DM_SERIAL=y
 +CONFIG_SOC_DEVICE=y
 +CONFIG_SOC_DEVICE_TI_K3=y
@@ -3782,13 +5117,10 @@ index 0000000000..1c9306fd9b
 +CONFIG_SYSRESET=y
 +CONFIG_SPL_SYSRESET=y
 +CONFIG_SYSRESET_TI_SCI=y
++CONFIG_TEE=y
++CONFIG_OPTEE=y
 +CONFIG_DM_THERMAL=y
-+CONFIG_TIMER=y
-+CONFIG_SPL_TIMER=y
-+CONFIG_OMAP_TIMER=y
 +CONFIG_USB=y
-+CONFIG_DM_USB=y
-+CONFIG_USB_HOST=y
 +CONFIG_DM_USB_GADGET=y
 +CONFIG_SPL_DM_USB_GADGET=y
 +CONFIG_USB_XHCI_HCD=y
@@ -3805,57 +5137,76 @@ index 0000000000..1c9306fd9b
 +CONFIG_USB_FUNCTION_MASS_STORAGE=y
 +CONFIG_FS_FAT_MAX_CLUSTSIZE=16384
 +CONFIG_OF_LIBFDT_OVERLAY=y
-+CONFIG_TI_I2C_BOARD_DETECT=n
-diff --git a/configs/am64x_r5_solidrun_defconfig b/configs/am64x_r5_solidrun_defconfig
++CONFIG_EEPROM_TLV_LIB=y
++CONFIG_SUPPORT_EMMC_RPMB=y
++CONFIG_CMD_OPTEE_RPMB=y
+diff --git a/configs/am64som_r5_defconfig b/configs/am64som_r5_defconfig
 new file mode 100644
-index 0000000000..afd7968277
+index 0000000000..c8aa205513
 --- /dev/null
-+++ b/configs/am64x_r5_solidrun_defconfig
-@@ -0,0 +1,158 @@
++++ b/configs/am64som_r5_defconfig
+@@ -0,0 +1,194 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_K3=y
-+CONFIG_SPL_GPIO_SUPPORT=y
++CONFIG_TI_SECURE_DEVICE=y
++CONFIG_SYS_MALLOC_F_LEN=0x80000
++CONFIG_SPL_GPIO=y
 +CONFIG_SPL_LIBCOMMON_SUPPORT=y
 +CONFIG_SPL_LIBGENERIC_SUPPORT=y
-+CONFIG_SYS_MALLOC_F_LEN=0x80000
++CONFIG_NR_DRAM_BANKS=2
 +CONFIG_SOC_K3_AM642=y
-+CONFIG_TARGET_AM642_R5_SOLIDRUN=y
-+CONFIG_ENV_SIZE=0x20000
-+CONFIG_SYS_SPI_U_BOOT_OFFS=0x80000
++CONFIG_TARGET_AM64_SR_SOM_R5=y
++CONFIG_HAS_CUSTOM_SYS_INIT_SP_ADDR=y
++CONFIG_CUSTOM_SYS_INIT_SP_ADDR=0x7019b800
++CONFIG_ENV_SIZE=0x80000
++CONFIG_ENV_OFFSET=0x380000
 +CONFIG_DM_GPIO=y
 +CONFIG_SPL_DM_SPI=y
++CONFIG_DEFAULT_DEVICE_TREE="k3-am642-r5-sr-som"
 +CONFIG_SPL_TEXT_BASE=0x70000000
-+CONFIG_SPL_MMC_SUPPORT=y
-+CONFIG_SPL_SERIAL_SUPPORT=y
-+CONFIG_SPL_DRIVERS_MISC_SUPPORT=y
++CONFIG_DM_RESET=y
++CONFIG_SPL_MMC=y
++CONFIG_SPL_SERIAL=y
 +CONFIG_SPL_STACK_R_ADDR=0x82000000
 +CONFIG_SPL_SIZE_LIMIT=0x190000
 +CONFIG_SPL_SIZE_LIMIT_PROVIDE_STACK=0x4000
 +CONFIG_SPL_FS_FAT=y
 +CONFIG_SPL_LIBDISK_SUPPORT=y
 +CONFIG_SPL_SPI_FLASH_SUPPORT=y
-+CONFIG_SPL_SPI_SUPPORT=y
-+CONFIG_DEFAULT_DEVICE_TREE="am64x-solidrun-r5"
++CONFIG_SPL_SPI=y
 +CONFIG_SPL_LOAD_FIT=y
 +CONFIG_SPL_LOAD_FIT_ADDRESS=0x80080000
++CONFIG_USE_BOOTCOMMAND=y
++CONFIG_BOOTCOMMAND="run distro_bootcmd"
 +# CONFIG_DISPLAY_CPUINFO is not set
 +CONFIG_SPL_SIZE_LIMIT_SUBTRACT_GD=y
 +CONFIG_SPL_SIZE_LIMIT_SUBTRACT_MALLOC=y
++CONFIG_SPL_MAX_SIZE=0x180000
++CONFIG_SPL_HAS_BSS_LINKER_SECTION=y
++CONFIG_SPL_BSS_START_ADDR=0x7019b800
++CONFIG_SPL_BSS_MAX_SIZE=0x4000
 +CONFIG_SPL_SYS_REPORT_STACK_F_USAGE=y
 +CONFIG_SPL_BOARD_INIT=y
 +CONFIG_SPL_SYS_MALLOC_SIMPLE=y
 +CONFIG_SPL_STACK_R=y
++CONFIG_SPL_STACK_R_MALLOC_SIMPLE_LEN=0x200000
 +CONFIG_SPL_SEPARATE_BSS=y
++CONFIG_SYS_SPL_MALLOC=y
++CONFIG_HAS_CUSTOM_SPL_MALLOC_START=y
++CONFIG_CUSTOM_SYS_SPL_MALLOC_ADDR=0x84000000
++CONFIG_SYS_SPL_MALLOC_SIZE=0x1000000
 +CONFIG_SPL_EARLY_BSS=y
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR=y
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x400
 +CONFIG_SPL_DMA=y
 +CONFIG_SPL_ENV_SUPPORT=y
-+CONFIG_SPL_I2C_SUPPORT=y
++CONFIG_SPL_ETH=y
++CONFIG_SPL_I2C=y
 +CONFIG_SPL_DM_MAILBOX=y
 +CONFIG_SPL_DM_SPI_FLASH=y
++CONFIG_SPL_NET=y
++CONFIG_SPL_NET_VCI_STRING="AM64X U-Boot R5 SPL"
 +CONFIG_SPL_DM_RESET=y
-+CONFIG_SPL_POWER_SUPPORT=y
 +CONFIG_SPL_POWER_DOMAIN=y
 +CONFIG_SPL_RAM_SUPPORT=y
 +CONFIG_SPL_RAM_DEVICE=y
@@ -3863,13 +5214,15 @@ index 0000000000..afd7968277
 +# CONFIG_SPL_SPI_FLASH_TINY is not set
 +CONFIG_SPL_SPI_FLASH_SFDP_SUPPORT=y
 +CONFIG_SPL_SPI_LOAD=y
++CONFIG_SYS_SPI_U_BOOT_OFFS=0x100000
 +CONFIG_SPL_THERMAL=y
-+CONFIG_SPL_USB_HOST_SUPPORT=y
++CONFIG_SPL_USB_HOST=y
 +CONFIG_SPL_USB_STORAGE=y
 +CONFIG_SPL_USB_GADGET=y
 +CONFIG_SPL_DFU=y
 +CONFIG_SPL_YMODEM_SUPPORT=y
 +CONFIG_HUSH_PARSER=y
++CONFIG_SYS_MAXARGS=64
 +CONFIG_CMD_ASKENV=y
 +CONFIG_CMD_DFU=y
 +CONFIG_CMD_GPT=y
@@ -3878,16 +5231,21 @@ index 0000000000..afd7968277
 +CONFIG_CMD_USB=y
 +CONFIG_CMD_USB_MASS_STORAGE=y
 +# CONFIG_CMD_SETEXPR is not set
++CONFIG_CMD_DHCP=y
 +CONFIG_CMD_TIME=y
 +CONFIG_CMD_FAT=y
 +CONFIG_OF_CONTROL=y
 +CONFIG_SPL_OF_CONTROL=y
 +CONFIG_SPL_MULTI_DTB_FIT=y
-+CONFIG_SPL_OF_LIST="k3-am642-r5-evm k3-am642-r5-sk"
++CONFIG_SPL_OF_LIST="k3-am642-r5-sr-som k3-am642-r5-hummingboard-t"
 +CONFIG_SPL_MULTI_DTB_FIT_NO_COMPRESSION=y
-+CONFIG_ENV_IS_NOWHERE=y
++CONFIG_ENV_IS_IN_FAT=y
++CONFIG_ENV_IS_IN_MMC=y
++CONFIG_ENV_FAT_DEVICE_AND_PART=":1"
 +CONFIG_SYS_RELOC_GD_ENV_ADDR=y
-+CONFIG_DM=y
++CONFIG_SYS_MMC_ENV_PART=1
++CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
++CONFIG_SPL_ENV_IS_NOWHERE=y
 +CONFIG_SPL_DM=y
 +CONFIG_SPL_DM_SEQ_ALIAS=y
 +CONFIG_REGMAP=y
@@ -3897,6 +5255,8 @@ index 0000000000..afd7968277
 +CONFIG_SPL_OF_TRANSLATE=y
 +CONFIG_CLK=y
 +CONFIG_SPL_CLK=y
++CONFIG_SPL_CLK_CCF=y
++CONFIG_CLK_CCF=y
 +CONFIG_CLK_TI_SCI=y
 +CONFIG_DFU_MMC=y
 +CONFIG_DFU_RAM=y
@@ -3910,20 +5270,29 @@ index 0000000000..afd7968277
 +CONFIG_SYS_I2C_OMAP24XX=y
 +CONFIG_DM_MAILBOX=y
 +CONFIG_K3_SEC_PROXY=y
-+CONFIG_DM_MMC=y
++CONFIG_I2C_EEPROM=y
++CONFIG_ESM_K3=y
 +CONFIG_MMC_SDHCI=y
 +CONFIG_MMC_SDHCI_ADMA=y
 +CONFIG_SPL_MMC_SDHCI_ADMA=y
 +CONFIG_MMC_SDHCI_AM654=y
 +CONFIG_DM_SPI_FLASH=y
 +CONFIG_SF_DEFAULT_MODE=0
++CONFIG_SF_DEFAULT_SPEED=25000000
 +CONFIG_SPI_FLASH_SFDP_SUPPORT=y
 +CONFIG_SPI_FLASH_SOFT_RESET=y
 +CONFIG_SPI_FLASH_SOFT_RESET_ON_BOOT=y
 +CONFIG_SPI_FLASH_SPANSION=y
-+CONFIG_SPI_FLASH_S28HS512T=y
++CONFIG_SPI_FLASH_S28HX_T=y
 +CONFIG_SPI_FLASH_STMICRO=y
 +CONFIG_SPI_FLASH_MT35XU=y
++CONFIG_PHY_TI_DP83867=y
++CONFIG_TI_AM65_CPSW_NUSS=y
++CONFIG_PHY=y
++CONFIG_SPL_PHY=y
++CONFIG_PHY_CADENCE_SIERRA=y
++CONFIG_PHY_CADENCE_TORRENT=y
++CONFIG_PHY_J721E_WIZ=y
 +CONFIG_PINCTRL=y
 +# CONFIG_PINCTRL_GENERIC is not set
 +CONFIG_SPL_PINCTRL=y
@@ -3937,31 +5306,32 @@ index 0000000000..afd7968277
 +CONFIG_SPL_DM_REGULATOR_GPIO=y
 +CONFIG_K3_SYSTEM_CONTROLLER=y
 +CONFIG_REMOTEPROC_TI_K3_ARM64=y
-+CONFIG_DM_RESET=y
 +CONFIG_RESET_TI_SCI=y
 +CONFIG_SPECIFY_CONSOLE_INDEX=y
 +CONFIG_DM_SERIAL=y
++CONFIG_SOC_DEVICE=y
++CONFIG_SOC_DEVICE_TI_K3=y
 +CONFIG_SOC_TI=y
 +CONFIG_SPI=y
 +CONFIG_DM_SPI=y
 +CONFIG_CADENCE_QSPI=y
 +CONFIG_CADENCE_QSPI_PHY=y
++CONFIG_SYSRESET=y
++CONFIG_SPL_SYSRESET=y
++CONFIG_SYSRESET_TI_SCI=y
 +CONFIG_DM_THERMAL=y
 +CONFIG_TIMER=y
 +CONFIG_SPL_TIMER=y
 +CONFIG_OMAP_TIMER=y
 +CONFIG_USB=y
-+CONFIG_DM_USB=y
-+CONFIG_SPL_DM_USB=y
 +CONFIG_DM_USB_GADGET=y
 +CONFIG_SPL_DM_USB_GADGET=y
 +CONFIG_USB_XHCI_HCD=y
 +CONFIG_USB_CDNS3=y
 +CONFIG_USB_CDNS3_GADGET=y
-+CONFIG_SPL_USB_CDNS3_GADGET=y
 +CONFIG_USB_CDNS3_HOST=y
++CONFIG_SPL_USB_CDNS3_GADGET=y
 +CONFIG_SPL_USB_CDNS3_HOST=y
-+CONFIG_USB_CDNS3_TI=y
 +CONFIG_USB_STORAGE=y
 +CONFIG_USB_GADGET=y
 +CONFIG_USB_GADGET_MANUFACTURER="Texas Instruments"
@@ -3969,23 +5339,23 @@ index 0000000000..afd7968277
 +CONFIG_USB_GADGET_PRODUCT_NUM=0x6165
 +CONFIG_USB_GADGET_DOWNLOAD=y
 +CONFIG_FS_FAT_MAX_CLUSTSIZE=16384
-+CONFIG_TI_I2C_BOARD_DETECT=n
-diff --git a/include/configs/am64x_solidrun.h b/include/configs/am64x_solidrun.h
++CONFIG_EEPROM_TLV_LIB=y
+diff --git a/include/configs/am64som.h b/include/configs/am64som.h
 new file mode 100644
-index 0000000000..56b1c6d519
+index 0000000000..93be93eb73
 --- /dev/null
-+++ b/include/configs/am64x_solidrun.h
-@@ -0,0 +1,128 @@
++++ b/include/configs/am64som.h
+@@ -0,0 +1,21 @@
 +/* SPDX-License-Identifier: GPL-2.0+ */
 +/*
-+ * Configuration header file for K3 AM642 SoC family
++ * Configuration header file SolidRun AM642 SoM
 + *
-+ * Copyright (C) 2020 Texas Instruments Incorporated - https://www.ti.com/
-+ *	Keerthy <j-keerthy@ti.com>
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
 + */
 +
-+#ifndef __CONFIG_AM642_EVM_H
-+#define __CONFIG_AM642_EVM_H
++#ifndef _CONFIG_AM64SOM_H
++#define _CONFIG_AM64SOM_H
 +
 +#include <linux/sizes.h>
 +#include <config_distro_bootcmd.h>
@@ -3993,117 +5363,10 @@ index 0000000000..56b1c6d519
 +#include <asm/arch/am64_hardware.h>
 +#include <environment/ti/k3_dfu.h>
 +
-+/* DDR Configuration */
-+#define CONFIG_SYS_SDRAM_BASE1		0x880000000
-+
-+#ifdef CONFIG_SYS_K3_SPL_ATF
-+#define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME	"tispl.bin"
-+#endif
-+
-+#ifndef CONFIG_CPU_V7R
-+#define CONFIG_SKIP_LOWLEVEL_INIT
-+#endif
-+
-+#define CONFIG_SPL_MAX_SIZE		CONFIG_SYS_K3_MAX_DOWNLODABLE_IMAGE_SIZE
-+#if defined(CONFIG_TARGET_AM642_A53_SOLIDRUN)
-+#define CONFIG_SYS_INIT_SP_ADDR         (CONFIG_SPL_TEXT_BASE +	\
-+					CONFIG_SYS_K3_NON_SECURE_MSRAM_SIZE - 4)
-+#else
-+/*
-+ * Maximum size in memory allocated to the SPL BSS. Keep it as tight as
-+ * possible (to allow the build to go through), as this directly affects
-+ * our memory footprint. The less we use for BSS the more we have available
-+ * for everything else.
-+ */
-+#define CONFIG_SPL_BSS_MAX_SIZE		0x1000
-+/*
-+ * Link BSS to be within SPL in a dedicated region located near the top of
-+ * the MCU SRAM, this way making it available also before relocation. Note
-+ * that we are not using the actual top of the MCU SRAM as there is a memory
-+ * location filled in by the boot ROM that we want to read out without any
-+ * interference from the C context.
-+ */
-+#define CONFIG_SPL_BSS_START_ADDR	(TI_SRAM_SCRATCH_BOARD_EEPROM_START -\
-+					 CONFIG_SPL_BSS_MAX_SIZE)
-+/* Set the stack right below the SPL BSS section */
-+#define CONFIG_SYS_INIT_SP_ADDR         CONFIG_SPL_BSS_START_ADDR
-+/* Configure R5 SPL post-relocation malloc pool in DDR */
-+#define CONFIG_SYS_SPL_MALLOC_START    0x84000000
-+#define CONFIG_SYS_SPL_MALLOC_SIZE     SZ_16M
-+#endif
-+
-+#define PARTS_DEFAULT \
-+	/* Linux partitions */ \
-+	"name=rootfs,start=0,size=-,uuid=${uuid_gpt_rootfs}\0"
-+
-+/* U-Boot general configuration */
-+#define EXTRA_ENV_AM642_BOARD_SETTINGS					\
-+	"findfdt="							\
-+		"if test $board_name = am64x_gpevm; then " \
-+			"setenv fdtfile k3-am642-evm.dtb; fi; " \
-+		"if test $board_name = am64x_skevm; then " \
-+			"setenv fdtfile k3-am642-sk.dtb; fi;" \
-+		"if test $fdtfile = undefined; then " \
-+			"echo WARNING: Could not determine device tree to use; fi; \0" \
-+	"name_kern=Image\0"						\
-+	"console=ttyS2,115200n8\0"					\
-+	"args_all=setenv optargs earlycon=ns16550a,mmio32,0x02800000 "	\
-+		"${mtdparts}\0"						\
-+	"run_kern=booti ${loadaddr} ${rd_spec} ${fdtaddr}\0"
-+
-+/* U-Boot MMC-specific configuration */
-+#define EXTRA_ENV_AM642_BOARD_SETTINGS_MMC				\
-+	"boot=mmc\0"							\
-+	"mmcdev=1\0"							\
-+	"bootpart=1:2\0"						\
-+	"bootdir=/boot\0"						\
-+	"rd_spec=-\0"							\
-+	"init_mmc=run args_all args_mmc\0"				\
-+	"get_fdt_mmc=load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
-+	"get_overlay_mmc="						\
-+		"fdt address ${fdtaddr};"				\
-+		"fdt resize 0x100000;"					\
-+		"for overlay in $name_overlays;"			\
-+		"do;"							\
-+		"load mmc ${bootpart} ${dtboaddr} ${bootdir}/${overlay} && "	\
-+		"fdt apply ${dtboaddr};"				\
-+		"done;\0"						\
-+	"get_kern_mmc=load mmc ${bootpart} ${loadaddr} "		\
-+		"${bootdir}/${name_kern}\0"				\
-+	"get_fit_mmc=load mmc ${bootpart} ${addr_fit} "			\
-+		"${bootdir}/${name_fit}\0"				\
-+	"partitions=" PARTS_DEFAULT
-+
-+#ifdef CONFIG_TARGET_AM642_A53_SOLIDRUN
-+#define EXTRA_ENV_AM642_BOARD_SETTINGS_MTD				\
-+	"mtdids=" CONFIG_MTDIDS_DEFAULT "\0"				\
-+	"mtdparts=" CONFIG_MTDPARTS_DEFAULT "\0"
-+#else
-+#define EXTRA_ENV_AM642_BOARD_SETTINGS_MTD
-+#endif
-+
-+
-+#define EXTRA_ENV_DFUARGS \
-+	DFU_ALT_INFO_MMC \
-+	DFU_ALT_INFO_EMMC \
-+	DFU_ALT_INFO_RAM \
-+	DFU_ALT_INFO_OSPI
-+
-+/* Incorporate settings into the U-Boot environment */
-+#define CONFIG_EXTRA_ENV_SETTINGS					\
-+	DEFAULT_LINUX_BOOT_ENV						\
-+	DEFAULT_MMC_TI_ARGS						\
-+	EXTRA_ENV_AM642_BOARD_SETTINGS					\
-+	EXTRA_ENV_AM642_BOARD_SETTINGS_MMC				\
-+	EXTRA_ENV_AM642_BOARD_SETTINGS_MTD				\
-+	EXTRA_ENV_DFUARGS
-+
 +/* Now for the remaining common defines */
 +#include <configs/ti_armv7_common.h>
 +
-+#define CONFIG_SYS_USB_FAT_BOOT_PARTITION 1
-+
-+#endif /* __CONFIG_AM642_EVM_H */
++#endif /* _CONFIG_AM64SOM_H */
 -- 
 2.35.3
 

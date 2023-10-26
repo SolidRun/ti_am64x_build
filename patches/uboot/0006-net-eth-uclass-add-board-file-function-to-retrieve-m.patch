@@ -1,0 +1,58 @@
+From 171e07e1720199f819e2fffa2193173f8e2f57f3 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Sun, 3 Dec 2023 17:18:54 +0100
+Subject: [PATCH 6/7] net: eth-uclass: add board-file function to retrieve mac
+
+Some existing network interface drivers  such as nxp fec support calling
+a board_* function to retrieve "ROM" mac addresses, e.g. in case MACs
+are not stored in the efuse but some other vendor-defined mechanism.
+
+Rather than implementing this in each relevant driver, call a new
+generic "board_get_mac_address" function directly from eth-uclass,
+before invoking driver-specific read_rom_hwaddr function.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ net/eth-uclass.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/net/eth-uclass.c b/net/eth-uclass.c
+index b01a910938..e1735e3030 100644
+--- a/net/eth-uclass.c
++++ b/net/eth-uclass.c
+@@ -542,10 +542,15 @@ static bool eth_dev_get_mac_address(struct udevice *dev, u8 mac[ARP_HLEN])
+ #endif
+ }
+ 
++__weak int board_get_mac_address(struct udevice *dev, char *mac) {
++	return -EOPNOTSUPP;
++}
++
+ static int eth_post_probe(struct udevice *dev)
+ {
+ 	struct eth_device_priv *priv = dev_get_uclass_priv(dev);
+ 	struct eth_pdata *pdata = dev_get_plat(dev);
++	unsigned char board_enetaddr[ARP_HLEN];
+ 	unsigned char env_enetaddr[ARP_HLEN];
+ 	char *source = "DT";
+ 
+@@ -582,8 +587,15 @@ static int eth_post_probe(struct udevice *dev)
+ 	if (!eth_dev_get_mac_address(dev, pdata->enetaddr) ||
+ 	    !is_valid_ethaddr(pdata->enetaddr)) {
+ 		source = "ROM";
++
++		/* Check if the board-file has a valid MAC address */
++		if (!board_get_mac_address(dev, board_enetaddr) &&
++		    is_valid_ethaddr(board_enetaddr)) {
++			memcpy(pdata->enetaddr, board_enetaddr, ARP_HLEN);
++		}
++
+ 		/* Check if the device has a MAC address in ROM */
+-		if (eth_get_ops(dev)->read_rom_hwaddr)
++		else if (eth_get_ops(dev)->read_rom_hwaddr)
+ 			eth_get_ops(dev)->read_rom_hwaddr(dev);
+ 	}
+ 
+-- 
+2.35.3
+

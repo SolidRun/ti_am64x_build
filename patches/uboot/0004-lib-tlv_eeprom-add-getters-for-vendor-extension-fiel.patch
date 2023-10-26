@@ -1,0 +1,121 @@
+From ef64f27b8d622ec9251c8873335337fa2e8a4d32 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Sun, 19 Nov 2023 15:59:08 +0100
+Subject: [PATCH 4/7] lib: tlv_eeprom: add getters for vendor extension field
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ include/tlv_eeprom.h | 36 ++++++++++++++++++++++++++++++++++++
+ lib/tlv/tlv_eeprom.c | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 78 insertions(+)
+
+diff --git a/include/tlv_eeprom.h b/include/tlv_eeprom.h
+index c1084a28b5..92ad8690c3 100644
+--- a/include/tlv_eeprom.h
++++ b/include/tlv_eeprom.h
+@@ -50,6 +50,19 @@ struct __attribute__ ((__packed__)) tlvinfo_tlv {
+ /* Maximum length of a TLV value in bytes */
+ #define TLV_VALUE_MAX_LEN        255
+ 
++/*
++ * TlvInfo TLV Vendor Extension: Layout of a Vendor Extension field
++ */
++struct __attribute__ ((__packed__)) tlvinfo_tlv_ext {
++	u8  type;
++	u8  length;
++	u32 pen;
++	u8  value[];
++};
++
++#define TLV_INFO_ENTRY_EXT_SIZE      sizeof(struct tlvinfo_tlv_ext)
++#define tlvinfo_tlv_ext_offset(i) (i + TLV_INFO_ENTRY_EXT_SIZE)
++
+ /**
+  *  The TLV Types.
+  *
+@@ -173,6 +186,29 @@ struct tlvinfo_tlv *const tlv_entry_next_by_code(struct tlvinfo_priv *const priv
+  */
+ int tlv_crc_update(struct tlvinfo_priv *const priv);
+ 
++/*
++ * Accessors for special TLV fields
++ */
++
++/**
++ * Get the next TLV Vendor Extension entry.
++ *
++ * @tlv: Pointer to TLV structure.
++ * @offset: Start search after this entry; Pass NULL to search from the beginning.
++ * @return: Pointer to TLV Vendor Extension entry, or error code.
++ */
++struct tlvinfo_tlv_ext *const tlv_entry_ext_next(struct tlvinfo_priv *const priv, struct tlvinfo_tlv *const offset);
++
++/**
++ * Get the next TLV Vendor Extension entry by IANA Enterprise Number.
++ *
++ * @tlv: Pointer to TLV structure.
++ * @offset: Start search after this entry; Pass NULL to search from the beginning.
++ * @pen: IANA Enterprise Number to search.
++ * @return: Pointer to TLV Vendor Extension entry, or error code.
++ */
++struct tlvinfo_tlv_ext *const tlv_entry_ext_next_by_vendor(struct tlvinfo_priv *const priv, struct tlvinfo_tlv *const offset, u32 pen);
++
+ /*
+  * TLV data get/set API
+  * (Convenience wrappers around struct tlvinfo_tlv)
+diff --git a/lib/tlv/tlv_eeprom.c b/lib/tlv/tlv_eeprom.c
+index 2f1d2708b7..b68f0f1136 100644
+--- a/lib/tlv/tlv_eeprom.c
++++ b/lib/tlv/tlv_eeprom.c
+@@ -466,6 +466,48 @@ struct tlvinfo_tlv *const tlv_entry_next_by_code(struct tlvinfo_priv *const priv
+ 	return ERR_PTR(-ENOENT);
+ }
+ 
++/**
++ * Get the next TLV Vendor Extension entry.
++ *
++ * @tlv: Pointer to TLV structure.
++ * @offset: Start search after this entry; Pass NULL to search from the beginning.
++ * @return: Pointer to TLV Vendor Extension entry, or error code.
++ */
++struct tlvinfo_tlv_ext *const tlv_entry_ext_next(struct tlvinfo_priv *const priv, struct tlvinfo_tlv *const offset)
++{
++	struct tlvinfo_tlv *entry;
++
++	entry = tlv_entry_next_by_code(priv, offset, TLV_CODE_VENDOR_EXT);
++	if (IS_ERR(entry))
++		return (struct tlvinfo_tlv_ext *)entry;
++
++	/* ensure length includes capacity for 4-byte IANA enterprise ID */
++	if (entry->length < (TLV_INFO_ENTRY_EXT_SIZE - TLV_INFO_ENTRY_SIZE))
++		return ERR_PTR(-EINVAL);
++
++	return (struct tlvinfo_tlv_ext *)entry;
++}
++
++/**
++ * Get the next TLV Vendor Extension entry by IANA Enterprise Number.
++ *
++ * @tlv: Pointer to TLV structure.
++ * @offset: Start search after this entry; Pass NULL to search from the beginning.
++ * @return: Pointer to TLV Vendor Extension entry, or error code.
++ */
++struct tlvinfo_tlv_ext *const tlv_entry_ext_next_by_vendor(struct tlvinfo_priv *const priv, struct tlvinfo_tlv *const offset, u32 pen)
++{
++	struct tlvinfo_tlv_ext *entry;
++
++	for (entry = tlv_entry_ext_next(priv, offset);
++	     !IS_ERR(entry);
++	     entry = tlv_entry_ext_next(priv, (struct tlvinfo_tlv *)entry))
++		if (entry->pen == pen)
++			return entry;
++
++	return ERR_PTR(-ENOENT);
++}
++
+ int tlv_crc_update(struct tlvinfo_priv *const priv)
+ {
+ 	struct tlvinfo_tlv *crc;
+-- 
+2.35.3
+
