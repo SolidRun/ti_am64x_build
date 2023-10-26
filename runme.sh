@@ -25,6 +25,9 @@ set -e
 # - hs-se: high security, security enabled (after burning customer key to efuses, sr2 and later only)
 : ${SOC_TYPE:=hs-fs}
 
+# Secure-Boot Signing Key
+: ${SIGNING_KEY:=}
+
 ## Buildroot Options
 : ${BUILDROOT_VERSION:=2023.02.6}
 : ${BUILDROOT_DEFCONFIG:=am64xx_solidrun_defconfig}
@@ -334,6 +337,7 @@ cd $BASE_DIR/build/ti-u-boot
 # 	R5
 
 make ARCH=arm $U_BOOT_R5_DEFCONFIG
+test -n "${SIGNING_KEY}" && ./scripts/config --set-str SYS_K3_KEY "${BASE_DIR}/${SIGNING_KEY}"
 #make ARCH=arm menuconfig
 make ARCH=arm savedefconfig
 mv defconfig defconfig_r5
@@ -361,6 +365,7 @@ cp ${TIBOOT3} $BASE_DIR/tmp/tiboot3.bin
 # 	A53
 
 make ARCH=arm $U_BOOT_A53_DEFCONFIG
+test -n "${SIGNING_KEY}" && ./scripts/config --set-str SYS_K3_KEY "${BASE_DIR}/${SIGNING_KEY}"
 #make ARCH=arm menuconfig
 make ARCH=arm savedefconfig
 mv defconfig defconfig_a53
