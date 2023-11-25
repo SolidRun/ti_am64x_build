@@ -212,7 +212,7 @@ export TI_SECURE_DEV_PKG=$BASE_DIR/build/core-secdev-k3
 
 ###################################################################################################################################
 #							CLONE Linux Kernel
-KERNEL_TAG=08.06.00.007
+KERNEL_TAG=09.00.00.011
 
 if [[ ! -d $BASE_DIR/build/ti-linux-kernel ]]; then
 	cd $BASE_DIR/build
