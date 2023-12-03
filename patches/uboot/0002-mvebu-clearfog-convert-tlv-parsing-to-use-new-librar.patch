@@ -1,7 +1,7 @@
 From a42c9f20c2ac146a485dd896c3162fcae35eddb1 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Tue, 16 May 2023 14:41:52 +0300
-Subject: [PATCH 2/6] mvebu: clearfog: convert tlv parsing to use new library
+Subject: [PATCH 2/7] mvebu: clearfog: convert tlv parsing to use new library
 
 Update the existing code reading tlv data from eeprom to use the new tlv
 library functions rather than relying on tlv_eeprom command internals.

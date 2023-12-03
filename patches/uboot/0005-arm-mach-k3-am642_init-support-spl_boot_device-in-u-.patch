@@ -1,7 +1,7 @@
 From d0d98237521c6d2ec981a8be5f67502aa76983d2 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 27 Sep 2023 14:39:51 +0200
-Subject: [PATCH 5/6] arm: mach-k3: am642_init: support spl_boot_device in
+Subject: [PATCH 5/7] arm: mach-k3: am642_init: support spl_boot_device in
  u-boot proper
 
 The memory addresses for boot mode are still valid in full u-boot.

@@ -1,10 +1,10 @@
-From 1caefea77cd32b72eae0ce46c1702159cbe39a2f Mon Sep 17 00:00:00 2001
+From a1d41425b4add9f5fd426733dbda1adb9b534b10 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Fri, 27 Oct 2023 16:58:16 +0200
-Subject: [PATCH 6/6] board: solidrun: add initial support for AM64 SoM
+Subject: [PATCH 7/7] board: solidrun: add initial support for AM64 SoM
 
 SolidRun has a System on Module based on TI AM6442 SoC,
-as well  as a reference carrier board called "HummingBoard-T".
+as well as a reference carrier board called "HummingBoard-T".
 
 Add initial board file and device-tree files.
 
@@ -15,23 +15,23 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  arch/arm/dts/k3-am642-hummingboard-t.dtsi     |  290 +++
  arch/arm/dts/k3-am642-r5-hummingboard-t.dts   |   23 +
  arch/arm/dts/k3-am642-r5-sr-som.dts           |   22 +
- arch/arm/dts/k3-am642-r5-sr-som.dtsi          |  178 ++
+ arch/arm/dts/k3-am642-r5-sr-som.dtsi          |  195 ++
  arch/arm/dts/k3-am642-sr-som-binman.dtsi      |  513 ++++
  .../dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi | 2189 +++++++++++++++++
  arch/arm/dts/k3-am642-sr-som-u-boot.dtsi      |  174 ++
  arch/arm/dts/k3-am642-sr-som.dts              |   18 +
- arch/arm/dts/k3-am642-sr-som.dtsi             |  522 ++++
+ arch/arm/dts/k3-am642-sr-som.dtsi             |  572 +++++
  arch/arm/mach-k3/Kconfig                      |    1 +
  board/solidrun/am64som/Kconfig                |   45 +
  board/solidrun/am64som/Makefile               |    7 +
  board/solidrun/am64som/am64som.env            |   49 +
  board/solidrun/am64som/id-eeprom.c            |  241 ++
  board/solidrun/am64som/id-eeprom.h            |   16 +
- board/solidrun/am64som/som.c                  |  224 ++
+ board/solidrun/am64som/som.c                  |  331 +++
  configs/am64som_a53_defconfig                 |  191 ++
  configs/am64som_r5_defconfig                  |  194 ++
  include/configs/am64som.h                     |   21 +
- 21 files changed, 4942 insertions(+), 1 deletion(-)
+ 21 files changed, 5116 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dts
  create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dtsi
  create mode 100644 arch/arm/dts/k3-am642-r5-hummingboard-t.dts
@@ -449,10 +449,10 @@ index 0000000000..39bcdb3ac6
 +};
 diff --git a/arch/arm/dts/k3-am642-r5-sr-som.dtsi b/arch/arm/dts/k3-am642-r5-sr-som.dtsi
 new file mode 100644
-index 0000000000..37a9e7a4fe
+index 0000000000..a29886367b
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-r5-sr-som.dtsi
-@@ -0,0 +1,178 @@
+@@ -0,0 +1,195 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
@@ -501,6 +501,13 @@ index 0000000000..37a9e7a4fe
 +&cbass_main {
 +	bootph-pre-ram;
 +
++	main_esm: esm@420000 {
++		compatible = "ti,j721e-esm";
++		reg = <0x0 0x420000 0x0 0x1000>;
++		ti,esm-pins = <160>, <161>;
++		bootph-pre-ram;
++	};
++
 +	sysctrler: sysctrler {
 +		compatible = "ti,am654-system-controller";
 +		mboxes= <&secure_proxy_main 1>, <&secure_proxy_main 0>;
@@ -513,6 +520,16 @@ index 0000000000..37a9e7a4fe
 +		reg = <0x0 0x2400000 0x0 0x80>;
 +		ti,timer-alwon;
 +		clock-frequency = <200000000>;
++		bootph-pre-ram;
++	};
++};
++
++&cbass_mcu {
++	bootph-pre-ram;
++	mcu_esm: esm@4100000 {
++		compatible = "ti,j721e-esm";
++		reg = <0x0 0x4100000 0x0 0x1000>;
++		ti,esm-pins = <0>, <1>;
 +		bootph-pre-ram;
 +	};
 +};
@@ -3551,10 +3568,10 @@ index 0000000000..c9df215dd5
 +};
 diff --git a/arch/arm/dts/k3-am642-sr-som.dtsi b/arch/arm/dts/k3-am642-sr-som.dtsi
 new file mode 100644
-index 0000000000..db3ab21efe
+index 0000000000..2a87304adb
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-sr-som.dtsi
-@@ -0,0 +1,522 @@
+@@ -0,0 +1,572 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
@@ -3678,15 +3695,12 @@ index 0000000000..db3ab21efe
 +
 +&cpsw3g_mdio {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&mdio0_pins_default>;
++	pinctrl-0 = <&mdio0_pins_default>, <&ethernet_phy0_pins_default>;
 +	status = "okay";
 +
-+	/* DP83868 */
 +	ethernet_phy0: ethernet-phy@0 {
 +		compatible = "ethernet-phy-id2000.a0f1";
 +		reg = <0>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&ethernet_phy0_pins_default>;
 +		ti,clk-output-sel = <DP83869_CLK_O_SEL_REF_CLK>;
 +		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
 +		/*
@@ -3707,13 +3721,61 @@ index 0000000000..db3ab21efe
 +};
 +
 +&cpsw_port1 {
-+	phy-mode = "rgmii-rxid";
++	phy-mode = "rgmii-id";
 +	phy-handle = <&ethernet_phy0>;
 +	status = "okay";
 +};
 +
 +&cpsw_port2 {
 +	status = "disabled";
++};
++
++&icssg1_mdio {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pru1_mdio0_pins_default>,
++		    <&ethernet_phy1_pins_default>, <&ethernet_phy2_pins_default>;
++	status = "okay";
++
++	ethernet_phy1: ethernet-phy@3 {
++		compatible = "ethernet-phy-id2000.a0f1";
++		reg = <3>;
++		ti,clk-output-sel = <DP83869_CLK_O_SEL_REF_CLK>;
++		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
++		/*
++		 * Disable interrupts because ISR never clears 0x0040
++		 *
++		 * interrupt-parent = <&main_gpio1>;
++		 * interrupts = <70 IRQ_TYPE_LEVEL_LOW>;
++		 */
++		/*
++		 * Disable HW Reset because clock signal is daisy-chained
++		 *
++		 * reset-gpios = <&main_gpio0 20 GPIO_ACTIVE_LOW>;
++		 * reset-assert-us = <1>;
++		 * reset-deassert-us = <30>;
++		 */
++		 status = "okay";
++	};
++
++	ethernet_phy2: ethernet-phy@f {
++		compatible = "ethernet-phy-id2000.a0f1";
++		reg = <0xf>;
++		ti,op-mode = <DP83869_RGMII_COPPER_ETHERNET>;
++		/*
++		 * Disable interrupts because ISR never clears 0x0040
++		 *
++		 * interrupt-parent = <&main_gpio1>;
++		 * interrupts = <70 IRQ_TYPE_LEVEL_LOW>;
++		 */
++		/*
++		 * Disable HW Reset because clock signal is daisy-chained
++		 *
++		 * reset-gpios = <&main_gpio0 52 GPIO_ACTIVE_LOW>;
++		 * reset-assert-us = <1>;
++		 * reset-deassert-us = <30>;
++		 */
++		 status = "okay";
++	};
 +};
 +
 +&mailbox0_cluster2 {
@@ -3783,11 +3845,16 @@ index 0000000000..db3ab21efe
 +
 +&main_pmx0 {
 +	/* hog functions without u-boot driver */
-+	pinctrl-0 = <&pru1_mdio0_pins_default>,
-+		    <&ethernet_phy1_pins_default>,
-+		    <&ethernet_phy2_pins_default>,
++	pinctrl-0 = <&ethernet_phy_pins_default>,
 +		    <&pru_rgmii1_pins_default>,
 +		    <&pru_rgmii2_pins_default>;
++
++	ethernet_phy_pins_default: ethernet-phy-pins-default {
++		pinctrl-single,pins = <
++			/* interrupt / power-down, external pull-up on SoM */
++			AM64X_IOPAD(0x0278, PIN_INPUT, 7)	/* Pad EXTINTn Mux GPIO1_70 */
++		>;
++	};
 +
 +	ethernet_phy0_pins_default: ethernet-phy0-pins-default {
 +		pinctrl-single,pins = <
@@ -4479,10 +4546,10 @@ index 0000000000..17c50c46ae
 +phys_size_t am64som_ram_size(void);
 diff --git a/board/solidrun/am64som/som.c b/board/solidrun/am64som/som.c
 new file mode 100644
-index 0000000000..04401ebe86
+index 0000000000..5c1534a4eb
 --- /dev/null
 +++ b/board/solidrun/am64som/som.c
-@@ -0,0 +1,224 @@
+@@ -0,0 +1,331 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * SolidRun AM64 SoM initialization
@@ -4493,6 +4560,7 @@ index 0000000000..04401ebe86
 +
 +#include <asm/io.h>
 +#include <common.h>
++#include <dm/device.h>
 +#include <dm/uclass.h>
 +#include <env.h>
 +#include <env_internal.h>
@@ -4549,9 +4617,107 @@ index 0000000000..04401ebe86
 +	return 0;
 +}
 +
++/* partition 2 registers (8000h to 9FFFh) write lock */
++#define CTRLMMR_LOCK2_KICK0		0x43009008
++#define CTRLMMR_LOCK2_KICK0_UNLOCKED	BIT(0)
++#define CTRLMMR_LOCK2_KICK0_KEY_MASK	GENMASK(31,1)
++#define CTRLMMR_LOCK2_KICK0_KEY		0x68EF3490
++#define CTRLMMR_LOCK2_KICK0_LOCK	0xFFFFFFFF
++#define CTRLMMR_LOCK2_KICK1		0x4300900C
++#define CTRLMMR_LOCK2_KICK1_KEY_MASK	0xFFFFFFFF
++#define CTRLMMR_LOCK2_KICK1_KEY		0xD172BC5A
++#define CTRLMMR_LOCK2_KICK1_LOCK	0xFFFFFFFF
++
++/* query the write lock on partition 2 registers (8000h to 9FFFh) */
++static int am64_get_p2_regs_lock(void)
++{
++	u32 val = 0;
++
++	val = readl(CTRLMMR_LOCK2_KICK0);
++	if (val < 0)
++		return val;
++
++	return val & CTRLMMR_LOCK2_KICK0_UNLOCKED;
++}
++
++/* apply the write lock on partition 2 registers (8000h to 9FFFh) */
++static int am64_set_p2_regs_locked(void)
++{
++	int ret;
++
++	/* return when already locked */
++	ret = am64_get_p2_regs_lock();
++	if (ret < 0)
++		return ret;
++	else if (ret)
++		return 0;
++
++	/* write 1's to lock */
++	writel(CTRLMMR_LOCK2_KICK0_LOCK, CTRLMMR_LOCK2_KICK0);
++	writel(CTRLMMR_LOCK2_KICK1_LOCK, CTRLMMR_LOCK2_KICK1);
++
++	/* validate lock */
++	ret = am64_get_p2_regs_lock();
++	if (!ret)
++		return -EPERM;
++	else
++		return ret;
++}
++
++/* release the write lock on partition 2 registers (8000h to 9FFFh) */
++static int am64_set_p2_regs_unlocked(void)
++{
++	int ret;
++
++	/* return when already unlocked */
++	ret = am64_get_p2_regs_lock();
++	if (ret < 0)
++		return ret;
++	else if (!ret)
++		return 0;
++
++	/* write key to unlock */
++	writel(CTRLMMR_LOCK2_KICK0_KEY, CTRLMMR_LOCK2_KICK0);
++	writel(CTRLMMR_LOCK2_KICK1_KEY, CTRLMMR_LOCK2_KICK1);
++
++	/* validate unlock */
++	ret = am64_get_p2_regs_lock();
++	if (ret < 0 || !ret)
++		return ret;
++	else
++		return -EPERM;
++}
++
++#define CTRLMMR_CLKOUT_CTRL		0x43008010
++/* CLK_SEL: 0=50MHz, 1=25MHz */
++#define CTRLMMR_CLKOUT_CTRL_CLK_SEL	BIT(0)
++#define CTRLMMR_CLKOUT_CTRL_CLK_EN	BIT(4)
++
++static int set_am64_clkout0(int is25mhz)
++{
++	u32 val = 0;
++
++	/* release the write lock on partition 2 registers (8000h to 9FFFh) */
++	am64_set_p2_regs_unlocked();
++
++	/* configure clkout control register */
++	val = readl(CTRLMMR_CLKOUT_CTRL);
++	val |= CTRLMMR_CLKOUT_CTRL_CLK_EN;
++	if (is25mhz)
++		val |= CTRLMMR_CLKOUT_CTRL_CLK_SEL;
++	else
++		val &= ~CTRLMMR_CLKOUT_CTRL_CLK_SEL;
++	writel(val, CTRLMMR_CLKOUT_CTRL);
++
++	return 0;
++}
++
 +#ifdef CONFIG_BOARD_LATE_INIT
 +int board_late_init(void)
 +{
++	/* enable 25MHz reference clkout for ethernet phys */
++	set_am64_clkout0(1);
++
 +#ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 +	switch (am64som_carrier_type())
 +	{
@@ -4706,6 +4872,14 @@ index 0000000000..04401ebe86
 +	}
 +
 +	return -ENODEV;
++}
++
++int board_get_mac_address(struct udevice *dev, char *mac) {
++	/* match interfaces by name */
++	if (strcmp("ethernet@8000000port@1", dev->name) == 0)
++		return am64som_mac(mac, 0);
++
++	return -ENOENT;
 +}
 diff --git a/configs/am64som_a53_defconfig b/configs/am64som_a53_defconfig
 new file mode 100644

@@ -394,6 +394,9 @@ do_build_buildroot() {
 	cp $BASE_DIR/configs/am64xx-solidrun-buildroot_defconfig $BASE_DIR/build/buildroot/configs/${BUILDROOT_DEFCONFIG}
 	printf 'BR2_PRIMARY_SITE="%s"\n' "${BR2_PRIMARY_SITE}" >> $BASE_DIR/build/buildroot/configs/${BUILDROOT_DEFCONFIG}
 
+	# ensure overlay  directory exists even if empty
+	mkdir -p $BASE_DIR/overlay/buildroot
+
 	cd $BASE_DIR/build/buildroot
 	make $BUILDROOT_DEFCONFIG
 	#make menuconfig
@@ -506,6 +509,20 @@ EOF
 #							BUILD selected Distro
 do_build_${DISTRO}
 ##################################################################################################################################
+
+
+
+
+##################################################################################################################################
+#							APPLY TI Firmware
+do_ti_firmware_rootfs() {
+	for fw in ti-pruss/am65x-sr2-{pru,rtu,txpru}{0,1}-prueth-fw.elf; do
+		echo $fw | e2cp -G 0 -O 0 -s "${BASE_DIR}/build/ti-linux-firmware/" -d "${BASE_DIR}/tmp/rootfs.ext4:/usr/lib/firmware" -a -v
+	done
+}
+do_ti_firmware_rootfs
+##################################################################################################################################
+
 
 
 
