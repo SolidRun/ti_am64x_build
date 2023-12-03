@@ -482,7 +482,6 @@ The build script supports several customisation options that can be applied thro
   - gp (general purpose, **sr1 only**, default)
   - hs-fs (high security, field-securable - before burning customer key to efuses, **sr2 and later**)
   - hs-se (high security, security-enabled - after burning customer key to efuses, **sr2 and later**)
-- MODULES: comma-separated list of kernel modules to include in rootfs
 - DISTRO: Choose Linux distribution for rootfs
   - buildroot (default)
   - debian
