@@ -286,11 +286,33 @@ cp build/k3/lite/release/bl31.bin $BASE_DIR/tmp/bl31.bin
 
 ###################################################################################################################################
 #							BUILD OPTEE
-PLATFORM=k3-am64x
+build_optee() {
+	PLATFORM=k3-am64x
 
-cd  $BASE_DIR/build/optee_os
-make -j${JOBS} ARCH=arm PLATFORM=$PLATFORM CROSS_COMPILE32=arm-linux-gnueabihf- CFG_ARM64_core=y
-cp out/arm-plat-k3/core/tee-pager_v2.bin $BASE_DIR/tmp/tee-pager_v2.bin
+	# build optee devkit
+	cd  $BASE_DIR/build/optee_os
+	make -j${JOBS} \
+		ARCH=arm \
+		PLATFORM=$PLATFORM \
+		CROSS_COMPILE64=aarch64-linux-gnu- \
+		CROSS_COMPILE32=arm-linux-gnueabihf- \
+		CFG_ARM64_core=y \
+		ta_dev_kit
+
+	# TODO: build TAs if any
+
+	# build optee os
+	cd  $BASE_DIR/build/optee_os
+	make -j${JOBS} \
+		ARCH=arm \
+		PLATFORM=$PLATFORM \
+		CROSS_COMPILE64=aarch64-linux-gnu- \
+		CROSS_COMPILE32=arm-linux-gnueabihf- \
+		CFG_ARM64_core=y
+
+	cp out/arm-plat-k3/core/tee-pager_v2.bin $BASE_DIR/tmp/tee-pager_v2.bin
+}
+build_optee
 
 ###################################################################################################################################
 
