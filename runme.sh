@@ -443,12 +443,17 @@ do_build_debian() {
 	if [ ! -f rootfs.e2.orig ] || [[ ${BASE_DIR}/${BASH_SOURCE[0]} -nt rootfs.e2.orig ]]; then
 		rm -f rootfs.e2.orig
 
+		local PKGS=apt-transport-https,busybox,ca-certificates,can-utils,command-not-found,chrony,curl,e2fsprogs,ethtool,fdisk,gpiod,haveged,i2c-tools,ifupdown,iputils-ping,isc-dhcp-client,initramfs-tools,libiio-utils,lm-sensors,locales,nano,net-tools,ntpdate,openssh-server,psmisc,rfkill,sudo,systemd-sysv,tio,usbutils,wget,xterm,xz-utils
+		if [ ${DEBIAN_VERSION} != "bullseye" ]; then
+			PKGS=$PKGS,tee-supplicant
+		fi
+
 		# bootstrap a first-stage rootfs
 		rm -rf stage1
 		fakeroot debootstrap --variant=minbase \
 			--arch=arm64 --components=main,contrib,non-free \
 			--foreign \
-			--include=apt-transport-https,busybox,ca-certificates,can-utils,command-not-found,chrony,curl,e2fsprogs,ethtool,fdisk,gpiod,haveged,i2c-tools,ifupdown,iputils-ping,isc-dhcp-client,initramfs-tools,libiio-utils,lm-sensors,locales,nano,net-tools,ntpdate,openssh-server,psmisc,rfkill,sudo,systemd-sysv,tio,usbutils,wget,xterm,xz-utils \
+			--include=$PKGS \
 			${DEBIAN_VERSION} \
 			stage1 \
 			https://deb.debian.org/debian
@@ -501,8 +506,9 @@ EOF
 		qemu-system-aarch64 \
 			-m 1G \
 			-M virt \
-			-cpu max,pauth-impdef=on,sve=off \
+			-cpu max,pauth-impdef=on,sve=on \
 			-smp 4 \
+			-device virtio-rng-device \
 			-netdev user,id=eth0 \
 			-device virtio-net-device,netdev=eth0 \
 			-drive file=rootfs.e2.orig,if=none,format=raw,id=hd0,discard=unmap \
@@ -510,7 +516,7 @@ EOF
 			-nographic \
 			-no-reboot \
 			-kernel "${BASE_DIR}/tmp/linux/boot/Image" \
-			-append "console=ttyAMA0 root=/dev/vda rootfstype=ext2 ip=dhcp rw init=/stage2.sh" \
+			-append "earlycon console=ttyAMA0 root=/dev/vda rootfstype=ext2 ip=dhcp rw init=/stage2.sh" \
 
 
 		:
