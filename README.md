@@ -242,28 +242,26 @@ PCI-Express and USB-3.1 are mutually exclusive, the SoC supports only one functi
 
 #### Function Selection
 
-Selection of specific function requires changes to the device-tree to ensure that:
+Selection of specific function is achieved by setting a u-boot environment variable:
 
-- USB-Controller
-- PCI-Controller
-- Serdes MUX
+1. stop the boot process using the serial console by pressing a key at the timeout prompt:
 
-are configured as required.
+       Hit any key to stop autoboot:  3
 
-Open `arch/arm64/boot/dts/ti/k3-am642-hummingboard-t.dts`:
+2. set `board_m2_function` variable according to the desired function:
 
-```
-/*
- * choose either PCI-E (M1) or USB-3.1 (M2):
- * - PHY_TYPE_PCIE
- * - PHY_TYPE_USB3
- */
-#define SERDES0_PHY_TYPE PHY_TYPE_USB3
-```
+   - PCI-E: `setenv board_m2_function pcie`
+   - USB-3: `setenv board_m2_function usb3`
+   - Neither (default): `env delete -f board_m2_function`
 
-Change the value of `SERDES0_PHY_TYPE`, and rebuild a full image.
+3. (optionally) save this choice in u-boot environment:
 
-We are working on a more user-friendly configuration method in the background ... .
+       => saveenv
+       Saving Environment to FAT... OK
+
+4. continue boot:
+
+       => boot
 
 ## Booting from eMMC
 

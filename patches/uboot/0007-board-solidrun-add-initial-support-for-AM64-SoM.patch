@@ -1,4 +1,4 @@
-From 425bf2115749b6ca8645e463a7f6ff0a4e9c67f8 Mon Sep 17 00:00:00 2001
+From 091dc21f1a8ea2d5fed2ea093457d8af84555c42 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Fri, 27 Oct 2023 16:58:16 +0200
 Subject: [PATCH 7/7] board: solidrun: add initial support for AM64 SoM
@@ -24,14 +24,14 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  arch/arm/mach-k3/Kconfig                      |    1 +
  board/solidrun/am64som/Kconfig                |   45 +
  board/solidrun/am64som/Makefile               |    7 +
- board/solidrun/am64som/am64som.env            |   49 +
+ board/solidrun/am64som/am64som.env            |   54 +
  board/solidrun/am64som/id-eeprom.c            |  241 ++
  board/solidrun/am64som/id-eeprom.h            |   16 +
  board/solidrun/am64som/som.c                  |  352 +++
  configs/am64som_a53_defconfig                 |  196 ++
  configs/am64som_r5_defconfig                  |  194 ++
  include/configs/am64som.h                     |   21 +
- 21 files changed, 5171 insertions(+), 1 deletion(-)
+ 21 files changed, 5176 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dts
  create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dtsi
  create mode 100644 arch/arm/dts/k3-am642-r5-hummingboard-t.dts
@@ -4251,17 +4251,22 @@ index 0000000000..4e520ddc52
 +obj-y	+= som.o
 diff --git a/board/solidrun/am64som/am64som.env b/board/solidrun/am64som/am64som.env
 new file mode 100644
-index 0000000000..9026618d44
+index 0000000000..a2d6327ce8
 --- /dev/null
 +++ b/board/solidrun/am64som/am64som.env
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,54 @@
 +#include <environment/ti/ti_armv7_common.env>
 +#include <environment/ti/mmc.env>
 +#include <environment/ti/k3_dfu_combined.env>
 +
++board_m2_function=
 +findfdt=
-+	if test $board_name = hummingboard-t; then
-+		setenv name_fdt ti/k3-am642-hummingboard-t.dtb; fi;
++	if test $board_name = hummingboard-t; then if test $board_m2_function = pcie; then
++		setenv name_fdt ti/k3-am642-hummingboard-t-pcie.dtb; fi; fi;
++	if test $board_name = hummingboard-t; then if test $board_m2_function = usb3; then
++		setenv name_fdt ti/k3-am642-hummingboard-t-usb3.dtb; fi; fi;
++	if test $board_name = hummingboard-t; then if test $board_m2_function = undefined; then
++		setenv name_fdt ti/k3-am642-hummingboard-t.dtb; fi; fi;
 +	if test $board_name = sr-som; then
 +		setenv name_fdt ti/k3-am642-sr-som.dtb; fi;
 +	if test $name_fdt = undefined; then
