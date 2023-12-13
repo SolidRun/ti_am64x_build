@@ -157,6 +157,17 @@ fi
 
 
 ###################################################################################################################################
+#							CLONE OPTEE fTPM TA
+if [[ ! -d $BASE_DIR/build/ftpm ]]; then
+	cd $BASE_DIR/build
+	git clone https://github.com/Microsoft/MSRSec.git ftpm
+fi
+###################################################################################################################################
+
+
+
+
+###################################################################################################################################
 #							CLONE U-boot
 U_BOOT_TAG=09.00.00.006
 
@@ -281,8 +292,27 @@ cp build/k3/lite/release/bl31.bin $BASE_DIR/tmp/bl31.bin
 
 ###################################################################################################################################
 #							BUILD OPTEE
+build_optee_ftpm() {
+	DEVKIT="$1"
+
+	cd $BASE_DIR/build/ftpm/TAs/optee_ta
+	make -j1 \
+		CFG_FTPM_USE_WOLF=n \
+		CFG_AUTHVARS_USE_WOLF=n \
+		TA_CPU=cortex-a53 \
+		CFG_ARM64_ta_arm64=y \
+		TA_CROSS_COMPILE=aarch64-linux-gnu- \
+		CROSS_COMPILE64=aarch64-linux-gnu- \
+		TA_DEV_KIT_DIR="$DEVKIT" \
+		CFG_TEE_TA_LOG_LEVEL=2
+
+	mkdir -p $BASE_DIR/tmp/optee
+	cp -v out/*/*.ta $BASE_DIR/tmp/optee/
+}
+
 build_optee() {
 	PLATFORM=k3-am64x
+	RPMBFS_OPTS="CFG_RPMB_FS=y"
 
 	# build optee devkit
 	cd  $BASE_DIR/build/optee_os
@@ -292,9 +322,11 @@ build_optee() {
 		CROSS_COMPILE64=aarch64-linux-gnu- \
 		CROSS_COMPILE32=arm-linux-gnueabihf- \
 		CFG_ARM64_core=y \
+		$RPMBFS_OPTS \
 		ta_dev_kit
 
-	# TODO: build TAs if any
+	# build TAs
+	build_optee_ftpm $BASE_DIR/build/optee_os/out/arm-plat-k3/export-ta_arm64
 
 	# build optee os
 	cd  $BASE_DIR/build/optee_os
@@ -303,9 +335,11 @@ build_optee() {
 		PLATFORM=$PLATFORM \
 		CROSS_COMPILE64=aarch64-linux-gnu- \
 		CROSS_COMPILE32=arm-linux-gnueabihf- \
-		CFG_ARM64_core=y
+		CFG_ARM64_core=y \
+		$RPMBFS_OPTS \
 
-	cp out/arm-plat-k3/core/tee-pager_v2.bin $BASE_DIR/tmp/tee-pager_v2.bin
+	mkdir -p $BASE_DIR/tmp/optee
+	cp out/arm-plat-k3/core/tee-pager_v2.bin $BASE_DIR/tmp/optee/
 }
 build_optee
 
@@ -359,7 +393,7 @@ make \
 	ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- \
 	BINMAN_INDIRS="./board/ti/am64x $BASE_DIR/build/ti-linux-firmware" \
 	BL31=$BASE_DIR/tmp/bl31.bin \
-	TEE=$BASE_DIR/tmp/tee-pager_v2.bin
+	TEE=$BASE_DIR/tmp/optee/tee-pager_v2.bin
 
 
 cp tispl.bin $BASE_DIR/tmp/tispl.bin
@@ -531,6 +565,19 @@ EOF
 ##################################################################################################################################
 #							BUILD selected Distro
 do_build_${DISTRO}
+##################################################################################################################################
+
+
+
+
+##################################################################################################################################
+#							Install OPTEE TAs
+do_optee_ta_rootfs() {
+	for ta in ${BASE_DIR}/tmp/optee/*.ta; do
+		e2cp -G 0 -O 0 -d "${BASE_DIR}/tmp/rootfs.ext4:/root/" -v $ta
+	done
+}
+do_optee_ta_rootfs
 ##################################################################################################################################
 
 
