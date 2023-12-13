@@ -157,11 +157,12 @@ Binary releases are available on [our website](https://images.solid-run.com/AM64
 This table indicates valid boot-modes selectable via the DIP switch S1 on the HummingBoard-T Carrier.
 The value 0 indicates OFF, 1 indicates the ON state and X indicates don't care.
 
-| Switch                  | 1 | 2 | 3 | 4 | 5 | 6 |
-|-------------------------|---|---|---|---|---|---|
-| microSD (FAT partition) | 0 | 0 | 0 | 1 | 0 | 1 |
-| microSD (RAW)           | 1 | 0 | 0 | 0 | 1 | 1 |
-| eMMC                    | 1 | 0 | 0 | 1 | X | X |
+| Switch                  | 1 | 2 | 3 | 4 | 5 | 6 | Notes        |
+|-------------------------|---|---|---|---|---|---|              |
+| microSD (FAT partition) | 0 | 0 | 0 | 1 | 0 | 1 |              |
+| microSD (RAW)           | 1 | 0 | 0 | 0 | 1 | 1 |              |
+| eMMC                    | 1 | 0 | 0 | 1 | X | X |              |
+| UART                    | 1 | 1 | 1 | 0 | X | X | DNP SoM R175 |
 
 ## Configure Interfaces
 
