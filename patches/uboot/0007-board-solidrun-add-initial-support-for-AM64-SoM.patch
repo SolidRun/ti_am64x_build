@@ -1,4 +1,4 @@
-From a1d41425b4add9f5fd426733dbda1adb9b534b10 Mon Sep 17 00:00:00 2001
+From 425bf2115749b6ca8645e463a7f6ff0a4e9c67f8 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Fri, 27 Oct 2023 16:58:16 +0200
 Subject: [PATCH 7/7] board: solidrun: add initial support for AM64 SoM
@@ -12,7 +12,7 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
 ---
  arch/arm/dts/Makefile                         |    6 +-
  arch/arm/dts/k3-am642-hummingboard-t.dts      |   19 +
- arch/arm/dts/k3-am642-hummingboard-t.dtsi     |  290 +++
+ arch/arm/dts/k3-am642-hummingboard-t.dtsi     |  319 +++
  arch/arm/dts/k3-am642-r5-hummingboard-t.dts   |   23 +
  arch/arm/dts/k3-am642-r5-sr-som.dts           |   22 +
  arch/arm/dts/k3-am642-r5-sr-som.dtsi          |  195 ++
@@ -27,11 +27,11 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  board/solidrun/am64som/am64som.env            |   49 +
  board/solidrun/am64som/id-eeprom.c            |  241 ++
  board/solidrun/am64som/id-eeprom.h            |   16 +
- board/solidrun/am64som/som.c                  |  331 +++
- configs/am64som_a53_defconfig                 |  191 ++
+ board/solidrun/am64som/som.c                  |  352 +++
+ configs/am64som_a53_defconfig                 |  196 ++
  configs/am64som_r5_defconfig                  |  194 ++
  include/configs/am64som.h                     |   21 +
- 21 files changed, 5116 insertions(+), 1 deletion(-)
+ 21 files changed, 5171 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dts
  create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dtsi
  create mode 100644 arch/arm/dts/k3-am642-r5-hummingboard-t.dts
@@ -96,10 +96,10 @@ index 0000000000..8ed191d339
 +};
 diff --git a/arch/arm/dts/k3-am642-hummingboard-t.dtsi b/arch/arm/dts/k3-am642-hummingboard-t.dtsi
 new file mode 100644
-index 0000000000..6e073f3965
+index 0000000000..d8712a915d
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-hummingboard-t.dtsi
-@@ -0,0 +1,290 @@
+@@ -0,0 +1,319 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
@@ -240,12 +240,27 @@ index 0000000000..6e073f3965
 +	};
 +};
 +
++&main_i2c1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_i2c1_pins_default>, <&main_i2c1_int_pins_default>;
++	status = "okay";
++
++	rtc: am1805aq@69 {
++		compatible = "abracon,abx80x";
++		reg = <0x69>;
++		abracon,tc-diode = "schottky";
++		abracon,tc-resistor = <3>;
++		interrupt-parent = <&main_gpio0>;
++		interrupts = <44 IRQ_TYPE_EDGE_FALLING>;
++		status = "okay";
++	};
++};
++
 +&main_mcan0 {
 +	status = "okay";
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&main_mcan0_pins_default>;
 +
-+	/* Carrier */
 +	can-transceiver {
 +		max-bitrate = <8000000>;
 +	};
@@ -256,7 +271,6 @@ index 0000000000..6e073f3965
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&main_mcan1_pins_default>;
 +
-+	/* Carrier */
 +	can-transceiver {
 +		max-bitrate = <8000000>;
 +	};
@@ -275,6 +289,21 @@ index 0000000000..6e073f3965
 +		pinctrl-single,pins = <
 +			/* external pull-up on Carrier */
 +			AM64X_IOPAD(0x0098, PIN_INPUT, 7)	/* Pad GPMC0_WAIT0 Mux GPIO0_37 */
++		>;
++	};
++
++	main_i2c1_pins_default: main-i2c1-pins-default {
++		pinctrl-single,pins = <
++			/* external pull-up on SoM */
++			AM64X_IOPAD(0x0268, PIN_INPUT, 0)	/* Pad I2C1_SCL Mux I2C1_SCL */
++			AM64X_IOPAD(0x026c, PIN_INPUT, 0)	/* Pad I2C1_SDA Mux I2C1_SDA */
++		>;
++	};
++
++	main_i2c1_int_pins_default: main-i2c1-int-pins-default {
++		pinctrl-single,pins = <
++			/* external pull-up on Carrier */
++			AM64X_IOPAD(0x00b4, PIN_INPUT, 7)	/* Pad GPMC0_CSn3 Mux GPIO0_44 */
 +		>;
 +	};
 +
@@ -4546,10 +4575,10 @@ index 0000000000..17c50c46ae
 +phys_size_t am64som_ram_size(void);
 diff --git a/board/solidrun/am64som/som.c b/board/solidrun/am64som/som.c
 new file mode 100644
-index 0000000000..5c1534a4eb
+index 0000000000..fac5c7f555
 --- /dev/null
 +++ b/board/solidrun/am64som/som.c
-@@ -0,0 +1,331 @@
+@@ -0,0 +1,352 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * SolidRun AM64 SoM initialization
@@ -4713,6 +4742,23 @@ index 0000000000..5c1534a4eb
 +}
 +
 +#ifdef CONFIG_BOARD_LATE_INIT
++/*
++ * HACK: set MAC addresses for interfaces without uboot driver
++ * in environment so that they can be passed on to Linux.
++ */
++static void fixup_macs_eth1_eth2() {
++	char mac[6];
++	int ret;
++
++	ret = am64som_mac(mac, 1);
++	if (!ret)
++		eth_env_set_enetaddr("eth1addr", mac);
++
++	ret = am64som_mac(mac, 2);
++	if (!ret)
++		eth_env_set_enetaddr("eth2addr", mac);
++}
++
 +int board_late_init(void)
 +{
 +	/* enable 25MHz reference clkout for ethernet phys */
@@ -4733,6 +4779,10 @@ index 0000000000..5c1534a4eb
 +	/* Note: currently there is just one SoM */
 +	env_set("som_name", "k3-am642");
 +#endif
++
++	/* HACK: set MAC addresses for interfaces without uboot driver */
++	fixup_macs_eth1_eth2();
++
 +	return 0;
 +}
 +#endif
@@ -4883,10 +4933,10 @@ index 0000000000..5c1534a4eb
 +}
 diff --git a/configs/am64som_a53_defconfig b/configs/am64som_a53_defconfig
 new file mode 100644
-index 0000000000..6955163a3e
+index 0000000000..a2900caba1
 --- /dev/null
 +++ b/configs/am64som_a53_defconfig
-@@ -0,0 +1,191 @@
+@@ -0,0 +1,196 @@
 +CONFIG_ARM=y
 +CONFIG_SKIP_LOWLEVEL_INIT=y
 +CONFIG_ARCH_K3=y
@@ -4964,6 +5014,7 @@ index 0000000000..6955163a3e
 +CONFIG_CMD_I2C=y
 +CONFIG_CMD_MMC=y
 +CONFIG_CMD_USB=y
++CONFIG_CMD_RTC=y
 +CONFIG_CMD_TIME=y
 +CONFIG_CMD_PMIC=y
 +CONFIG_CMD_REGULATOR=y
@@ -5048,6 +5099,8 @@ index 0000000000..6955163a3e
 +CONFIG_K3_SYSTEM_CONTROLLER=y
 +CONFIG_REMOTEPROC_TI_K3_ARM64=y
 +CONFIG_RESET_TI_SCI=y
++CONFIG_DM_RTC=y
++CONFIG_RTC_ABX80X=y
 +CONFIG_DM_SERIAL=y
 +CONFIG_SOC_DEVICE=y
 +CONFIG_SOC_DEVICE_TI_K3=y
@@ -5059,6 +5112,8 @@ index 0000000000..6955163a3e
 +CONFIG_SYSRESET=y
 +CONFIG_SPL_SYSRESET=y
 +CONFIG_SYSRESET_TI_SCI=y
++CONFIG_TEE=y
++CONFIG_OPTEE=y
 +CONFIG_DM_THERMAL=y
 +CONFIG_USB=y
 +CONFIG_DM_USB_GADGET=y
