@@ -1,7 +1,7 @@
-From 69b0637e12b8deaae9d1817e047b61c2d0e96640 Mon Sep 17 00:00:00 2001
+From 62ab87b56ba9149cc27779750c1ef90f992a1396 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Fri, 24 Nov 2023 17:44:27 +0100
-Subject: [PATCH 3/3] arm64: dts: add description for solidrun am64 som and
+Subject: [PATCH 4/4] arm64: dts: add description for solidrun am64 som and
  hummingboard
 
 Signed-off-by: Josua Mayer <josua@solid-run.com>

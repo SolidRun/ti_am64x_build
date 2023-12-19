@@ -1,7 +1,7 @@
 From a29ae907837417f0887c8510bef92813ab9072b3 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Mon, 27 Nov 2023 14:30:52 +0100
-Subject: [PATCH 2/3] arm64: dts: ti: k3-am64-main: fix pci-e gic interrupt
+Subject: [PATCH 2/4] arm64: dts: ti: k3-am64-main: fix pci-e gic interrupt
  numbers
 
 Existing pci-e nodes refer to gic interrupts 202 and 203 for legacy
