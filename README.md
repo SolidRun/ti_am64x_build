@@ -158,7 +158,7 @@ This table indicates valid boot-modes selectable via the DIP switch S1 on the Hu
 The value 0 indicates OFF, 1 indicates the ON state and X indicates don't care.
 
 | Switch                  | 1 | 2 | 3 | 4 | 5 | 6 | Notes        |
-|-------------------------|---|---|---|---|---|---|              |
+|-------------------------|---|---|---|---|---|---|--------------|
 | microSD (FAT partition) | 0 | 0 | 0 | 1 | 0 | 1 |              |
 | microSD (RAW)           | 1 | 0 | 0 | 0 | 1 | 1 |              |
 | eMMC                    | 1 | 0 | 0 | 1 | X | X |              |

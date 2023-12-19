@@ -1,4 +1,4 @@
-From 091dc21f1a8ea2d5fed2ea093457d8af84555c42 Mon Sep 17 00:00:00 2001
+From 265865498df38cd5a5d5d3984b2ba2c1e09c5301 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Fri, 27 Oct 2023 16:58:16 +0200
 Subject: [PATCH 7/7] board: solidrun: add initial support for AM64 SoM
@@ -28,10 +28,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  board/solidrun/am64som/id-eeprom.c            |  241 ++
  board/solidrun/am64som/id-eeprom.h            |   16 +
  board/solidrun/am64som/som.c                  |  352 +++
- configs/am64som_a53_defconfig                 |  196 ++
+ configs/am64som_a53_defconfig                 |  198 ++
  configs/am64som_r5_defconfig                  |  194 ++
  include/configs/am64som.h                     |   21 +
- 21 files changed, 5176 insertions(+), 1 deletion(-)
+ 21 files changed, 5178 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dts
  create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dtsi
  create mode 100644 arch/arm/dts/k3-am642-r5-hummingboard-t.dts
@@ -4938,10 +4938,10 @@ index 0000000000..fac5c7f555
 +}
 diff --git a/configs/am64som_a53_defconfig b/configs/am64som_a53_defconfig
 new file mode 100644
-index 0000000000..a2900caba1
+index 0000000000..3df1143580
 --- /dev/null
 +++ b/configs/am64som_a53_defconfig
-@@ -0,0 +1,196 @@
+@@ -0,0 +1,198 @@
 +CONFIG_ARM=y
 +CONFIG_SKIP_LOWLEVEL_INIT=y
 +CONFIG_ARCH_K3=y
@@ -4986,7 +4986,7 @@ index 0000000000..a2900caba1
 +CONFIG_SYS_SPL_MALLOC=y
 +CONFIG_SYS_SPL_MALLOC_SIZE=0x800000
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR=y
-+CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x1400
++CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0xC00
 +CONFIG_SPL_DMA=y
 +CONFIG_SPL_ENV_SUPPORT=y
 +CONFIG_SPL_ETH=y
@@ -5138,6 +5138,8 @@ index 0000000000..a2900caba1
 +CONFIG_FS_FAT_MAX_CLUSTSIZE=16384
 +CONFIG_OF_LIBFDT_OVERLAY=y
 +CONFIG_EEPROM_TLV_LIB=y
++CONFIG_SUPPORT_EMMC_RPMB=y
++CONFIG_CMD_OPTEE_RPMB=y
 diff --git a/configs/am64som_r5_defconfig b/configs/am64som_r5_defconfig
 new file mode 100644
 index 0000000000..c8aa205513

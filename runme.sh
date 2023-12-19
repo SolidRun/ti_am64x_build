@@ -692,6 +692,20 @@ function do_assemble_emmc_bootpart() {
 	cd $BASE_DIR
 	mkdir -p "$BASE_DIR/output"
 
+	# size-check files
+	if [ $(stat -c %s "$BASE_DIR/tmp/tiboot3.bin") -gt $((0x400*0x200)) ]; then
+		echo "ERROR: \"tiboot3.bin\" is too large!\n"
+		return 1
+	fi
+	if [ $(stat -c %s "$BASE_DIR/tmp/tispl.bin") -gt $((0x800*0x200)) ]; then
+		echo "ERROR: \"tispl.bin\" is too large!\n"
+		return 1
+	fi
+	if [ $(stat -c %s "$BASE_DIR/tmp/u-boot.img") -gt $((0x1000*0x200)) ]; then
+		echo "ERROR: \"u-boot.img\" is too large!\n"
+		return 1
+	fi
+
 	truncate -s 4M "$BUNDLE"
 	dd of="$BUNDLE" bs=512 conv=notrunc seek=0    if="$BASE_DIR/tmp/tiboot3.bin"
 	dd of="$BUNDLE" bs=512 conv=notrunc seek=1024 if="$BASE_DIR/tmp/tispl.bin"
