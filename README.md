@@ -491,7 +491,8 @@ The build script supports several customisation options that can be applied thro
   - am64xx_solidrun_defconfig (default)
 - BR2_PRIMARY_SITE: Use specific (local) buildroot mirror
 - DEBIAN_VERSION
-  - bullseye (default)
+  - bookworm (default)
+  - bullseye
 - DEBIAN_ROOTFS_SIZE
   - 936M (default)
 

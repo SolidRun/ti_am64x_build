@@ -31,7 +31,7 @@ set -e
 : ${BR2_PRIMARY_SITE:=}
 
 ## Debian Options
-: ${DEBIAN_VERSION:=bullseye}
+: ${DEBIAN_VERSION:=bookworm}
 : ${DEBIAN_ROOTFS_SIZE:=1192M}
 
 ###################################################################################################################################
