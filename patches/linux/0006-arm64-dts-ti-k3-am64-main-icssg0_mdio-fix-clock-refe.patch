@@ -1,0 +1,33 @@
+From f73057cf884f07b099869e9dc6f8dc33a577bd84 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Wed, 27 Dec 2023 15:48:20 +0100
+Subject: [PATCH 6/8] arm64: dts: ti: k3-am64-main: icssg0_mdio: fix clock
+ reference
+
+am64 and am65 icssg_mdio_* use the icssg iclk to calculate mdio bus
+frequency. icssg0_mdio clocks reference "62 3" is an am65 reference and
+invalid on  am64.
+
+Update the reference to actual am64 iclk ("81 20").
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ arch/arm64/boot/dts/ti/k3-am64-main.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
+index 5f3cf4c49dbc..9d08c508b9fe 100644
+--- a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
+@@ -1213,7 +1213,7 @@ tx_pru0_1: txpru@c000 {
+ 		icssg0_mdio: mdio@32400 {
+ 			compatible = "ti,davinci_mdio";
+ 			reg = <0x32400 0x100>;
+-			clocks = <&k3_clks 62 3>;
++			clocks = <&k3_clks 81 20>;
+ 			clock-names = "fck";
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+-- 
+2.35.3
+
