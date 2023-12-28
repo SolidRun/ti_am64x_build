@@ -1,0 +1,31 @@
+From 0ab6255232db3b28dbd960ba42aed4cf951a6579 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Wed, 27 Dec 2023 16:17:16 +0100
+Subject: [PATCH 5/8] arm64: dts: ti: k3-am642-sr-som: add reserved memory
+ regions for m4 mcu
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ arch/arm64/boot/dts/ti/k3-am642-sr-som.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-am642-sr-som.dtsi b/arch/arm64/boot/dts/ti/k3-am642-sr-som.dtsi
+index 1250cdb37049..8cbb3bd36d53 100644
+--- a/arch/arm64/boot/dts/ti/k3-am642-sr-som.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-am642-sr-som.dtsi
+@@ -584,6 +584,12 @@ &main_uart0 {
+ 	status = "okay";
+ };
+ 
++&mcu_m4fss {
++	mboxes = <&mailbox0_cluster6 &mbox_m4_0>;
++	memory-region = <&mcu_m4fss_dma_memory_region>,
++			<&mcu_m4fss_memory_region>;
++};
++
+ &ospi0 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&ospi0_pins_default>;
+-- 
+2.35.3
+
