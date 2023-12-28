@@ -446,7 +446,7 @@ do_build_debian() {
 		# bootstrap a first-stage rootfs
 		rm -rf stage1
 		fakeroot debootstrap --variant=minbase \
-			--arch=arm64 --components=main,contrib,non-free \
+			--arch=arm64 --components=main,contrib,non-free,non-free-firmware \
 			--foreign \
 			--include=$PKGS \
 			${DEBIAN_VERSION} \
