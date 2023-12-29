@@ -1,4 +1,4 @@
-From 265865498df38cd5a5d5d3984b2ba2c1e09c5301 Mon Sep 17 00:00:00 2001
+From ddeb0438b2dad01f2e84292c7d1bc4a3e2c90fcb Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Fri, 27 Oct 2023 16:58:16 +0200
 Subject: [PATCH 7/7] board: solidrun: add initial support for AM64 SoM
@@ -53,10 +53,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  create mode 100644 include/configs/am64som.h
 
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index 3ecde2d1cc..161b3de609 100644
+index 2067136d03..188eaa6c78 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -1277,7 +1277,11 @@ dtb-$(CONFIG_SOC_K3_J784S4) +=	k3-am69-sk.dtb \
+@@ -1280,7 +1280,11 @@ dtb-$(CONFIG_SOC_K3_J784S4) +=	k3-am69-sk.dtb \
  dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
  			      k3-am642-r5-evm.dtb \
  			      k3-am642-sk.dtb \

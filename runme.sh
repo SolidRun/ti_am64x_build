@@ -117,7 +117,7 @@ set -e
 
 ###################################################################################################################################
 #							CLONE K3 Firmware
-FIRMWARE_TAG=09.00.00.007
+FIRMWARE_TAG=09.00.00.011
 
 if [[ ! -d $BASE_DIR/build/ti-linux-firmware ]]; then
 	cd $BASE_DIR/build
@@ -158,7 +158,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE U-boot
-U_BOOT_TAG=09.00.00.006
+U_BOOT_TAG=09.00.00.011
 
 if [[ ! -d $BASE_DIR/build/ti-u-boot ]]; then
 	cd $BASE_DIR/build
@@ -185,25 +185,6 @@ if [[ ! -d $BASE_DIR/build/k3conf ]]; then
 	git reset --hard $K3CONF_HEAD
 	test -d $BASE_DIR/patches/k3conf && git am $BASE_DIR/patches/k3conf/*.patch
 fi
-
-###################################################################################################################################
-
-
-
-
-###################################################################################################################################
-#							CLONE Security Development Package
-SECDEVPKG_BRANCH=master
-SECDEVPKG_HEAD=08.06.00.007
-
-if [[ ! -d $BASE_DIR/build/core-secdev-k3 ]]; then
-	cd $BASE_DIR/build
-	git clone git://git.ti.com/security-development-tools/core-secdev-k3.git -b $SECDEVPKG_BRANCH
-	cd core-secdev-k3
-	git reset --hard $SECDEVPKG_HEAD
-	test -d $BASE_DIR/patches/core-secdev-k3 && git am $BASE_DIR/patches/k3conf/*.patch
-fi
-export TI_SECURE_DEV_PKG=$BASE_DIR/build/core-secdev-k3
 
 ###################################################################################################################################
 

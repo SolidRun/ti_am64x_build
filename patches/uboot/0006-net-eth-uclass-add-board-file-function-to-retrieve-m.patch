@@ -1,4 +1,4 @@
-From 171e07e1720199f819e2fffa2193173f8e2f57f3 Mon Sep 17 00:00:00 2001
+From ef52b06f24c5b123037d79de983042f69026b735 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Sun, 3 Dec 2023 17:18:54 +0100
 Subject: [PATCH 6/7] net: eth-uclass: add board-file function to retrieve mac
