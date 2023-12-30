@@ -1,4 +1,4 @@
-From 0ab6255232db3b28dbd960ba42aed4cf951a6579 Mon Sep 17 00:00:00 2001
+From 6ef88df3c1763e12081e8b0f66919a7e298532ab Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 27 Dec 2023 16:17:16 +0100
 Subject: [PATCH 5/8] arm64: dts: ti: k3-am642-sr-som: add reserved memory

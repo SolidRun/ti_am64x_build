@@ -1,0 +1,44 @@
+From 648c11c2bd9de397a7b75118fed83b8e87b376f9 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Sat, 30 Dec 2023 12:26:33 +0100
+Subject: [PATCH] board: solidrun: am64som: minor corrections in non-functional
+ code path
+
+correct comment in board file outlining reason for lock-up when enabling
+early eeprom-based board detection; fix binman reference in board dtb.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ arch/arm/dts/k3-am642-r5-hummingboard-t.dts | 2 +-
+ board/solidrun/am64som/som.c                | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/dts/k3-am642-r5-hummingboard-t.dts b/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
+index 92646e405b..659377beb3 100644
+--- a/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
++++ b/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
+@@ -12,7 +12,7 @@
+ #include "k3-am642.dtsi"
+ #include "k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi"
+ #include "k3-am64-ddr.dtsi"
+-#include "k3-am64x-binman.dtsi"
++#include "k3-am642-sr-som-binman.dtsi"
+ #include "k3-am642-sr-som.dtsi"
+ #include "k3-am642-r5-sr-som.dtsi"
+ #include "k3-am642-hummingboard-t.dtsi"
+diff --git a/board/solidrun/am64som/som.c b/board/solidrun/am64som/som.c
+index fac5c7f555..4464fc94b6 100644
+--- a/board/solidrun/am64som/som.c
++++ b/board/solidrun/am64som/som.c
+@@ -240,7 +240,7 @@ int board_fit_config_name_match(const char *name)
+ {
+ 	/*
+ 	 * TODO: detect board from eeprom here
+-	 * currently dram_init locks up later, if eeprom is read here ... ... :(
++	 * currently dram_init locks up later, if board dtb is matched here ... ... :(
+ 	 *
+ 	 * switch (am64som_carrier_type())
+ 	 * {
+-- 
+2.35.3
+

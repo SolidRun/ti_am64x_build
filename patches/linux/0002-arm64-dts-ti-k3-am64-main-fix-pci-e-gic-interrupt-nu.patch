@@ -1,7 +1,7 @@
-From a29ae907837417f0887c8510bef92813ab9072b3 Mon Sep 17 00:00:00 2001
+From a69ec8ca7464ad10c55eafbcda68ccac37d3c714 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Mon, 27 Nov 2023 14:30:52 +0100
-Subject: [PATCH 2/4] arm64: dts: ti: k3-am64-main: fix pci-e gic interrupt
+Subject: [PATCH 2/8] arm64: dts: ti: k3-am64-main: fix pci-e gic interrupt
  numbers
 
 Existing pci-e nodes refer to gic interrupts 202 and 203 for legacy
@@ -59,7 +59,7 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
-index ac7b2b061680..5f3cf4c49dbc 100644
+index 7b4cc0578d20..7bd862d3abeb 100644
 --- a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
 +++ b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
 @@ -861,7 +861,7 @@ pcie0_rc: pcie@f102000 {

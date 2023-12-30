@@ -1,4 +1,4 @@
-From ddeb0438b2dad01f2e84292c7d1bc4a3e2c90fcb Mon Sep 17 00:00:00 2001
+From 32613e5db1b96cb59dfc32a38369586c653cd4fe Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Fri, 27 Oct 2023 16:58:16 +0200
 Subject: [PATCH 7/7] board: solidrun: add initial support for AM64 SoM
@@ -53,15 +53,15 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  create mode 100644 include/configs/am64som.h
 
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index 2067136d03..188eaa6c78 100644
+index f5c4141b3b..6635d4d4ec 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -1280,7 +1280,11 @@ dtb-$(CONFIG_SOC_K3_J784S4) +=	k3-am69-sk.dtb \
- dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
+@@ -1281,7 +1281,11 @@ dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
  			      k3-am642-r5-evm.dtb \
  			      k3-am642-sk.dtb \
--			      k3-am642-r5-sk.dtb
-+			      k3-am642-r5-sk.dtb \
+ 			      k3-am642-r5-sk.dtb \
+-			      k3-am642-evm-nand.dtbo
++			      k3-am642-evm-nand.dtbo \
 +			      k3-am642-sr-som.dtb \
 +			      k3-am642-r5-sr-som.dtb \
 +			      k3-am642-hummingboard-t.dtb \
@@ -4174,10 +4174,10 @@ index 0000000000..2a87304adb
 +	ti,usb2-only;
 +};
 diff --git a/arch/arm/mach-k3/Kconfig b/arch/arm/mach-k3/Kconfig
-index 34f1eff7d8..1cdd941157 100644
+index 3c3d971e13..4419a6ae17 100644
 --- a/arch/arm/mach-k3/Kconfig
 +++ b/arch/arm/mach-k3/Kconfig
-@@ -191,6 +191,7 @@ config K3_X509_SWRV
+@@ -195,6 +195,7 @@ config K3_X509_SWRV
  	help
  	  SWRV for X509 certificate used for boot images
  

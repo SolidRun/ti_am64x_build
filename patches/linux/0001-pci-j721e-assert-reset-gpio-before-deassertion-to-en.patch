@@ -1,7 +1,7 @@
-From 66225cfe91c79a2a32171711be67002598214d30 Mon Sep 17 00:00:00 2001
+From f2fe807263327f876d0b2fff1c8420d54acca24a Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Mon, 27 Nov 2023 14:44:29 +0100
-Subject: [PATCH 1/4] pci: j721e: assert reset-gpio before deassertion to
+Subject: [PATCH 1/8] pci: j721e: assert reset-gpio before deassertion to
  ensure reset
 
 Optional reset gpio is already being deasserted after a 100us delay,

@@ -1,4 +1,4 @@
-From f362c22de83bee843b345aaecd723478cc2f5f28 Mon Sep 17 00:00:00 2001
+From 4d836f4650411af508d1913d1e4fbb33f148a84f Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 27 Sep 2023 14:39:51 +0200
 Subject: [PATCH 5/7] arm: mach-k3: am642_init: support spl_boot_device in
@@ -15,19 +15,19 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  2 files changed, 7 insertions(+)
 
 diff --git a/arch/arm/mach-k3/Makefile b/arch/arm/mach-k3/Makefile
-index 14cf85ad38..4fea5817c9 100644
+index d77bf46572..21e1ad0080 100644
 --- a/arch/arm/mach-k3/Makefile
 +++ b/arch/arm/mach-k3/Makefile
-@@ -20,5 +20,7 @@ obj-$(CONFIG_SOC_K3_AM625) += am625_init.o
- obj-$(CONFIG_SOC_K3_AM62A7) += am62a7_init.o
+@@ -22,5 +22,7 @@ obj-$(CONFIG_SOC_K3_AM62A7) += am62a7_init.o
  obj-$(CONFIG_SOC_K3_J784S4) += j784s4_init.o
+ obj-$(CONFIG_SOC_K3_AM62P5) += am62p5_init.o
  obj-$(CONFIG_K3_LOAD_SYSFW) += sysfw-loader.o
 +else
 +obj-$(CONFIG_SOC_K3_AM642) += am642_init.o
  endif
  obj-y += common.o security.o
 diff --git a/arch/arm/mach-k3/am642_init.c b/arch/arm/mach-k3/am642_init.c
-index 077612ff80..1e961ef298 100644
+index 811f323ff0..53536cb202 100644
 --- a/arch/arm/mach-k3/am642_init.c
 +++ b/arch/arm/mach-k3/am642_init.c
 @@ -31,6 +31,7 @@
@@ -46,7 +46,7 @@ index 077612ff80..1e961ef298 100644
  
  static u32 __get_backup_bootmedia(u32 main_devstat)
  {
-@@ -373,12 +375,14 @@ static u32 __get_primary_bootmedia(u32 main_devstat)
+@@ -376,12 +378,14 @@ static u32 __get_primary_bootmedia(u32 main_devstat)
  u32 spl_boot_device(void)
  {
  	u32 devstat = readl(CTRLMMR_MAIN_DEVSTAT);
@@ -61,7 +61,7 @@ index 077612ff80..1e961ef298 100644
  
  #if defined(CONFIG_SYS_K3_SPL_ATF)
  
-@@ -430,3 +434,4 @@ void release_resources_for_core_shutdown(void)
+@@ -433,3 +437,4 @@ void release_resources_for_core_shutdown(void)
  	}
  }
  #endif

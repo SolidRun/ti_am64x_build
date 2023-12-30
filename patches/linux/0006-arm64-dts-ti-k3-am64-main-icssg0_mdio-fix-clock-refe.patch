@@ -1,4 +1,4 @@
-From f73057cf884f07b099869e9dc6f8dc33a577bd84 Mon Sep 17 00:00:00 2001
+From 764a3b383589527c64f095f2b692d91b40ccdb0c Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 27 Dec 2023 15:48:20 +0100
 Subject: [PATCH 6/8] arm64: dts: ti: k3-am64-main: icssg0_mdio: fix clock
@@ -16,10 +16,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
-index 5f3cf4c49dbc..9d08c508b9fe 100644
+index 7bd862d3abeb..e1f8a6bc543d 100644
 --- a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
 +++ b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
-@@ -1213,7 +1213,7 @@ tx_pru0_1: txpru@c000 {
+@@ -1243,7 +1243,7 @@ tx_pru0_1: txpru@c000 {
  		icssg0_mdio: mdio@32400 {
  			compatible = "ti,davinci_mdio";
  			reg = <0x32400 0x100>;
