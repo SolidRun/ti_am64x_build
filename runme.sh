@@ -325,7 +325,20 @@ make \
 	-j${JOBS} \
 	ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- \
 	BINMAN_INDIRS="./board/ti/am64x $BASE_DIR/build/ti-linux-firmware"
-cp -L tiboot3.bin $BASE_DIR/tmp/tiboot3.bin
+case ${SOC_VERSION}_${SOC_TYPE} in
+	sr1_gp)
+		TIBOOT3=tiboot3-am64x-gp-sr-som.bin
+	;;
+	sr2_hs-fs)
+		TIBOOT3=tiboot3-am64x_sr2-hs-fs-sr-som.bin
+	;;
+	sr2_hs-se)
+		TIBOOT3=tiboot3-am64x_sr2-hs-sr-som.bin
+	;;
+	*)
+		echo "Error: Silicon \"${SOC_VERSION}\" type \"${SOC_TYPE}\" is not supported!"
+esac
+cp ${TIBOOT3} $BASE_DIR/tmp/tiboot3.bin
 
 
 
