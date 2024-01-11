@@ -1,0 +1,65 @@
+From 12f3faf45d07aa608c3a94d58fbe82fc83c2a88b Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Wed, 10 Jan 2024 17:47:27 +0100
+Subject: [PATCH 10/12] net: phy: ti: dp83869: implement software reset
+
+DP83869 uses cotrol register @1F for full software reset. BMCR_RESET
+does not reset all state reliably.
+
+Implement soft_reset driver function.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ drivers/net/phy/dp83869.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/phy/dp83869.c b/drivers/net/phy/dp83869.c
+index 23dbf42b68..a64e462412 100644
+--- a/drivers/net/phy/dp83869.c
++++ b/drivers/net/phy/dp83869.c
+@@ -7,6 +7,7 @@
+ #include <common.h>
+ #include <phy.h>
+ #include <linux/compat.h>
++#include <linux/delay.h>
+ #include <malloc.h>
+ 
+ #include <dm.h>
+@@ -20,6 +21,7 @@
+ #define MII_DP83869_CFG2	0x14
+ #define MII_DP83869_BISCR	0x16
+ #define DP83869_CTRL		0x1f
++#define DP83869_CTRL_SW_RESET	BIT(15)
+ #define DP83869_CFG4		0x1e
+ 
+ /* Extended Registers */
+@@ -473,6 +475,16 @@ static int dp83869_probe(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
++static int dp83869_soft_reset(struct phy_device *phydev)
++{
++	int ret;
++
++	ret = phy_write_mmd(phydev, DP83869_DEVADDR, DP83869_CTRL, DP83869_CTRL_SW_RESET);
++	udelay(30);
++
++	return ret;
++}
++
+ static struct phy_driver DP83869_driver = {
+ 	.name = "TI DP83869",
+ 	.uid = 0x2000a0f1,
+@@ -483,7 +495,8 @@ static struct phy_driver DP83869_driver = {
+ 	.startup = &genphy_startup,
+ 	.shutdown = &genphy_shutdown,
+ 	.readext = dp83869_readext,
+-	.writeext = dp83869_writeext
++	.writeext = dp83869_writeext,
++	.soft_reset = dp83869_soft_reset
+ };
+ 
+ int phy_dp83869_init(void)
+-- 
+2.35.3
+

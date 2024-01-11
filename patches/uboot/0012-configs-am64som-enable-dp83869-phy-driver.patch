@@ -1,0 +1,26 @@
+From 2a92d3e857fbe499ddaf8562f4fb55fc85cad009 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Thu, 11 Jan 2024 16:59:28 +0100
+Subject: [PATCH 12/12] configs: am64som: enable dp83869 phy driver
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ configs/am64som_a53_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configs/am64som_a53_defconfig b/configs/am64som_a53_defconfig
+index 3df1143580..0e0a3d7030 100644
+--- a/configs/am64som_a53_defconfig
++++ b/configs/am64som_a53_defconfig
+@@ -141,7 +141,7 @@ CONFIG_SPI_FLASH_MT35XU=y
+ # CONFIG_SPI_FLASH_USE_4K_SECTORS is not set
+ CONFIG_MULTIPLEXER=y
+ CONFIG_MUX_MMIO=y
+-CONFIG_PHY_TI_DP83867=y
++CONFIG_PHY_TI_DP83869=y
+ CONFIG_PHY_FIXED=y
+ CONFIG_TI_AM65_CPSW_NUSS=y
+ CONFIG_PHY=y
+-- 
+2.35.3
+

@@ -1,0 +1,50 @@
+From 68d7c74aa4a14a0e0e1a5f58ef0d970dd9149363 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Wed, 10 Jan 2024 17:35:44 +0100
+Subject: [PATCH 09/12] net: phy: add support for a driver-defined software
+ reset function
+
+Some ethernet PHYs don't fully reset from BMCR_RESET and require custom
+mdio message.
+
+Add a soft_reset function to struct phy_driver and call it in phy_init
+when available.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ drivers/net/phy/phy.c | 3 +++
+ include/phy.h         | 4 ++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index 80230b907c..abcdf40fd7 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -855,6 +855,9 @@ int phy_reset(struct phy_device *phydev)
+ 	if (phydev->flags & PHY_FLAG_BROKEN_RESET)
+ 		return 0;
+ 
++	if (phydev->drv->soft_reset)
++		return phydev->drv->soft_reset(phydev);
++
+ #ifdef CONFIG_PHYLIB_10G
+ 	/* If it's 10G, we need to issue reset through one of the MMDs */
+ 	if (phydev->is_c45) {
+diff --git a/include/phy.h b/include/phy.h
+index 87aa86c2e7..9e51a7b9e8 100644
+--- a/include/phy.h
++++ b/include/phy.h
+@@ -100,6 +100,10 @@ struct phy_driver {
+ 
+ 	u32 features;
+ 
++	/* perform driver defined software reset */
++	/* called from phy_reset */
++	int (*soft_reset)(struct phy_device *phydev);
++
+ 	/* Called to do any driver startup necessities */
+ 	/* Will be called during phy_connect */
+ 	int (*probe)(struct phy_device *phydev);
+-- 
+2.35.3
+
