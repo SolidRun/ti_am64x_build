@@ -635,7 +635,7 @@ function do_assemble_sd() {
 	IMAGE_BOOTPART_END=$((8*1024*1024-1)) # bootpart size = 7MiB
 	IMAGE_ROOTPART_SIZE=`stat -c "%s" tmp/rootfs.ext4`
 	IMAGE_ROOTPART_START=$((IMAGE_BOOTPART_END+1))
-	IMAGE_ROOTPART_END=$((IMAGE_ROOTPART_START+IMAGE_ROOTPART_SIZE))
+	IMAGE_ROOTPART_END=$((IMAGE_ROOTPART_START+IMAGE_ROOTPART_SIZE-1))
 	IMAGE_SIZE=$((IMAGE_ROOTPART_END+512)) # require 1 additional sector at end
 
 	# Create the output image, 2 partitions: 1 boot partition and one root partition
