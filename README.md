@@ -476,11 +476,11 @@ The build script supports several customisation options that can be applied thro
   - evm
   - hummingboard-t (default)
 - SOC_VERSION: Choose Silicon Revision
-  - sr1 (AM6442A - SR 1.0, default)
-  - sr2 (AM6442B - SR 2.0)
+  - sr1 (AM6442A - SR 1.0)
+  - sr2 (AM6442B - SR 2.0, default)
 - SOC_TYPE: Choose SoC Type (secure boot)
-  - gp (general purpose, **sr1 only**, default)
-  - hs-fs (high security, field-securable - before burning customer key to efuses, **sr2 and later**)
+  - gp (general purpose, **sr1 only**)
+  - hs-fs (high security, field-securable - before burning customer key to efuses, **sr2 and later**, default)
   - hs-se (high security, security-enabled - after burning customer key to efuses, **sr2 and later**)
 - DISTRO: Choose Linux distribution for rootfs
   - buildroot (default)

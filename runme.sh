@@ -17,13 +17,13 @@ set -e
 # Silicon Revision
 # - sr1: AM6442A - SR 1.0
 # - sr2: AM6442B - SR 2.0
-: ${SOC_VERSION:=sr1}
+: ${SOC_VERSION:=sr2}
 
 # Silicon Type
 # - gp: general purpose (ONLY sr1)
 # - hs-fs: high security, field-securable (before burning customer key to efuses, sr2 and later only)
 # - hs-se: high security, security enabled (after burning customer key to efuses, sr2 and later only)
-: ${SOC_TYPE:=gp}
+: ${SOC_TYPE:=hs-fs}
 
 ## Buildroot Options
 : ${BUILDROOT_VERSION:=2023.02.6}
