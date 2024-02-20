@@ -208,6 +208,22 @@ fi
 
 
 ###################################################################################################################################
+#							CLONE acontis atemsys module sources
+ATEMSYS_TAG=v1.4.28
+
+if [[ ! -d $BASE_DIR/build/atemsys ]]; then
+	cd $BASE_DIR/build
+	git clone https://github.com/acontis/atemsys.git
+	cd atemsys
+	test -d $BASE_DIR/patches/atemsys && git am $BASE_DIR/patches/atemsys/*.patch
+fi
+
+###################################################################################################################################
+
+
+
+
+###################################################################################################################################
 #							DOWNLOAD Buildroot
 do_fetch_buildroot() {
 	if [[ ! -d $BASE_DIR/build/buildroot ]]; then
@@ -380,20 +396,66 @@ install -v -m755 k3conf $BASE_DIR/tmp/k3conf
 #							BUILD Linux
 LINUX_DEFCONFIG=am64xx-solidrun-linux_defconfig
 
-cd $BASE_DIR/build/ti-linux-kernel
-./scripts/kconfig/merge_config.sh -O "${BASE_DIR}/build/ti-linux-kernel" -m arch/arm64/configs/defconfig "${BASE_DIR}/configs/${LINUX_DEFCONFIG}"
-make olddefconfig
-#make menuconfig
-make savedefconfig
-make -j${JOBS} dtbs Image modules
-rm -rf "${BASE_DIR}/tmp/linux"
-mkdir -p "${BASE_DIR}/tmp/linux/boot/ti"
-cp arch/arm64/boot/Image "${BASE_DIR}/tmp/linux/boot/Image"
-cp arch/arm64/boot/dts/ti/*.dtb "${BASE_DIR}/tmp/linux/boot/ti/"
-cp .config "${BASE_DIR}/tmp/linux/boot/config"
-cp System.map "${BASE_DIR}/tmp/linux/boot/System.map"
-make -j${JOBS} INSTALL_MOD_PATH="${BASE_DIR}/tmp/linux/usr" modules_install
+build_kernel() {
+	cd $BASE_DIR/build/ti-linux-kernel
+	./scripts/kconfig/merge_config.sh -O "${BASE_DIR}/build/ti-linux-kernel" -m arch/arm64/configs/defconfig "${BASE_DIR}/configs/${LINUX_DEFCONFIG}"
+	make olddefconfig
+	#make menuconfig
+	make savedefconfig
+	make -j${JOBS} dtbs Image modules
+	rm -rf "${BASE_DIR}/tmp/linux"
+	mkdir -p "${BASE_DIR}/tmp/linux/boot/ti"
+	cp arch/arm64/boot/Image "${BASE_DIR}/tmp/linux/boot/Image"
+	cp arch/arm64/boot/dts/ti/*.dtb "${BASE_DIR}/tmp/linux/boot/ti/"
+	cp .config "${BASE_DIR}/tmp/linux/boot/config"
+	cp System.map "${BASE_DIR}/tmp/linux/boot/System.map"
+	make -j${JOBS} INSTALL_MOD_PATH="${BASE_DIR}/tmp/linux/usr" modules_install
+}
 
+# export linux headers
+build_kernel_headers() {
+	# Build external Linux Headers package for compiling modules
+	cd "${BASE_DIR}/build/ti-linux-kernel"
+	rm -rf "${BASE_DIR}/tmp/linux-headers"
+	mkdir -p ${BASE_DIR}/tmp/linux-headers
+	tempfile=$(mktemp)
+	find . -name Makefile\* -o -name Kconfig\* -o -name \*.pl > $tempfile
+	find arch/arm64/include include scripts -type f >> $tempfile
+	tar -c -f - -T $tempfile | tar -C "${BASE_DIR}/tmp/linux-headers" -xf -
+	cd "${BASE_DIR}/build/ti-linux-kernel"
+	find arch/arm64/include .config Module.symvers include scripts -type f > $tempfile
+	tar -c -f - -T $tempfile | tar -C "${BASE_DIR}/tmp/linux-headers" -xf -
+	rm -f $tempfile
+	unset tempfile
+}
+
+build_kernel
+build_kernel_headers
+
+KRELEASE=`make -s -C "${BASE_DIR}/build/ti-linux-kernel" kernelrelease`
+###################################################################################################################################
+
+
+
+
+###################################################################################################################################
+#							BUILD External Kernel Modules
+build_atemsys() {
+	# acontis ethercat support module
+	# should build against linux-headers package, but private headers are referenced ...
+	cd $BASE_DIR/build/atemsys
+	make -C "${BASE_DIR}/build/ti-linux-kernel" CROSS_COMPILE="$CROSS_COMPILE" ARCH=arm64 M="$PWD" clean
+	make -C "${BASE_DIR}/build/ti-linux-kernel" CROSS_COMPILE="$CROSS_COMPILE" ARCH=arm64 M="$PWD" modules
+	install -v -m644 -D atemsys.ko "${BASE_DIR}/tmp/linux/usr/lib/modules/${KRELEASE}/extra/atemsys.ko"
+}
+
+update_moddeps() {
+	# regenerate modules dependencies
+	depmod -b "${BASE_DIR}/tmp/linux/usr" -F "${BASE_DIR}/tmp/linux/boot/System.map" ${KRELEASE}
+}
+
+build_atemsys
+update_moddeps
 ###################################################################################################################################
 
 
@@ -575,6 +637,18 @@ do_package_kernel() {
 	tar --numeric-owner --owner=0 --group=0 --create --file ${BASE_DIR}/output/linux-${COMMIT_HASH}.tar *
 }
 do_package_kernel
+###################################################################################################################################
+
+
+
+
+###################################################################################################################################
+#							Create Kernel Headers Package
+function do_package_kernel_headers() {
+	cd "${BASE_DIR}/tmp/linux-headers"
+	tar cpf "${BASE_DIR}/output/linux-headers-${COMMIT_HASH}.tar" --transform "s;^;linux-headers-${COMMIT_HASH}/;" *
+}
+do_package_kernel_headers
 ###################################################################################################################################
 
 

@@ -466,6 +466,29 @@ tlv_eeprom
 # CRC-32               0xFE   4 0x2214EB35
 ```
 
+## Compiling External Kernel Modules
+
+Kernel modules can be built using the "linux-headers" package for a specific image.
+It is available in the same place as binary images on [our website](https://images.solid-run.com/AM64X/ti_am64x_build).
+
+Modules should be compiled in the same environment as the original images:
+x86_64 host, Debian 11, `apt-get install crossbuild-essential-arm64`.
+
+A ficticious module may be compiled for fictitious binary image `20240220-abcdefg/microsd-abcdefg-buildroot-sr1.img.xz` using the steps below:
+
+```
+wget https://images.solid-run.com/AM64X/ti_am64x_build/20240220-abcdefg/linux-headers-abcdefg.tar.xz
+tar -xf linux-headers-abcdefg.tar.xz
+
+cd kernel-mod-src
+
+make -C ../linux-headers-abcdefg/ CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 M="$PWD" modules
+ls *.ko
+```
+
+In case the module requires access to kernel private headers not included in -headers package,
+it must be built as part of a full image. See [runme.sh](https://github.com/SolidRun/ti_am64x_build/blob/main/runme.sh) function `build_atemsys` for an example.
+
 ## Compiling Image from Source
 
 ### Configuration Options
