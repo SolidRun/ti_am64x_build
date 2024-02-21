@@ -685,7 +685,8 @@ echo "copying \"k3conf\" ..."
 e2cp -G 0 -O 0 -P 755 -s "$BASE_DIR/tmp" -d "${BASE_DIR}/tmp/rootfs.ext4:/usr/bin" -a -v k3conf
 
 echo "copying kernel ..."
-e2cp -G 0 -O 0 -P 644 -a -d "${BASE_DIR}/tmp/rootfs.ext4:" -s "${BASE_DIR}/tmp/linux" -v boot/Image boot/ti/*.dtb
+e2cp -G 0 -O 0 -P 644 -a -d "${BASE_DIR}/tmp/rootfs.ext4:" -s "${BASE_DIR}/tmp/linux" -v boot/Image
+find "${BASE_DIR}/tmp/linux/boot/ti" -type f -name "*.dtb" -printf "%P\n" | e2cp -G 0 -O 0 -P 644 -s "${BASE_DIR}/tmp/linux/boot/ti" -d "${BASE_DIR}/tmp/rootfs.ext4:boot/ti" -a -v
 
 echo "copying kernel modules ..."
 find "${BASE_DIR}/tmp/linux/usr/lib/modules" -type f -not -name "*.ko*" -printf "%P\n" | e2cp -G 0 -O 0 -P 644 -s "${BASE_DIR}/tmp/linux/usr/lib/modules" -d "${BASE_DIR}/tmp/rootfs.ext4:usr/lib/modules" -a
