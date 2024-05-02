@@ -212,7 +212,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE acontis atemsys module sources
-ATEMSYS_TAG=v1.4.28
+ATEMSYS_TAG=v1.4.29
 
 if [[ ! -d $BASE_DIR/build/atemsys ]]; then
 	cd $BASE_DIR/build
@@ -447,10 +447,9 @@ KRELEASE=`make -s -C "${BASE_DIR}/build/ti-linux-kernel" kernelrelease`
 #							BUILD External Kernel Modules
 build_atemsys() {
 	# acontis ethercat support module
-	# should build against linux-headers package, but private headers are referenced ...
 	cd $BASE_DIR/build/atemsys
-	make -C "${BASE_DIR}/build/ti-linux-kernel" CROSS_COMPILE="$CROSS_COMPILE" ARCH=arm64 M="$PWD" clean
-	make -C "${BASE_DIR}/build/ti-linux-kernel" CROSS_COMPILE="$CROSS_COMPILE" ARCH=arm64 M="$PWD" modules
+	make -C "${BASE_DIR}/tmp/linux-headers" CROSS_COMPILE="$CROSS_COMPILE" ARCH=arm64 M="$PWD" clean
+	make -C "${BASE_DIR}/tmp/linux-headers" CROSS_COMPILE="$CROSS_COMPILE" ARCH=arm64 M="$PWD" modules
 	install -v -m644 -D atemsys.ko "${BASE_DIR}/tmp/linux/usr/lib/modules/${KRELEASE}/extra/atemsys.ko"
 }
 
