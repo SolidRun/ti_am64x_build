@@ -1,7 +1,7 @@
-From 4d836f4650411af508d1913d1e4fbb33f148a84f Mon Sep 17 00:00:00 2001
+From a424ddcd52ff152b58bfd6fc0e12301172d52ae9 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 27 Sep 2023 14:39:51 +0200
-Subject: [PATCH 5/7] arm: mach-k3: am642_init: support spl_boot_device in
+Subject: [PATCH 05/12] arm: mach-k3: am642_init: support spl_boot_device in
  u-boot proper
 
 The memory addresses for boot mode are still valid in full u-boot.
@@ -15,12 +15,12 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  2 files changed, 7 insertions(+)
 
 diff --git a/arch/arm/mach-k3/Makefile b/arch/arm/mach-k3/Makefile
-index d77bf46572..21e1ad0080 100644
+index 9a3c735327..263139d3a5 100644
 --- a/arch/arm/mach-k3/Makefile
 +++ b/arch/arm/mach-k3/Makefile
-@@ -22,5 +22,7 @@ obj-$(CONFIG_SOC_K3_AM62A7) += am62a7_init.o
- obj-$(CONFIG_SOC_K3_J784S4) += j784s4_init.o
+@@ -24,5 +24,7 @@ obj-$(CONFIG_SOC_K3_J784S4) += j784s4_init.o
  obj-$(CONFIG_SOC_K3_AM62P5) += am62p5_init.o
+ obj-$(CONFIG_SOC_K3_J722S) += j722s_init.o
  obj-$(CONFIG_K3_LOAD_SYSFW) += sysfw-loader.o
 +else
 +obj-$(CONFIG_SOC_K3_AM642) += am642_init.o

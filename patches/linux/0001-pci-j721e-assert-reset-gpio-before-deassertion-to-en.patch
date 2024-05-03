@@ -1,7 +1,7 @@
-From f2fe807263327f876d0b2fff1c8420d54acca24a Mon Sep 17 00:00:00 2001
+From fe9ce0dabec3ea97573405de369f14acae7ced59 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Mon, 27 Nov 2023 14:44:29 +0100
-Subject: [PATCH 1/8] pci: j721e: assert reset-gpio before deassertion to
+Subject: [PATCH 1/9] pci: j721e: assert reset-gpio before deassertion to
  ensure reset
 
 Optional reset gpio is already being deasserted after a 100us delay,
@@ -18,10 +18,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/drivers/pci/controller/cadence/pci-j721e-host.c b/drivers/pci/controller/cadence/pci-j721e-host.c
-index 624ae38c38f3..32566e3e3a8e 100644
+index 36b1cafca7d3..7511f5dc2938 100644
 --- a/drivers/pci/controller/cadence/pci-j721e-host.c
 +++ b/drivers/pci/controller/cadence/pci-j721e-host.c
-@@ -368,6 +368,9 @@ static int j721e_pcie_probe(struct platform_device *pdev)
+@@ -379,6 +379,9 @@ static int j721e_pcie_probe(struct platform_device *pdev)
  		goto err_get_sync;
  	}
  

@@ -1,7 +1,7 @@
-From 32613e5db1b96cb59dfc32a38369586c653cd4fe Mon Sep 17 00:00:00 2001
+From deb77a76d0155b45db12ce816989ecb7652c594f Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Fri, 27 Oct 2023 16:58:16 +0200
-Subject: [PATCH 7/7] board: solidrun: add initial support for AM64 SoM
+Subject: [PATCH 07/12] board: solidrun: add initial support for AM64 SoM
 
 SolidRun has a System on Module based on TI AM6442 SoC,
 as well as a reference carrier board called "HummingBoard-T".
@@ -53,10 +53,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  create mode 100644 include/configs/am64som.h
 
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index f5c4141b3b..6635d4d4ec 100644
+index 4beef8cdb3..26e4b59cd2 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -1281,7 +1281,11 @@ dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
+@@ -1287,7 +1287,11 @@ dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
  			      k3-am642-r5-evm.dtb \
  			      k3-am642-sk.dtb \
  			      k3-am642-r5-sk.dtb \
@@ -4174,10 +4174,10 @@ index 0000000000..2a87304adb
 +	ti,usb2-only;
 +};
 diff --git a/arch/arm/mach-k3/Kconfig b/arch/arm/mach-k3/Kconfig
-index 3c3d971e13..4419a6ae17 100644
+index c5c909919d..fda1045bba 100644
 --- a/arch/arm/mach-k3/Kconfig
 +++ b/arch/arm/mach-k3/Kconfig
-@@ -195,6 +195,7 @@ config K3_X509_SWRV
+@@ -205,6 +205,7 @@ config K3_X509_SWRV
  	help
  	  SWRV for X509 certificate used for boot images
  

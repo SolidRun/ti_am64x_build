@@ -1,8 +1,8 @@
-From 648c11c2bd9de397a7b75118fed83b8e87b376f9 Mon Sep 17 00:00:00 2001
+From c9043b3bea144bbc2a2d5b2ce9160852c32b484a Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Sat, 30 Dec 2023 12:26:33 +0100
-Subject: [PATCH] board: solidrun: am64som: minor corrections in non-functional
- code path
+Subject: [PATCH 08/12] board: solidrun: am64som: minor corrections in
+ non-functional code path
 
 correct comment in board file outlining reason for lock-up when enabling
 early eeprom-based board detection; fix binman reference in board dtb.

@@ -1,4 +1,4 @@
-From 2a92d3e857fbe499ddaf8562f4fb55fc85cad009 Mon Sep 17 00:00:00 2001
+From 88e421072f739d4d93c1879691c0cb7011653b58 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Thu, 11 Jan 2024 16:59:28 +0100
 Subject: [PATCH 12/12] configs: am64som: enable dp83869 phy driver

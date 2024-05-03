@@ -1,7 +1,8 @@
-From 5faf3b063ea5b3d5bbcdd6d1841c52f680e7dfb1 Mon Sep 17 00:00:00 2001
+From f951f24fc8b9b7264c96da30fdc461ae6aa1e190 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Sun, 3 Dec 2023 17:18:54 +0100
-Subject: [PATCH 6/7] net: eth-uclass: add board-file function to retrieve mac
+Subject: [PATCH 06/12] net: eth-uclass: add board-file function to retrieve
+ mac
 
 Some existing network interface drivers  such as nxp fec support calling
 a board_* function to retrieve "ROM" mac addresses, e.g. in case MACs

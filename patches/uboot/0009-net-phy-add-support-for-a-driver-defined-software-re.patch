@@ -1,4 +1,4 @@
-From 68d7c74aa4a14a0e0e1a5f58ef0d970dd9149363 Mon Sep 17 00:00:00 2001
+From 20c8836c15dfb512e3d5c885652d5078beb1f639 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 10 Jan 2024 17:35:44 +0100
 Subject: [PATCH 09/12] net: phy: add support for a driver-defined software

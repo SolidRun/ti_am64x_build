@@ -193,7 +193,8 @@ Steps are identical except for replacing the name in instructions below.
 
 1. Enable can0 netdev:
 
-       ip link set can0 up type can bitrate 125000 up
+       ip link set can0 type can bitrate 125000
+       ip link set can0 up
 
 2. Receive on can0 to a temporary file:
 

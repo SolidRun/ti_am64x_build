@@ -1,4 +1,4 @@
-From 7bcbafecc9ebee8b8eb57278d3eaee3c1b9fefbb Mon Sep 17 00:00:00 2001
+From 904e5a7e49088ad525a859d853f3eaed95489061 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Thu, 11 Jan 2024 16:43:59 +0100
 Subject: [PATCH 11/12] net: phy: ti: dp83869: fix rx/tx delay value parsing

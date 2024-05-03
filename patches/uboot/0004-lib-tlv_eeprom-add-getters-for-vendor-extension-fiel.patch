@@ -1,7 +1,7 @@
-From b174e05217025d9c080d3ab41fc71edbb0ca2c73 Mon Sep 17 00:00:00 2001
+From 9e7a6148df5670fcbc9fcd581ed2922278b0f0ba Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Sun, 19 Nov 2023 15:59:08 +0100
-Subject: [PATCH 4/7] lib: tlv_eeprom: add getters for vendor extension field
+Subject: [PATCH 04/12] lib: tlv_eeprom: add getters for vendor extension field
 
 Signed-off-by: Josua Mayer <josua@solid-run.com>
 ---

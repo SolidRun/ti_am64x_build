@@ -1,4 +1,4 @@
-From 12f3faf45d07aa608c3a94d58fbe82fc83c2a88b Mon Sep 17 00:00:00 2001
+From 4d03d7ce0bed7843c0a28d19dcf6b8333cbab231 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 10 Jan 2024 17:47:27 +0100
 Subject: [PATCH 10/12] net: phy: ti: dp83869: implement software reset

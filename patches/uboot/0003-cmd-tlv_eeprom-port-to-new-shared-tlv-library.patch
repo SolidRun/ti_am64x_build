@@ -1,7 +1,7 @@
-From 33fc9d41d19b5376c24a50f431931a2fe1723c98 Mon Sep 17 00:00:00 2001
+From 886a6622fb145726c835d98e3d12f8b0e6320354 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Tue, 16 May 2023 14:41:53 +0300
-Subject: [PATCH 3/7] cmd: tlv_eeprom: port to new shared tlv library
+Subject: [PATCH 03/12] cmd: tlv_eeprom: port to new shared tlv library
 
 Rewrite tlv_eeprom command for using the new tlv library, and drop all
 unused functions. From this point on, tlv_eeprom command internal

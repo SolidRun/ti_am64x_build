@@ -1,7 +1,7 @@
-From a69ec8ca7464ad10c55eafbcda68ccac37d3c714 Mon Sep 17 00:00:00 2001
+From 69da89c40854295501bce9aeb4c18e57cd9a20dd Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Mon, 27 Nov 2023 14:30:52 +0100
-Subject: [PATCH 2/8] arm64: dts: ti: k3-am64-main: fix pci-e gic interrupt
+Subject: [PATCH 2/9] arm64: dts: ti: k3-am64-main: fix pci-e gic interrupt
  numbers
 
 Existing pci-e nodes refer to gic interrupts 202 and 203 for legacy
@@ -59,10 +59,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
-index 7b4cc0578d20..7bd862d3abeb 100644
+index 2bf45e8dfde3..1b22f0de1368 100644
 --- a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
 +++ b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
-@@ -861,7 +861,7 @@ pcie0_rc: pcie@f102000 {
+@@ -865,7 +865,7 @@ pcie0_rc: pcie@f102000 {
  		      <0x00 0x68000000 0x00 0x00001000>;
  		reg-names = "intd_cfg", "user_cfg", "reg", "cfg";
  		interrupt-names = "link_state";
@@ -71,7 +71,7 @@ index 7b4cc0578d20..7bd862d3abeb 100644
  		device_type = "pci";
  		ti,syscon-pcie-ctrl = <&main_conf 0x4070>;
  		max-link-speed = <2>;
-@@ -891,7 +891,7 @@ pcie0_intc: interrupt-controller {
+@@ -895,7 +895,7 @@ pcie0_intc: interrupt-controller {
  			interrupt-controller;
  			#interrupt-cells = <1>;
  			interrupt-parent = <&gic500>;
@@ -80,7 +80,7 @@ index 7b4cc0578d20..7bd862d3abeb 100644
  		};
  	};
  
-@@ -903,7 +903,7 @@ pcie0_ep: pcie-ep@f102000 {
+@@ -907,7 +907,7 @@ pcie0_ep: pcie-ep@f102000 {
  		      <0x00 0x68000000 0x00 0x08000000>;
  		reg-names = "intd_cfg", "user_cfg", "reg", "mem";
  		interrupt-names = "link_state";

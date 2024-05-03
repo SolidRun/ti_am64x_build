@@ -29,7 +29,7 @@ set -e
 : ${SIGNING_KEY:=}
 
 ## Buildroot Options
-: ${BUILDROOT_VERSION:=2023.02.6}
+: ${BUILDROOT_VERSION:=2023.02.11}
 : ${BUILDROOT_DEFCONFIG:=am64xx_solidrun_defconfig}
 : ${BR2_PRIMARY_SITE:=}
 
@@ -120,7 +120,7 @@ set -e
 
 ###################################################################################################################################
 #							CLONE K3 Firmware
-FIRMWARE_TAG=09.01.00.008
+FIRMWARE_TAG=09.02.00.009
 
 if [[ ! -d $BASE_DIR/build/ti-linux-firmware ]]; then
 	cd $BASE_DIR/build
@@ -133,7 +133,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE ATF
-ATF_TAG=09.01.00.008
+ATF_TAG=09.02.00.009
 
 if [[ ! -d $BASE_DIR/build/arm-trusted-firmware ]]; then
 	cd $BASE_DIR/build
@@ -147,11 +147,14 @@ fi
 
 ###################################################################################################################################
 #							CLONE OPTEE
-OPTEE_TAG=3.20.0
+OPTEE_BRANCH=master
+OPTEE_HEAD=012cdca49d
 
 if [[ ! -d $BASE_DIR/build/optee_os ]]; then
 	cd $BASE_DIR/build
-	git clone https://github.com/OP-TEE/optee_os.git -b $OPTEE_TAG --depth 1
+	git clone https://github.com/OP-TEE/optee_os.git -b $OPTEE_BRANCH
+	cd optee_os
+	git reset --hard $OPTEE_HEAD
 fi
 
 ###################################################################################################################################
@@ -161,7 +164,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE U-boot
-U_BOOT_TAG=09.01.00.008
+U_BOOT_TAG=09.02.00.009
 
 if [[ ! -d $BASE_DIR/build/ti-u-boot ]]; then
 	cd $BASE_DIR/build
@@ -179,7 +182,7 @@ fi
 ###################################################################################################################################
 #							CLONE k3conf Tool
 K3CONF_BRANCH=master
-K3CONF_HEAD=1dd468d551fd786c410e88dadc1114505d057ebe
+K3CONF_HEAD=85a7433202
 
 if [[ ! -d $BASE_DIR/build/k3conf ]]; then
 	cd $BASE_DIR/build
@@ -196,7 +199,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE Linux Kernel
-KERNEL_TAG=09.01.00.008
+KERNEL_TAG=09.02.00.009
 
 if [[ ! -d $BASE_DIR/build/ti-linux-kernel ]]; then
 	cd $BASE_DIR/build

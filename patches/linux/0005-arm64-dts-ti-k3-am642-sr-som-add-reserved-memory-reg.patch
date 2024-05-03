@@ -1,7 +1,7 @@
-From 6ef88df3c1763e12081e8b0f66919a7e298532ab Mon Sep 17 00:00:00 2001
+From b823a45d71b7bd9be00c53acf4679794fa6b7eb1 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 27 Dec 2023 16:17:16 +0100
-Subject: [PATCH 5/8] arm64: dts: ti: k3-am642-sr-som: add reserved memory
+Subject: [PATCH 5/9] arm64: dts: ti: k3-am642-sr-som: add reserved memory
  regions for m4 mcu
 
 Signed-off-by: Josua Mayer <josua@solid-run.com>
