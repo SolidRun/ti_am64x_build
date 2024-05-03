@@ -557,6 +557,53 @@ SolidRun have tested programming efuses, and booting signed binaries with an int
 
 E.g. using docker: `docker run --rm -i -t -v "$PWD":/ti_build -e SIGNING_KEY=./solidrun_am64_mpk_pub.pem ti_am64x_build -u $(id -u) -g $(id -g)`
 
+## OPTEE-OS: eMMC RPMB Secure Storage
+
+AM64 SoC and SolidRun SoM support using the eMMC RPMB partition for secure storage.
+
+Activation of the RPMB partition for OPTEE-OS is a one-time irreversible operation
+during which a secret key derived from protected efuses in the SoC is programmed to the eMMC.
+
+When this key is not programmed, secure variable access consistently fails with the error message below:
+
+```
+I/TC: RPMB: Using generated key
+I/TC: HUK Initialized
+E/TC:? 0 tee_rpmb_verify_key_sync_counter:1014 Verify key returning 0xffff0008
+E/LD:  init_elf:493 sys_open_ta_bin(023f8f1a-292a-432b-8fc4-de8471358067)
+E/TC:? 0 ldelf_init_with_ldelf:152 ldelf failed with res: 0xffff0009
+```
+
+Note: `0xffff0008` is defined as TEE_ERROR_ITEM_NOT_FOUND.
+
+### Activate Secure Storage
+
+A special build of optee-os with the `CFG_RPMB_WRITE_KEY` option set  to `y` can automatically program a secure key derived from protected efuses inside the SoC.
+This options is disabled by default to avoid accidental use, but can be enabled in `runme.sh` when building a  custom boot image.
+
+The key gets programmed automatically during any access of secure storage, e.g. by u-boot `optee_rpmb` command:
+
+```
+=> optee_rpmb read_pvalue hello 0x1
+I/TC: RPMB: Using generated key
+I/TC: HUK Initialized
+E/TC:? 0 tee_rpmb_verify_key_sync_counter:1014 Verify key returning 0xffff0008
+E/TA:  read_persist_value:338 Can't open named object value, res = 0xffff0008
+Failed to read persistent value
+```
+
+If writing the key succeeded, any future read commands will not include the error messages above, and just complain that the requested object "hello" as expected does not exist.
+
+```
+=> optee_rpmb read_pvalue hello 0x1
+I/TC: RPMB: Using generated key
+I/TC: HUK Initialized
+E/TA:  read_persist_value:338 Can't open named object value, res = 0xffff0008
+Failed to read persistent value
+```
+
+Secure Storage on RPMB is now active.
+
 ## Compiling Image from Source
 
 ### Configuration Options
