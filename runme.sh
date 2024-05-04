@@ -1,4 +1,12 @@
 #!/bin/bash
+
+# we don't have status code checks for each step - use "-e" with a trap instead
+function error() {
+	status=$?
+	printf "ERROR: Line %i failed with status %i: %s\n" $BASH_LINENO $status "$BASH_COMMAND" >&2
+	exit $status
+}
+trap error ERR
 set -e
 
 ###################################################################################################################################
@@ -66,7 +74,7 @@ COMMIT_HASH=`git log -1 --pretty=format:%h`
 ###################################################################################################################################
 #                                                       INSTALL Packages
 
-PACKAGES_LIST="bc bison build-essential ca-certificates cpio crossbuild-essential-arm64 crossbuild-essential-armhf debootstrap device-tree-compiler e2tools fakeroot fdisk flex git kmod libncurses-dev libssl-dev make mtools parted python3-dev python3-pyelftools qemu-system-arm rsync sudo swig u-boot-tools unzip wget xz-utils"
+PACKAGES_LIST="bc bison build-essential ca-certificates cmake cpio crossbuild-essential-arm64 crossbuild-essential-armhf debootstrap device-tree-compiler e2tools fakeroot fdisk flex git kmod libncurses-dev libssl-dev make mtools parted python3-dev python3-pyelftools qemu-system-arm rsync sudo swig u-boot-tools unzip wget xz-utils"
 
 set +e
 for i in $PACKAGES_LIST; do
@@ -433,9 +441,11 @@ cp u-boot.img $BASE_DIR/tmp/u-boot.img
 ###################################################################################################################################
 #							BUILD k3conf Tool
 cd $BASE_DIR/build/k3conf
-make
-${CROSS_COMPILE}strip --strip-unneeded k3conf
-install -v -m755 k3conf $BASE_DIR/tmp/k3conf
+rm -rf build $BASE_DIR/tmp/k3conf
+mkdir build; cd build
+cmake  .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_INSTALL_PREFIX=/usr
+make -j${JOBS}
+make DESTDIR=$BASE_DIR/tmp/k3conf install
 
 ###################################################################################################################################
 
@@ -744,7 +754,7 @@ EOF
 #							Integrate Artifacts on rootfs
 
 echo "copying \"k3conf\" ..."
-e2cp -G 0 -O 0 -P 755 -s "$BASE_DIR/tmp" -d "${BASE_DIR}/tmp/rootfs.ext4:/usr/bin" -a -v k3conf
+e2cp -G 0 -O 0 -P 755 -s "$BASE_DIR/tmp/k3conf/usr/bin" -d "${BASE_DIR}/tmp/rootfs.ext4:/usr/bin" -a -v k3conf
 
 echo "copying kernel ..."
 e2cp -G 0 -O 0 -P 644 -a -d "${BASE_DIR}/tmp/rootfs.ext4:" -s "${BASE_DIR}/tmp/linux" -v boot/Image
