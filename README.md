@@ -218,9 +218,24 @@ Steps are identical except for replacing the name in instructions below.
        RTS delay after send:         0
        Receive during sending data:  false
 
-2. Optionally change configuration as needed, e.g.:
+2. Optionally change configuration as needed (the settings shown above are functional):
 
-       rs485conf /dev/ttyS5 -e 1 -o 0 -a 1
+       rs485conf -h
+       usage: rs485conf [-h] tty
+
+       Get/set RS485 configuration of TTY.
+
+       positional arguments:
+         tty        TTY to get/set configuration (e.g. /dev/ttyS1)
+
+       optional arguments:
+         -e {0,1}   Disable/enable RS485 mode
+         -o {0,1}   Set RTS on send low/high
+         -a {0,1}   Set RTS after send low/high
+         -r {0,1}   Set RX during TX
+         -d d1 d2   Set delay RTS before (d1) and after (d2) send
+
+       rs485conf /dev/ttyS5 >options>
 
 3. Receive data to a temporary file:
 
