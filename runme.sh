@@ -342,10 +342,13 @@ build_optee() {
 	build_optee_ftpm $BASE_DIR/build/optee_os/out/arm-plat-k3/export-ta_arm64
 
 	# RPMB_FS OPTIONS:
+	# - CFG_RPMB_FS:
+	#   Enable or disable RPMB Filesystem Feature.
+	#   Disabled for now due to unstable access from Linux.
 	# - WRITE_KEY:
 	#   Disabled by default to avoid accidental programming of key,
 	#   enable if optee-os shall use rpmb for secure storage.
-	RPMB_FS="CFG_RPMB_FS=y CFG_RPMB_FS_DEV_ID=0 CFG_RPMB_WRITE_KEY=n"
+	RPMB_FS="CFG_RPMB_FS=n"
 
 	# build optee os
 	cd  $BASE_DIR/build/optee_os
