@@ -175,6 +175,8 @@ fi
 if [[ ! -d $BASE_DIR/build/ftpm ]]; then
 	cd $BASE_DIR/build
 	git clone https://github.com/Microsoft/MSRSec.git ftpm
+	cd ftpm
+	test -d $BASE_DIR/patches/ftpm && git am $BASE_DIR/patches/ftpm/*.patch
 fi
 ###################################################################################################################################
 
@@ -305,17 +307,16 @@ cp build/k3/lite/release/bl31.bin $BASE_DIR/tmp/bl31.bin
 #							BUILD OPTEE
 build_optee_ftpm() {
 	DEVKIT="$1"
+	CROSS_COMPILE=$2
 
 	cd $BASE_DIR/build/ftpm/TAs/optee_ta
 	make -j1 \
-		CFG_FTPM_USE_WOLF=n \
-		CFG_AUTHVARS_USE_WOLF=n \
+		CFG_FTPM_USE_WOLF=y \
 		TA_CPU=cortex-a53 \
-		CFG_ARM64_ta_arm64=y \
-		TA_CROSS_COMPILE=aarch64-linux-gnu- \
-		CROSS_COMPILE64=aarch64-linux-gnu- \
+		TA_CROSS_COMPILE=$CROSS_COMPILE \
 		TA_DEV_KIT_DIR="$DEVKIT" \
-		CFG_TEE_TA_LOG_LEVEL=2
+		CFG_TEE_TA_LOG_LEVEL=2 \
+		ftpm
 
 	mkdir -p $BASE_DIR/tmp/optee
 	cp -v out/*/*.ta $BASE_DIR/tmp/optee/
@@ -339,7 +340,7 @@ build_optee() {
 		ta_dev_kit
 
 	# build TAs
-	build_optee_ftpm $BASE_DIR/build/optee_os/out/arm-plat-k3/export-ta_arm64
+	build_optee_ftpm $BASE_DIR/build/optee_os/out/arm-plat-k3/export-ta_arm32 arm-linux-gnueabihf-
 
 	# RPMB_FS OPTIONS:
 	# - CFG_RPMB_FS:
@@ -358,7 +359,9 @@ build_optee() {
 		CROSS_COMPILE64=aarch64-linux-gnu- \
 		CROSS_COMPILE32=arm-linux-gnueabihf- \
 		CFG_ARM64_core=y \
+		CFG_EARLY_TA=y \
 		CFG_IN_TREE_EARLY_TAS=avb/023f8f1a-292a-432b-8fc4-de8471358067 \
+		EARLY_TA_PATHS="$BASE_DIR/build/ftpm/TAs/optee_ta/out/fTPM/bc50d971-d4c9-42c4-82cb-343fb7f37896.stripped.elf" \
 		$RPMB_FS
 
 	cp out/arm-plat-k3/core/tee-pager_v2.bin $BASE_DIR/tmp/optee/
