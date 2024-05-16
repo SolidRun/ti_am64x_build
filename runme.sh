@@ -306,8 +306,8 @@ cp build/k3/lite/release/bl31.bin $BASE_DIR/tmp/bl31.bin
 ###################################################################################################################################
 #							BUILD OPTEE
 build_optee_ftpm() {
-	DEVKIT="$1"
-	CROSS_COMPILE=$2
+	local DEVKIT="$1"
+	local CROSS_COMPILE=$2
 
 	cd $BASE_DIR/build/ftpm/TAs/optee_ta
 	make -j1 \
@@ -323,7 +323,7 @@ build_optee_ftpm() {
 }
 
 build_optee() {
-	PLATFORM=k3-am64x
+	local PLATFORM=k3-am64x
 
 	rm -rf $BASE_DIR/tmp/optee
 	mkdir -p $BASE_DIR/tmp/optee
