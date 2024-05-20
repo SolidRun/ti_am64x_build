@@ -1,0 +1,1256 @@
+From 749c73c154f807d0e68ff9520b1609770a78a59e Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Sun, 19 May 2024 19:43:58 +0200
+Subject: [PATCH] board: solidrun: am64som: support dram and board detection
+ from eeprom
+
+Production units come with an identification eeprom programmedwith tlv
+data. Use the encoded data to select dram configuration and board dtb.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ arch/arm/dts/Makefile                         |   9 +-
+ .../k3-am642-hummingboard-t-16Gb-u-boot.dtsi  |   6 +
+ ...t.dts => k3-am642-hummingboard-t-16Gb.dts} |   7 +-
+ .../k3-am642-hummingboard-t-8Gb-u-boot.dtsi   |   6 +
+ arch/arm/dts/k3-am642-hummingboard-t-8Gb.dts  |  20 ++
+ .../dts/k3-am642-hummingboard-t-u-boot.dtsi   |   6 +
+ ...am642-r5-sr-som-ddr4-1600MTs-16Gb-cl12.dts |  27 +++
+ ...-am642-r5-sr-som-ddr4-1600MTs-8Gb-cl11.dts |  27 +++
+ arch/arm/dts/k3-am642-r5-sr-som.dts           |   2 -
+ arch/arm/dts/k3-am642-sr-som-16Gb-u-boot.dtsi |   6 +
+ arch/arm/dts/k3-am642-sr-som-16Gb.dts         |  19 ++
+ arch/arm/dts/k3-am642-sr-som-8Gb-u-boot.dtsi  |   6 +
+ arch/arm/dts/k3-am642-sr-som-8Gb.dts          |  19 ++
+ arch/arm/dts/k3-am642-sr-som-binman.dtsi      | 196 ++++++++++++++----
+ arch/arm/dts/k3-am642-sr-som.dtsi             |   6 +-
+ board/solidrun/am64som/id-eeprom.c            |  69 +++---
+ board/solidrun/am64som/id-eeprom.h            |   6 +-
+ board/solidrun/am64som/som.c                  | 122 +++++++----
+ configs/am64som_a53_defconfig                 |  12 +-
+ configs/am64som_r5_defconfig                  |  19 +-
+ 20 files changed, 447 insertions(+), 143 deletions(-)
+ create mode 100644 arch/arm/dts/k3-am642-hummingboard-t-16Gb-u-boot.dtsi
+ rename arch/arm/dts/{k3-am642-r5-hummingboard-t.dts => k3-am642-hummingboard-t-16Gb.dts} (68%)
+ create mode 100644 arch/arm/dts/k3-am642-hummingboard-t-8Gb-u-boot.dtsi
+ create mode 100644 arch/arm/dts/k3-am642-hummingboard-t-8Gb.dts
+ create mode 100644 arch/arm/dts/k3-am642-hummingboard-t-u-boot.dtsi
+ create mode 100644 arch/arm/dts/k3-am642-r5-sr-som-ddr4-1600MTs-16Gb-cl12.dts
+ create mode 100644 arch/arm/dts/k3-am642-r5-sr-som-ddr4-1600MTs-8Gb-cl11.dts
+ create mode 100644 arch/arm/dts/k3-am642-sr-som-16Gb-u-boot.dtsi
+ create mode 100644 arch/arm/dts/k3-am642-sr-som-16Gb.dts
+ create mode 100644 arch/arm/dts/k3-am642-sr-som-8Gb-u-boot.dtsi
+ create mode 100644 arch/arm/dts/k3-am642-sr-som-8Gb.dts
+
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index 26e4b59c..7b44cfb6 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -1288,10 +1288,15 @@ dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
+ 			      k3-am642-sk.dtb \
+ 			      k3-am642-r5-sk.dtb \
+ 			      k3-am642-evm-nand.dtbo \
++			      k3-am642-hummingboard-t.dtb \
++			      k3-am642-hummingboard-t-8Gb.dtb \
++			      k3-am642-hummingboard-t-16Gb.dtb \
+ 			      k3-am642-sr-som.dtb \
++			      k3-am642-sr-som-8Gb.dtb \
++			      k3-am642-sr-som-16Gb.dtb \
+ 			      k3-am642-r5-sr-som.dtb \
+-			      k3-am642-hummingboard-t.dtb \
+-			      k3-am642-r5-hummingboard-t.dtb \
++			      k3-am642-r5-sr-som-ddr4-1600MTs-8Gb-cl11.dtb \
++			      k3-am642-r5-sr-som-ddr4-1600MTs-16Gb-cl12.dtb
+ 
+ dtb-$(CONFIG_SOC_K3_AM625) += k3-am625-sk.dtb \
+ 			      k3-am625-r5-sk.dtb \
+diff --git a/arch/arm/dts/k3-am642-hummingboard-t-16Gb-u-boot.dtsi b/arch/arm/dts/k3-am642-hummingboard-t-16Gb-u-boot.dtsi
+new file mode 100644
+index 00000000..3743ddf3
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-hummingboard-t-16Gb-u-boot.dtsi
+@@ -0,0 +1,6 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2024 Josua Mayer <josua@solid-run.com>
++ */
++
++#include "k3-am642-hummingboard-t-u-boot.dtsi"
+diff --git a/arch/arm/dts/k3-am642-r5-hummingboard-t.dts b/arch/arm/dts/k3-am642-hummingboard-t-16Gb.dts
+similarity index 68%
+rename from arch/arm/dts/k3-am642-r5-hummingboard-t.dts
+rename to arch/arm/dts/k3-am642-hummingboard-t-16Gb.dts
+index 0a084d6f..e702658f 100644
+--- a/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
++++ b/arch/arm/dts/k3-am642-hummingboard-t-16Gb.dts
+@@ -3,18 +3,15 @@
+  * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
+  *
+  * DTS for SolidRun AM642 HummingBoard-T,
+- * running on Cortex R5.
++ * running on Cortex A53.
+  *
+  */
+ 
+ /dts-v1/;
+ 
+ #include "k3-am642.dtsi"
+-#include "k3-am642-sr-som-ddr4-1600MTs-8Gb-cl11.dtsi"
+-#include "k3-am64-ddr.dtsi"
+-#include "k3-am642-sr-som-binman.dtsi"
+ #include "k3-am642-sr-som.dtsi"
+-#include "k3-am642-r5-sr-som.dtsi"
++#include "k3-am642-sr-som-16Gb.dtsi"
+ #include "k3-am642-hummingboard-t.dtsi"
+ 
+ / {
+diff --git a/arch/arm/dts/k3-am642-hummingboard-t-8Gb-u-boot.dtsi b/arch/arm/dts/k3-am642-hummingboard-t-8Gb-u-boot.dtsi
+new file mode 100644
+index 00000000..3743ddf3
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-hummingboard-t-8Gb-u-boot.dtsi
+@@ -0,0 +1,6 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2024 Josua Mayer <josua@solid-run.com>
++ */
++
++#include "k3-am642-hummingboard-t-u-boot.dtsi"
+diff --git a/arch/arm/dts/k3-am642-hummingboard-t-8Gb.dts b/arch/arm/dts/k3-am642-hummingboard-t-8Gb.dts
+new file mode 100644
+index 00000000..e096f218
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-hummingboard-t-8Gb.dts
+@@ -0,0 +1,20 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ * DTS for SolidRun AM642 HummingBoard-T,
++ * running on Cortex A53.
++ *
++ */
++
++/dts-v1/;
++
++#include "k3-am642.dtsi"
++#include "k3-am642-sr-som.dtsi"
++#include "k3-am642-sr-som-8Gb.dtsi"
++#include "k3-am642-hummingboard-t.dtsi"
++
++/ {
++	compatible = "solidrun,am642-hummingboard-t", "solidrun,am642-som", "ti,am642";
++	model = "SolidRun AM642 HummingBoard-T";
++};
+diff --git a/arch/arm/dts/k3-am642-hummingboard-t-u-boot.dtsi b/arch/arm/dts/k3-am642-hummingboard-t-u-boot.dtsi
+new file mode 100644
+index 00000000..5f92fe30
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-hummingboard-t-u-boot.dtsi
+@@ -0,0 +1,6 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2024 Josua Mayer <josua@solid-run.com>
++ */
++
++#include "k3-am642-sr-som-u-boot.dtsi"
+diff --git a/arch/arm/dts/k3-am642-r5-sr-som-ddr4-1600MTs-16Gb-cl12.dts b/arch/arm/dts/k3-am642-r5-sr-som-ddr4-1600MTs-16Gb-cl12.dts
+new file mode 100644
+index 00000000..4c00173c
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-r5-sr-som-ddr4-1600MTs-16Gb-cl12.dts
+@@ -0,0 +1,27 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ * Minimal DTS for SolidRun AM642 SoM on generic carrier,
++ * running on Cortex R5.
++ *
++ */
++
++/dts-v1/;
++
++#include "k3-am642.dtsi"
++#include "k3-am642-sr-som-ddr4-1600MTs-16Gb-cl12.dtsi"
++#include "k3-am64-ddr.dtsi"
++#include "k3-am642-sr-som-binman.dtsi"
++#include "k3-am642-sr-som.dtsi"
++#include "k3-am642-r5-sr-som.dtsi"
++
++/ {
++	compatible = "solidrun,am642-som", "ti,am642";
++	model = "SolidRun AM642 SoM";
++
++	memory@80000000 {
++		/* 2GB size */
++		reg = <0x00000000 0x80000000 0x00000000 0x80000000>;
++	};
++};
+diff --git a/arch/arm/dts/k3-am642-r5-sr-som-ddr4-1600MTs-8Gb-cl11.dts b/arch/arm/dts/k3-am642-r5-sr-som-ddr4-1600MTs-8Gb-cl11.dts
+new file mode 100644
+index 00000000..61fa0b8b
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-r5-sr-som-ddr4-1600MTs-8Gb-cl11.dts
+@@ -0,0 +1,27 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ * Minimal DTS for SolidRun AM642 SoM on generic carrier,
++ * running on Cortex R5.
++ *
++ */
++
++/dts-v1/;
++
++#include "k3-am642.dtsi"
++#include "k3-am642-sr-som-ddr4-1600MTs-8Gb-cl11.dtsi"
++#include "k3-am64-ddr.dtsi"
++#include "k3-am642-sr-som-binman.dtsi"
++#include "k3-am642-sr-som.dtsi"
++#include "k3-am642-r5-sr-som.dtsi"
++
++/ {
++	compatible = "solidrun,am642-som", "ti,am642";
++	model = "SolidRun AM642 SoM";
++
++	memory@80000000 {
++		/* 1GB size */
++		reg = <0x00000000 0x80000000 0x00000000 0x40000000>;
++	};
++};
+diff --git a/arch/arm/dts/k3-am642-r5-sr-som.dts b/arch/arm/dts/k3-am642-r5-sr-som.dts
+index 6c9e9ba2..fdd2a852 100644
+--- a/arch/arm/dts/k3-am642-r5-sr-som.dts
++++ b/arch/arm/dts/k3-am642-r5-sr-som.dts
+@@ -10,8 +10,6 @@
+ /dts-v1/;
+ 
+ #include "k3-am642.dtsi"
+-#include "k3-am642-sr-som-ddr4-1600MTs-8Gb-cl11.dtsi"
+-#include "k3-am64-ddr.dtsi"
+ #include "k3-am642-sr-som-binman.dtsi"
+ #include "k3-am642-sr-som.dtsi"
+ #include "k3-am642-r5-sr-som.dtsi"
+diff --git a/arch/arm/dts/k3-am642-sr-som-16Gb-u-boot.dtsi b/arch/arm/dts/k3-am642-sr-som-16Gb-u-boot.dtsi
+new file mode 100644
+index 00000000..5f92fe30
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-sr-som-16Gb-u-boot.dtsi
+@@ -0,0 +1,6 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2024 Josua Mayer <josua@solid-run.com>
++ */
++
++#include "k3-am642-sr-som-u-boot.dtsi"
+diff --git a/arch/arm/dts/k3-am642-sr-som-16Gb.dts b/arch/arm/dts/k3-am642-sr-som-16Gb.dts
+new file mode 100644
+index 00000000..90517b9a
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-sr-som-16Gb.dts
+@@ -0,0 +1,19 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ * Minimal DTS for SolidRun AM642 SoM on generic carrier,
++ * running on Cortex A53.
++ *
++ */
++
++/dts-v1/;
++
++#include "k3-am642.dtsi"
++#include "k3-am642-sr-som.dtsi"
++#include "k3-am642-sr-som-16Gb.dtsi"
++
++/ {
++	compatible = "solidrun,am642-som", "ti,am642";
++	model = "SolidRun AM642 SoM";
++};
+diff --git a/arch/arm/dts/k3-am642-sr-som-8Gb-u-boot.dtsi b/arch/arm/dts/k3-am642-sr-som-8Gb-u-boot.dtsi
+new file mode 100644
+index 00000000..5f92fe30
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-sr-som-8Gb-u-boot.dtsi
+@@ -0,0 +1,6 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2024 Josua Mayer <josua@solid-run.com>
++ */
++
++#include "k3-am642-sr-som-u-boot.dtsi"
+diff --git a/arch/arm/dts/k3-am642-sr-som-8Gb.dts b/arch/arm/dts/k3-am642-sr-som-8Gb.dts
+new file mode 100644
+index 00000000..f11f2e20
+--- /dev/null
++++ b/arch/arm/dts/k3-am642-sr-som-8Gb.dts
+@@ -0,0 +1,19 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ * Minimal DTS for SolidRun AM642 SoM on generic carrier,
++ * running on Cortex A53.
++ *
++ */
++
++/dts-v1/;
++
++#include "k3-am642.dtsi"
++#include "k3-am642-sr-som.dtsi"
++#include "k3-am642-sr-som-8Gb.dtsi"
++
++/ {
++	compatible = "solidrun,am642-som", "ti,am642";
++	model = "SolidRun AM642 SoM";
++};
+diff --git a/arch/arm/dts/k3-am642-sr-som-binman.dtsi b/arch/arm/dts/k3-am642-sr-som-binman.dtsi
+index 31fb95e2..38436742 100644
+--- a/arch/arm/dts/k3-am642-sr-som-binman.dtsi
++++ b/arch/arm/dts/k3-am642-sr-som-binman.dtsi
+@@ -118,11 +118,7 @@
+ 
+ #ifdef CONFIG_TARGET_AM64_SR_SOM_A53
+ #define SPL_NODTB "spl/u-boot-spl-nodtb.bin"
+-#define SPL_AM642_SR_SOM_DTB "spl/dts/k3-am642-sr-som.dtb"
+-#define SPL_AM642_HUMMINGBOARD_DTB "spl/dts/k3-am642-hummingboard-t.dtb"
+ #define UBOOT_NODTB "u-boot-nodtb.bin"
+-#define AM642_SR_SOM_DTB "u-boot.dtb"
+-#define AM642_HUMMINGBOARD_DTB "arch/arm/dts/k3-am642-hummingboard-t.dtb"
+ 
+ &binman {
+ 	ti-spl {
+@@ -134,7 +130,6 @@
+ 			#address-cells = <1>;
+ 
+ 			images {
+-
+ 				atf {
+ 					description = "ARM Trusted Firmware";
+ 					type = "firmware";
+@@ -143,10 +138,12 @@
+ 					os = "arm-trusted-firmware";
+ 					load = <CONFIG_K3_ATF_LOAD_ADDR>;
+ 					entry = <CONFIG_K3_ATF_LOAD_ADDR>;
++
+ 					ti-secure {
+ 						content = <&atf>;
+ 						keyfile = "custMpk.pem";
+ 					};
++
+ 					atf: atf-bl31 {
+ 					};
+ 				};
+@@ -159,10 +156,12 @@
+ 					os = "tee";
+ 					load = <0x9e800000>;
+ 					entry = <0x9e800000>;
++
+ 					ti-secure {
+ 						content = <&tee>;
+ 						keyfile = "custMpk.pem";
+ 					};
++
+ 					tee: tee-os {
+ 					};
+ 				};
+@@ -175,6 +174,7 @@
+ 					os = "DM";
+ 					load = <0x89000000>;
+ 					entry = <0x89000000>;
++
+ 					blob-ext {
+ 						filename = "/dev/null";
+ 					};
+@@ -188,44 +188,48 @@
+ 					compression = "none";
+ 					load = <CONFIG_SPL_TEXT_BASE>;
+ 					entry = <CONFIG_SPL_TEXT_BASE>;
++
+ 					ti-secure {
+ 						content = <&u_boot_spl_nodtb>;
+ 						keyfile = "custMpk.pem";
+ 
+ 					};
++
+ 					u_boot_spl_nodtb: blob-ext {
+ 						filename = SPL_NODTB;
+ 					};
+ 				};
+ 
+ 				fdt-0 {
+-					description = "k3-am642-sr-som";
++					description = "k3-am642-sr-som-8Gb";
+ 					type = "flat_dt";
+ 					arch = "arm";
+ 					compression = "none";
++
+ 					ti-secure {
+-						content = <&spl_am64x_sr_som_dtb>;
++						content = <&spl_am64x_sr_som_8Gb_dtb>;
+ 						keyfile = "custMpk.pem";
+ 					};
+-					spl_am64x_sr_som_dtb: blob-ext {
+-						filename = SPL_AM642_SR_SOM_DTB;
+-					};
+ 
++					spl_am64x_sr_som_8Gb_dtb: blob-ext {
++						filename = "spl/dts/k3-am642-sr-som-8Gb.dtb";
++					};
+ 				};
+ 
+ 				fdt-1 {
+-					description = "k3-am642-hummingboard-t";
++					description = "k3-am642-sr-som-16Gb";
+ 					type = "flat_dt";
+ 					arch = "arm";
+ 					compression = "none";
++
+ 					ti-secure {
+-						content = <&spl_am64x_sk_dtb>;
++						content = <&spl_am64x_sr_som_16Gb_dtb>;
+ 						keyfile = "custMpk.pem";
+ 					};
+-					spl_am64x_sk_dtb: blob-ext {
+-						filename = SPL_AM642_HUMMINGBOARD_DTB;
+-					};
+ 
++					spl_am64x_sr_som_16Gb_dtb: blob-ext {
++						filename = "spl/dts/k3-am642-sr-som-16Gb.dtb";
++					};
+ 				};
+ 			};
+ 
+@@ -233,14 +237,14 @@
+ 				default = "conf-0";
+ 
+ 				conf-0 {
+-					description = "k3-am642-sr-som";
++					description = "k3-am642-sr-som-8Gb";
+ 					firmware = "atf";
+ 					loadables = "tee", "dm", "spl";
+ 					fdt = "fdt-0";
+ 				};
+ 
+ 				conf-1 {
+-					description = "k3-am642-hummingboard-t";
++					description = "k3-am642-sr-som-16Gb";
+ 					firmware = "atf";
+ 					loadables = "tee", "dm", "spl";
+ 					fdt = "fdt-1";
+@@ -266,71 +270,135 @@
+ 					arch = "arm";
+ 					compression = "none";
+ 					load = <CONFIG_TEXT_BASE>;
++
+ 					ti-secure {
+ 						content = <&u_boot_nodtb>;
+ 						keyfile = "custMpk.pem";
+ 					};
++
+ 					u_boot_nodtb: u-boot-nodtb {
+ 					};
++
+ 					hash {
+ 						algo = "crc32";
+ 					};
+ 				};
+ 
+ 				fdt-0 {
+-					description = "k3-am642-sr-som";
++					description = "k3-am642-sr-som-8Gb";
+ 					type = "flat_dt";
+ 					arch = "arm";
+ 					compression = "none";
++
+ 					ti-secure {
+-						content = <&am64x_sr_som_dtb>;
++						content = <&am64x_sr_som_8gb_dtb>;
+ 						keyfile = "custMpk.pem";
+ 
+ 					};
+-					am64x_sr_som_dtb: blob-ext {
+-						filename = AM642_SR_SOM_DTB;
++
++					am64x_sr_som_8gb_dtb: blob-ext {
++						filename = "arch/arm/dts/k3-am642-sr-som-8Gb.dtb";
+ 					};
++
+ 					hash {
+ 						algo = "crc32";
+ 					};
+ 				};
+ 
+ 				fdt-1 {
+-					description = "k3-am642-hummingboard-t";
++					description = "k3-am642-hummingboard-t-8Gb";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++
++					ti-secure {
++						content = <&am64x_hummingboard_8gb_dtb>;
++						keyfile = "custMpk.pem";
++
++					};
++
++					am64x_hummingboard_8gb_dtb: blob-ext {
++						filename = "arch/arm/dts/k3-am642-hummingboard-t-8Gb.dtb";
++					};
++
++					hash {
++						algo = "crc32";
++					};
++				};
++
++				fdt-2 {
++					description = "k3-am642-sr-som-16Gb";
+ 					type = "flat_dt";
+ 					arch = "arm";
+ 					compression = "none";
++
+ 					ti-secure {
+-						content = <&am64x_hummingboard_dtb>;
++						content = <&am64x_sr_som_16gb_dtb>;
+ 						keyfile = "custMpk.pem";
+ 
+ 					};
+-					am64x_hummingboard_dtb: blob-ext {
+-						filename = AM642_HUMMINGBOARD_DTB;
++
++					am64x_sr_som_16gb_dtb: blob-ext {
++						filename = "arch/arm/dts/k3-am642-sr-som-16Gb.dtb";
+ 					};
++
+ 					hash {
+ 						algo = "crc32";
+ 					};
+ 				};
+ 
++				fdt-3 {
++					description = "k3-am642-hummingboard-t-16Gb";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++
++					ti-secure {
++						content = <&am64x_hummingboard_16gb_dtb>;
++						keyfile = "custMpk.pem";
++
++					};
++
++					am64x_hummingboard_16gb_dtb: blob-ext {
++						filename = "arch/arm/dts/k3-am642-hummingboard-t-16Gb.dtb";
++					};
++
++					hash {
++						algo = "crc32";
++					};
++				};
+ 			};
+ 
+ 			configurations {
+ 				default = "conf-0";
+ 
+ 				conf-0 {
+-					description = "k3-am642-sr-som";
++					description = "k3-am642-sr-som-8Gb";
+ 					firmware = "uboot";
+ 					loadables = "uboot";
+ 					fdt = "fdt-0";
+ 				};
+ 
+ 				conf-1 {
+-					description = "k3-am642-hummingboard-t";
++					description = "k3-am642-hummingboard-t-8Gb";
+ 					firmware = "uboot";
+ 					loadables = "uboot";
+ 					fdt = "fdt-1";
+ 				};
++
++				conf-2 {
++					description = "k3-am642-sr-som-16Gb";
++					firmware = "uboot";
++					loadables = "uboot";
++					fdt = "fdt-2";
++				};
++
++				conf-3 {
++					description = "k3-am642-hummingboard-t-16Gb";
++					firmware = "uboot";
++					loadables = "uboot";
++					fdt = "fdt-3";
++				};
+ 			};
+ 		};
+ 	};
+@@ -398,22 +466,24 @@
+ 				};
+ 
+ 				fdt-0 {
+-					description = "k3-am642-sr-som";
++					description = "k3-am642-sr-som-8Gb";
+ 					type = "flat_dt";
+ 					arch = "arm";
+ 					compression = "none";
++
+ 					blob {
+-						filename = SPL_AM642_SR_SOM_DTB;
++						filename = "spl/dts/k3-am642-sr-som-8Gb.dtb";
+ 					};
+ 				};
+ 
+ 				fdt-1 {
+-					description = "k3-am642-hummingboard-t";
++					description = "k3-am642-sr-som-16Gb";
+ 					type = "flat_dt";
+ 					arch = "arm";
+ 					compression = "none";
++
+ 					blob {
+-						filename = SPL_AM642_HUMMINGBOARD_DTB;
++						filename = "spl/dts/k3-am642-sr-som-16Gb.dtb";
+ 					};
+ 				};
+ 			};
+@@ -422,14 +492,14 @@
+ 				default = "conf-0";
+ 
+ 				conf-0 {
+-					description = "k3-am642-sr-som";
++					description = "k3-am642-sr-som-8Gb";
+ 					firmware = "atf";
+ 					loadables = "tee", "dm", "spl";
+ 					fdt = "fdt-0";
+ 				};
+ 
+ 				conf-1 {
+-					description = "k3-am642-hummingboard-t";
++					description = "k3-am642-sr-som-16Gb";
+ 					firmware = "atf";
+ 					loadables = "tee", "dm", "spl";
+ 					fdt = "fdt-1";
+@@ -464,26 +534,60 @@
+ 				};
+ 
+ 				fdt-0 {
+-					description = "k3-am642-sr-som";
++					description = "k3-am642-sr-som-8Gb";
+ 					type = "flat_dt";
+ 					arch = "arm";
+ 					compression = "none";
++
+ 					blob {
+-						filename = AM642_SR_SOM_DTB;
++						filename = "arch/arm/dts/k3-am642-sr-som-8Gb.dtb";
+ 					};
++
+ 					hash {
+ 						algo = "crc32";
+ 					};
+ 				};
+ 
+ 				fdt-1 {
+-					description = "k3-am642-hummingboard-t";
++					description = "k3-am642-hummingboard-t-8Gb";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++
++					blob {
++						filename = "arch/arm/dts/k3-am642-hummingboard-t-8Gb.dtb";
++					};
++
++					hash {
++						algo = "crc32";
++					};
++				};
++
++				fdt-2 {
++					description = "k3-am642-sr-som-16Gb";
+ 					type = "flat_dt";
+ 					arch = "arm";
+ 					compression = "none";
++
+ 					blob {
+-						filename = AM642_HUMMINGBOARD_DTB;
++						filename = "arch/arm/dts/k3-am642-sr-som-16Gb.dtb";
+ 					};
++
++					hash {
++						algo = "crc32";
++					};
++				};
++
++				fdt-3 {
++					description = "k3-am642-hummingboard-t-16Gb";
++					type = "flat_dt";
++					arch = "arm";
++					compression = "none";
++
++					blob {
++						filename = "arch/arm/dts/k3-am642-hummingboard-t-16Gb.dtb";
++					};
++
+ 					hash {
+ 						algo = "crc32";
+ 					};
+@@ -494,18 +598,32 @@
+ 				default = "conf-0";
+ 
+ 				conf-0 {
+-					description = "k3-am642-sr-som";
++					description = "k3-am642-sr-som-8Gb";
+ 					firmware = "uboot";
+ 					loadables = "uboot";
+ 					fdt = "fdt-0";
+ 				};
+ 
+ 				conf-1 {
+-					description = "k3-am642-hummingboard-t";
++					description = "k3-am642-hummingboard-t-8Gb";
+ 					firmware = "uboot";
+ 					loadables = "uboot";
+ 					fdt = "fdt-1";
+ 				};
++
++				conf-2 {
++					description = "k3-am642-sr-som-16Gb";
++					firmware = "uboot";
++					loadables = "uboot";
++					fdt = "fdt-2";
++				};
++
++				conf-3 {
++					description = "k3-am642-hummingboard-t-16Gb";
++					firmware = "uboot";
++					loadables = "uboot";
++					fdt = "fdt-3";
++				};
+ 			};
+ 		};
+ 	};
+diff --git a/arch/arm/dts/k3-am642-sr-som.dtsi b/arch/arm/dts/k3-am642-sr-som.dtsi
+index 2a87304a..4f1e67ed 100644
+--- a/arch/arm/dts/k3-am642-sr-som.dtsi
++++ b/arch/arm/dts/k3-am642-sr-som.dtsi
+@@ -24,10 +24,8 @@
+ 	 * - Bank 2 @ 0x880000000-0x9FFFFFFFF: max. 6GB in high memory
+ 	 */
+ 	memory@80000000 {
+-		/* reg = <0x00000000 0x80000000 0x00000000 0x80000000>,
+-		 *       <0x00000008 0x80000000 0x00000001 0x80000000>;
+-		 */
+-		reg = <0x00000000 0x80000000 0x00000000 0x40000000>; // declare just 1GB for now ...
++		reg = <0x00000000 0x80000000 0x00000000 0x80000000>,
++		      <0x00000008 0x80000000 0x00000001 0x80000000>;
+ 		device_type = "memory";
+ 	};
+ 
+diff --git a/board/solidrun/am64som/id-eeprom.c b/board/solidrun/am64som/id-eeprom.c
+index 708e0cef..8a8ab536 100644
+--- a/board/solidrun/am64som/id-eeprom.c
++++ b/board/solidrun/am64som/id-eeprom.c
+@@ -19,19 +19,22 @@ enum sr_tlv_code {
+ 	SR_TLV_CODE_RAM_SIZE	= 0x81,
+ };
+ 
+-static u8 som_eeprom[TLV_INFO_MAX_LEN];
+-static struct tlvinfo_priv *som_tlv;
+-
+-static int am64som_read_eeprom(void)
++static struct tlvinfo_priv *const am64som_read_eeprom(bool force_read)
+ {
++	/* When running off R5 core, global static variables are not initialised */
++	static u8 som_eeprom[TLV_INFO_MAX_LEN];
++	static struct tlvinfo_priv *som_tlv = NULL;
+ 	struct udevice *dev;
+ 	int ret;
+ 
++	if (force_read)
++		som_tlv = NULL;
++
+ 	// avoid running twice
+ 	if (IS_ERR(som_tlv))
+-		return PTR_ERR(som_tlv);
++		return som_tlv;
+ 	else if (som_tlv)
+-		return 0;
++		return som_tlv;
+ 
+ 	/* find som eeprom */
+ 	ret = uclass_get_device_by_name(UCLASS_I2C_EEPROM, "eeprom@50", &dev);
+@@ -43,26 +46,26 @@ static int am64som_read_eeprom(void)
+ 	/* read TLV data */
+ 	som_tlv = tlv_eeprom_read(dev, 0, som_eeprom, ARRAY_SIZE(som_eeprom));
+ 	if (IS_ERR(som_tlv)) {
+-		ret  = PTR_ERR(som_tlv);
++		ret = PTR_ERR(som_tlv);
+ 		printf("Warning: Failed to read TLV Data from SoM EEPROM: %i\n", ret);
+ 		goto err;
+ 	}
+ 
+-	return ret;
++	return som_tlv;
+ err:
+ 	printf("Fall-back to generic configuration, system might not function well.\n");
+-	som_tlv = ERR_PTR(ret);
+-	return ret;
++	return ERR_PTR(ret);
+ }
+ 
+-int am64som_get_sku(char *buffer, size_t size)
++int am64som_get_sku(char *buffer, size_t size, bool force_read)
+ {
++	struct tlvinfo_priv *som_tlv;
+ 	const struct tlvinfo_tlv *entry;
+ 	int ret;
+ 
+-	ret = am64som_read_eeprom();
+-	if (ret)
+-		return ret;
++	som_tlv = am64som_read_eeprom(force_read);
++	if (IS_ERR(som_tlv))
++		return PTR_ERR(som_tlv);
+ 
+ 	/* find SKU entry */
+ 	entry = tlv_entry_next_by_code(som_tlv, NULL, TLV_CODE_PART_NUMBER);
+@@ -82,15 +85,15 @@ int am64som_get_sku(char *buffer, size_t size)
+ 	return entry->length;
+ }
+ 
+-int am64som_get_kit_sku(char *buffer, size_t size)
++int am64som_get_kit_sku(char *buffer, size_t size, bool force_read)
+ {
++	struct tlvinfo_priv *som_tlv;
+ 	const struct tlvinfo_tlv_ext *ext;
+ 	u8 length;
+-	int ret;
+ 
+-	ret = am64som_read_eeprom();
+-	if (ret)
+-		return ret;
++	som_tlv = am64som_read_eeprom(force_read);
++	if (IS_ERR(som_tlv))
++		return PTR_ERR(som_tlv);
+ 
+ 	/* find SolidRun vendor extensions */
+ 	ext = tlv_entry_ext_next_by_vendor(som_tlv, NULL, 0xFFFFFFFF);
+@@ -117,13 +120,13 @@ int am64som_get_kit_sku(char *buffer, size_t size)
+ 	return PTR_ERR(ext);
+ }
+ 
+-enum am64som_carrier_type am64som_carrier_type(void)
++enum am64som_carrier_type am64som_carrier_type(bool force_read)
+ {
+ 	char kit_sku[24];
+ 	int ret;
+ 
+ 	/* find kit SKU on SoM EEPROM */
+-	ret = am64som_get_kit_sku(kit_sku, ARRAY_SIZE(kit_sku));
++	ret = am64som_get_kit_sku(kit_sku, ARRAY_SIZE(kit_sku), force_read);
+ 	if (ret < 0)
+ 		return UNKNOWN;
+ 
+@@ -141,16 +144,17 @@ enum am64som_carrier_type am64som_carrier_type(void)
+ 	}
+ }
+ 
+-int am64som_mac(char *buffer, int index)
++int am64som_mac(char *buffer, int index, bool force_read)
+ {
++	struct tlvinfo_priv *som_tlv;
+ 	struct tlvinfo_tlv *entry;
+ 	u16 macsize;
+ 	u8 macbase[6];
+ 	int i, ret;
+ 
+-	ret = am64som_read_eeprom();
+-	if (ret)
+-		return ret;
++	som_tlv = am64som_read_eeprom(force_read);
++	if (IS_ERR(som_tlv))
++		return PTR_ERR(som_tlv);
+ 
+ 	/* find mac size entry */
+ 	entry = tlv_entry_next_by_code(som_tlv, NULL, TLV_CODE_MAC_SIZE);
+@@ -212,27 +216,30 @@ int am64som_mac(char *buffer, int index)
+ 	return 0;
+ }
+ 
+-phys_size_t am64som_ram_size(void)
++phys_size_t am64som_ram_size(bool force_read)
+ {
+ 	char som_sku[24];
+ 	int ret;
+ 
+ 	/* find SKU on SoM EEPROM */
+-	ret = am64som_get_sku(som_sku, ARRAY_SIZE(som_sku));
++	ret = am64som_get_sku(som_sku, ARRAY_SIZE(som_sku), force_read);
+ 	if (ret < 0) {
+ 		/* fall-back to smallest known configuration */
+ 		return SZ_1G;
+ 	}
+ 
+ 	/*
+-	 * identify size at index 12,
+-	 * e.g. "SRT6442W00D01GE008V11I0".
+-	 *                   ^
++	 * identify size at index 12, e.g.
++	 * - "SRT6442W00D01GE008V11I0".
++	 * - "SRT6442W00D02GE008V11I0"
++	 *                ^
+ 	 */
+ 	switch (som_sku[12])
+ 	{
++	case '2':
++		return SZ_2G;
+ 	default:
+-		printf("Warning: Unsupported memory size \'%c\' configured, "
++		printf("Warning: Unsupported memory size \'%c\' programmed, "
+ 		       "fall-back to 1GB", som_sku[12]);
+ 		fallthrough;
+ 	case '1':
+diff --git a/board/solidrun/am64som/id-eeprom.h b/board/solidrun/am64som/id-eeprom.h
+index 17c50c46..c069804b 100644
+--- a/board/solidrun/am64som/id-eeprom.h
++++ b/board/solidrun/am64som/id-eeprom.h
+@@ -11,6 +11,6 @@ enum am64som_carrier_type {
+ 	UNKNOWN
+ };
+ 
+-enum am64som_carrier_type am64som_carrier_type(void);
+-int am64som_mac(char *buffer, int index);
+-phys_size_t am64som_ram_size(void);
++enum am64som_carrier_type am64som_carrier_type(bool force_read);
++int am64som_mac(char *buffer, int index, bool force_read);
++phys_size_t am64som_ram_size(bool force_read);
+diff --git a/board/solidrun/am64som/som.c b/board/solidrun/am64som/som.c
+index 4464fc94..26942e04 100644
+--- a/board/solidrun/am64som/som.c
++++ b/board/solidrun/am64som/som.c
+@@ -35,12 +35,6 @@ int dram_init(void)
+ 		return ret;
+ 	}
+ 
+-	/*
+-	 * TODO: clamp at actual size based on EEPROM e.g.
+-	 *
+-	 * Note: reading eeprom here locks up the device at "DRAM: " :(
+-	 */
+-
+ 	return 0;
+ }
+ 
+@@ -48,20 +42,13 @@ int dram_init_banksize(void)
+ {
+ 	s32 ret;
+ 
+-	/* setup all banks maximum sizes, according to device-tree */
++	/* Initialise all banks to maximum sizes, according to device-tree */
+ 	ret = fdtdec_setup_memory_banksize();
+ 	if (ret) {
+ 		printf("Error setting up memory banksize. %d\n", ret);
+ 		return ret;
+ 	}
+ 
+-	/*
+-	 * TODO: clamp at actual size based on EEPROM e.g.
+-	 *
+-	 * Note: reading eeprom here locks up the device at "DRAM: " :(
+-	 */
+-	// am64som_ram_size();
+-
+ 	return 0;
+ }
+ 
+@@ -165,15 +152,15 @@ static int set_am64_clkout0(int is25mhz)
+  * HACK: set MAC addresses for interfaces without uboot driver
+  * in environment so that they can be passed on to Linux.
+  */
+-static void fixup_macs_eth1_eth2() {
++static void fixup_macs_eth1_eth2(void) {
+ 	char mac[6];
+ 	int ret;
+ 
+-	ret = am64som_mac(mac, 1);
++	ret = am64som_mac(mac, 1, false);
+ 	if (!ret)
+ 		eth_env_set_enetaddr("eth1addr", mac);
+ 
+-	ret = am64som_mac(mac, 2);
++	ret = am64som_mac(mac, 2, false);
+ 	if (!ret)
+ 		eth_env_set_enetaddr("eth2addr", mac);
+ }
+@@ -184,7 +171,7 @@ int board_late_init(void)
+ 	set_am64_clkout0(1);
+ 
+ #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
+-	switch (am64som_carrier_type())
++	switch (am64som_carrier_type(false))
+ 	{
+ 	case HUMMINGBOARD:
+ 		env_set("board_name", "hummingboard-t");
+@@ -235,33 +222,90 @@ void spl_board_init(void)
+ }
+ #endif
+ 
+-#if defined(CONFIG_SPL_LOAD_FIT)
+ int board_fit_config_name_match(const char *name)
+ {
++#if defined(CONFIG_TARGET_AM64_SR_SOM_R5)
++	const char *match;
++
+ 	/*
+-	 * TODO: detect board from eeprom here
+-	 * currently dram_init locks up later, if board dtb is matched here ... ... :(
+-	 *
+-	 * switch (am64som_carrier_type())
+-	 * {
+-	 * case HUMMINGBOARD:
+-	 * 	if (!strcmp(name, "k3-am642-r5-hummingboard-t") || !strcmp(name, "k3-am642-hummingboard-t"))
+-	 * 		return 0;
+-	 * 	break;
+-	 * case UNKNOWN:
+-	 * 	fallthrough;
+-	 * default:
+-	 * 	if (!strcmp(name, "k3-am642-r5-sr-som") || !strcmp(name, "k3-am642-sr-som"))
+-	 * 		return 0;
+-	 * }
++	 * SPL on R5, before ddr init:
++	 * Select SoM DTB according to memory size.
++	 * DTBs builtin, from CONFIG_OF_LIST.
+ 	 */
+-	if (!strcmp(name, "k3-am642-r5-sr-som") || !strcmp(name, "k3-am642-sr-som"))
+-		return 0;
++	switch(am64som_ram_size(false)) {
++	case SZ_2G:
++		match = "k3-am642-r5-sr-som-ddr4-1600MTs-16Gb-cl12";
++		break;
++	default:
++		fallthrough;
++	case SZ_1G:
++		match = "k3-am642-r5-sr-som-ddr4-1600MTs-8Gb-cl11";
++		break;
++	}
++	if (strcmp(name, match))
++		return -1;
+ 
+-	return -1;
+-}
++	printf("Configuring R5: %s\n", match);
++#elif defined(CONFIG_TARGET_AM64_SR_SOM_A53) && defined(CONFIG_SPL_BUILD)
++	char match[32];
++	const char *carrier;
++	const char *mem;
++
++	/*
++	 * SPL on A53:
++	 * Select DTB based on board and memory size.
++	 * DTBs from binman.
++	 */
++	switch (am64som_carrier_type(false))
++	{
++	case HUMMINGBOARD:
++		carrier = "k3-am642-hummingboard-t";
++		break;
++	default:
++		fallthrough;
++	case UNKNOWN:
++		carrier = "k3-am642-sr-som";
++	}
++	switch(am64som_ram_size(false)) {
++	case SZ_2G:
++		mem = "16Gb";
++		break;
++	default:
++		fallthrough;
++	case SZ_1G:
++		mem = "8Gb";
++		break;
++	}
++	snprintf(match, sizeof(match), "%s-%s", carrier, mem);
++	if (strcmp(name, match))
++		return -1;
++#elif defined(CONFIG_TARGET_AM64_SR_SOM_A53) && !defined(CONFIG_SPL_BUILD)
++	const char *match;
++
++	/*
++	 * U-Boot on A53:
++	 * Select DTB based on board.
++	 * DTBs from OS FIT Image.
++	 */
++	switch (am64som_carrier_type(false))
++	{
++	case HUMMINGBOARD:
++		match = "k3-am642-hummingboard-t";
++		break;
++	default:
++		fallthrough;
++	case UNKNOWN:
++		match = "k3-am642-sr-som";
++		break;
++	}
++
++	if (strcmp(name, match))
++		return -1;
+ #endif
+ 
++	return 0;
++}
++
+ #if defined(CONFIG_SPL_BUILD)
+ #if defined(CONFIG_K3_AM64_DDRSS)
+ static void fixup_ddr_driver_for_ecc(struct spl_image_info *spl_image)
+@@ -346,7 +390,7 @@ int mmc_get_env_dev(void) {
+ int board_get_mac_address(struct udevice *dev, char *mac) {
+ 	/* match interfaces by name */
+ 	if (strcmp("ethernet@8000000port@1", dev->name) == 0)
+-		return am64som_mac(mac, 0);
++		return am64som_mac(mac, 0, false);
+ 
+ 	return -ENOENT;
+ }
+diff --git a/configs/am64som_a53_defconfig b/configs/am64som_a53_defconfig
+index 5fb4395b..e0ccedd4 100644
+--- a/configs/am64som_a53_defconfig
++++ b/configs/am64som_a53_defconfig
+@@ -57,10 +57,6 @@ CONFIG_SPL_SPI_FLASH_SFDP_SUPPORT=y
+ CONFIG_SPL_SPI_LOAD=y
+ CONFIG_SYS_SPI_U_BOOT_OFFS=0x300000
+ CONFIG_SPL_THERMAL=y
+-CONFIG_SPL_USB_HOST=y
+-CONFIG_SPL_USB_STORAGE=y
+-CONFIG_SPL_USB_GADGET=y
+-CONFIG_SPL_DFU=y
+ CONFIG_SPL_YMODEM_SUPPORT=y
+ CONFIG_SYS_MAXARGS=64
+ CONFIG_CMD_TLV_EEPROM=y
+@@ -75,11 +71,15 @@ CONFIG_CMD_USB=y
+ CONFIG_CMD_RTC=y
+ CONFIG_CMD_TIME=y
+ CONFIG_CMD_REGULATOR=y
++# CONFIG_SPL_PARTITION_UUIDS is not set
+ CONFIG_OF_CONTROL=y
+ CONFIG_SPL_OF_CONTROL=y
+ CONFIG_OF_LIST="k3-am642-sr-som k3-am642-hummingboard-t"
+ CONFIG_MULTI_DTB_FIT=y
+ CONFIG_SPL_MULTI_DTB_FIT=y
++CONFIG_SPL_OF_LIST="k3-am642-sr-som-8Gb k3-am642-hummingboard-t-8Gb k3-am642-sr-som-16Gb k3-am642-hummingboard-t-16Gb"
++CONFIG_SPL_MULTI_DTB_FIT_NO_COMPRESSION=y
++# CONFIG_OF_TAG_MIGRATE is not set
+ CONFIG_ENV_IS_NOWHERE=y
+ CONFIG_ENV_IS_IN_FAT=y
+ CONFIG_ENV_IS_IN_MMC=y
+@@ -171,14 +171,12 @@ CONFIG_OPTEE=y
+ # CONFIG_CHIMP_OPTEE is not set
+ CONFIG_DM_THERMAL=y
+ CONFIG_USB=y
++# CONFIG_SPL_DM_USB is not set
+ CONFIG_DM_USB_GADGET=y
+-CONFIG_SPL_DM_USB_GADGET=y
+ CONFIG_USB_XHCI_HCD=y
+ CONFIG_USB_CDNS3=y
+ CONFIG_USB_CDNS3_GADGET=y
+ CONFIG_USB_CDNS3_HOST=y
+-CONFIG_SPL_USB_CDNS3_GADGET=y
+-CONFIG_SPL_USB_CDNS3_HOST=y
+ CONFIG_USB_GADGET=y
+ CONFIG_USB_GADGET_MANUFACTURER="Texas Instruments"
+ CONFIG_USB_GADGET_VENDOR_NUM=0x0451
+diff --git a/configs/am64som_r5_defconfig b/configs/am64som_r5_defconfig
+index c8aa2055..cc94b618 100644
+--- a/configs/am64som_r5_defconfig
++++ b/configs/am64som_r5_defconfig
+@@ -31,6 +31,7 @@ CONFIG_SPL_LOAD_FIT_ADDRESS=0x80080000
+ CONFIG_USE_BOOTCOMMAND=y
+ CONFIG_BOOTCOMMAND="run distro_bootcmd"
+ # CONFIG_DISPLAY_CPUINFO is not set
++CONFIG_MISC_INIT_R=y
+ CONFIG_SPL_SIZE_LIMIT_SUBTRACT_GD=y
+ CONFIG_SPL_SIZE_LIMIT_SUBTRACT_MALLOC=y
+ CONFIG_SPL_MAX_SIZE=0x180000
+@@ -52,12 +53,9 @@ CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR=y
+ CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x400
+ CONFIG_SPL_DMA=y
+ CONFIG_SPL_ENV_SUPPORT=y
+-CONFIG_SPL_ETH=y
+ CONFIG_SPL_I2C=y
+ CONFIG_SPL_DM_MAILBOX=y
+ CONFIG_SPL_DM_SPI_FLASH=y
+-CONFIG_SPL_NET=y
+-CONFIG_SPL_NET_VCI_STRING="AM64X U-Boot R5 SPL"
+ CONFIG_SPL_DM_RESET=y
+ CONFIG_SPL_POWER_DOMAIN=y
+ CONFIG_SPL_RAM_SUPPORT=y
+@@ -83,13 +81,12 @@ CONFIG_CMD_REMOTEPROC=y
+ CONFIG_CMD_USB=y
+ CONFIG_CMD_USB_MASS_STORAGE=y
+ # CONFIG_CMD_SETEXPR is not set
+-CONFIG_CMD_DHCP=y
+ CONFIG_CMD_TIME=y
+ CONFIG_CMD_FAT=y
+ CONFIG_OF_CONTROL=y
+ CONFIG_SPL_OF_CONTROL=y
+ CONFIG_SPL_MULTI_DTB_FIT=y
+-CONFIG_SPL_OF_LIST="k3-am642-r5-sr-som k3-am642-r5-hummingboard-t"
++CONFIG_SPL_OF_LIST="k3-am642-r5-sr-som-ddr4-1600MTs-8Gb-cl11 k3-am642-r5-sr-som-ddr4-1600MTs-16Gb-cl12"
+ CONFIG_SPL_MULTI_DTB_FIT_NO_COMPRESSION=y
+ CONFIG_ENV_IS_IN_FAT=y
+ CONFIG_ENV_IS_IN_MMC=y
+@@ -98,6 +95,7 @@ CONFIG_SYS_RELOC_GD_ENV_ADDR=y
+ CONFIG_SYS_MMC_ENV_PART=1
+ CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
+ CONFIG_SPL_ENV_IS_NOWHERE=y
++# CONFIG_NET is not set
+ CONFIG_SPL_DM=y
+ CONFIG_SPL_DM_SEQ_ALIAS=y
+ CONFIG_REGMAP=y
+@@ -117,6 +115,8 @@ CONFIG_SYS_DFU_DATA_BUF_SIZE=0x5000
+ CONFIG_DMA_CHANNELS=y
+ CONFIG_TI_K3_NAVSS_UDMA=y
+ CONFIG_TI_SCI_PROTOCOL=y
++CONFIG_GPIO_HOG=y
++CONFIG_SPL_GPIO_HOG=y
+ CONFIG_DA8XX_GPIO=y
+ CONFIG_DM_I2C=y
+ CONFIG_SYS_I2C_OMAP24XX=y
+@@ -138,8 +138,6 @@ CONFIG_SPI_FLASH_SPANSION=y
+ CONFIG_SPI_FLASH_S28HX_T=y
+ CONFIG_SPI_FLASH_STMICRO=y
+ CONFIG_SPI_FLASH_MT35XU=y
+-CONFIG_PHY_TI_DP83867=y
+-CONFIG_TI_AM65_CPSW_NUSS=y
+ CONFIG_PHY=y
+ CONFIG_SPL_PHY=y
+ CONFIG_PHY_CADENCE_SIERRA=y
+@@ -147,19 +145,18 @@ CONFIG_PHY_CADENCE_TORRENT=y
+ CONFIG_PHY_J721E_WIZ=y
+ CONFIG_PINCTRL=y
+ # CONFIG_PINCTRL_GENERIC is not set
++# CONFIG_PINCONF_RECURSIVE is not set
+ CONFIG_SPL_PINCTRL=y
+ # CONFIG_SPL_PINCTRL_GENERIC is not set
++# CONFIG_SPL_PINCONF_RECURSIVE is not set
+ CONFIG_PINCTRL_SINGLE=y
+ CONFIG_POWER_DOMAIN=y
+ CONFIG_TI_SCI_POWER_DOMAIN=y
+-CONFIG_DM_REGULATOR=y
+-CONFIG_SPL_DM_REGULATOR=y
+-CONFIG_DM_REGULATOR_GPIO=y
+-CONFIG_SPL_DM_REGULATOR_GPIO=y
+ CONFIG_K3_SYSTEM_CONTROLLER=y
+ CONFIG_REMOTEPROC_TI_K3_ARM64=y
+ CONFIG_RESET_TI_SCI=y
+ CONFIG_SPECIFY_CONSOLE_INDEX=y
++CONFIG_CONS_INDEX=2
+ CONFIG_DM_SERIAL=y
+ CONFIG_SOC_DEVICE=y
+ CONFIG_SOC_DEVICE_TI_K3=y
+-- 
+2.35.3
+
