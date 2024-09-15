@@ -1,0 +1,44 @@
+From 47fc0b3e195a1c70142eb6c2d5090fae5bd037ab Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Sat, 14 Sep 2024 11:25:41 +0200
+Subject: [PATCH 18/19] board: solidrun: hummingboard-t: enable access to usb
+ drives
+
+HummingBoard-T has a USB-Hub connected to usb0 port, select host role
+for supporting access to usb flash drive as OS boot media.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ arch/arm/dts/k3-am642-hummingboard-t-u-boot.dtsi | 5 +++++
+ arch/arm/dts/k3-am642-hummingboard-t.dtsi        | 5 +++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/arch/arm/dts/k3-am642-hummingboard-t-u-boot.dtsi b/arch/arm/dts/k3-am642-hummingboard-t-u-boot.dtsi
+index 5f92fe30197..d7aa0cf371e 100644
+--- a/arch/arm/dts/k3-am642-hummingboard-t-u-boot.dtsi
++++ b/arch/arm/dts/k3-am642-hummingboard-t-u-boot.dtsi
+@@ -4,3 +4,8 @@
+  */
+ 
+ #include "k3-am642-sr-som-u-boot.dtsi"
++
++&usb0 {
++	/* undo k3-am642-sr-som-u-boot.dtsi */
++	dr_mode = "host";
++};
+diff --git a/arch/arm/dts/k3-am642-hummingboard-t.dtsi b/arch/arm/dts/k3-am642-hummingboard-t.dtsi
+index d8712a915d8..f57f21c87be 100644
+--- a/arch/arm/dts/k3-am642-hummingboard-t.dtsi
++++ b/arch/arm/dts/k3-am642-hummingboard-t.dtsi
+@@ -317,3 +317,8 @@
+ 		status = "okay";
+ 	};
+ };
++
++&usb0 {
++	/* there is a usb-hub, select host role */
++	dr_mode = "host";
++};
+-- 
+2.43.0
+
