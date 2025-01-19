@@ -1,0 +1,26 @@
+From 449085336ba462b4abba19a1d1ac70751345c14a Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Sun, 19 Jan 2025 21:52:49 +0100
+Subject: [PATCH 10/11] arm64: dts: ti: k3-am642-sr-som: link icssg1 statistics
+ block
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ arch/arm64/boot/dts/ti/k3-am642-sr-som.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-am642-sr-som.dtsi b/arch/arm64/boot/dts/ti/k3-am642-sr-som.dtsi
+index c19d0b8bbf0f..dd545e90a269 100644
+--- a/arch/arm64/boot/dts/ti/k3-am642-sr-som.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-am642-sr-som.dtsi
+@@ -45,6 +45,7 @@ ethernet {
+ 		ti,mii-g-rt = <&icssg1_mii_g_rt>;
+ 		ti,mii-rt = <&icssg1_mii_rt>;
+ 		ti,iep = <&icssg1_iep0>, <&icssg1_iep1>;
++		ti,pa-stats = <&icssg1_pa_stats>;
+ 
+ 		/*
+ 		 * Configure icssg interrupt controller to map pru-internal
+-- 
+2.43.0
+

@@ -1,8 +1,8 @@
-From 9fdfcccbd32e8da31216c5e7762b57c8d56db48d Mon Sep 17 00:00:00 2001
+From 3cd1577b69ba418ee14f34e95a5eca7e67ad8a84 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Thu, 28 Dec 2023 13:32:35 +0100
-Subject: [PATCH 8/9] arm64: dts: ti: k3-am64-main: icssg: (hack-)fix deferred
- probe of iep
+Subject: [PATCH 09/11] arm64: dts: ti: k3-am64-main: icssg: (hack-)fix
+ deferred probe of iep
 
 DT nodes for icssg[01]_iep[01] have a clock reference to
 icssg[01]/icssg[01]_cfg/clocks/icssg0_iepclk_mux.
@@ -33,10 +33,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  1 file changed, 2 deletions(-)
 
 diff --git a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
-index 6f9c3ae07632..38ae8c439947 100644
+index 1ff8d251d688..c65ff2157007 100644
 --- a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
 +++ b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
-@@ -1104,7 +1104,6 @@ icssg0_mem: memories@0 {
+@@ -1243,7 +1243,6 @@ icssg0_mem: memories@0 {
  		};
  
  		icssg0_cfg: cfg@26000 {
@@ -44,7 +44,7 @@ index 6f9c3ae07632..38ae8c439947 100644
  			reg = <0x26000 0x200>;
  			#address-cells = <1>;
  			#size-cells = <1>;
-@@ -1276,7 +1275,6 @@ icssg1_mem: memories@0 {
+@@ -1422,7 +1421,6 @@ icssg1_mem: memories@0 {
  		};
  
  		icssg1_cfg: cfg@26000 {
@@ -53,5 +53,5 @@ index 6f9c3ae07632..38ae8c439947 100644
  			#address-cells = <1>;
  			#size-cells = <1>;
 -- 
-2.35.3
+2.43.0
 

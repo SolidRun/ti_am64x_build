@@ -223,7 +223,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE Linux Kernel
-KERNEL_TAG=09.02.00.009
+KERNEL_TAG=10.01.10
 
 if [[ ! -d $BASE_DIR/build/ti-linux-kernel ]]; then
 	cd $BASE_DIR/build
@@ -463,11 +463,9 @@ make DESTDIR=$BASE_DIR/tmp/k3conf install
 
 ###################################################################################################################################
 #							BUILD Linux
-LINUX_DEFCONFIG=am64xx-solidrun-linux_defconfig
-
 build_kernel() {
 	cd $BASE_DIR/build/ti-linux-kernel
-	./scripts/kconfig/merge_config.sh -O "${BASE_DIR}/build/ti-linux-kernel" -m arch/arm64/configs/defconfig "${BASE_DIR}/configs/${LINUX_DEFCONFIG}"
+	./scripts/kconfig/merge_config.sh -O "${BASE_DIR}/build/ti-linux-kernel" -m arch/arm64/configs/defconfig kernel/configs/ti_arm64_prune.config "${BASE_DIR}/configs/kernel.extra"
 	make olddefconfig
 	#make menuconfig
 	make savedefconfig
@@ -625,8 +623,9 @@ EOF
 		qemu-system-aarch64 \
 			-m 1G \
 			-M virt \
-			-cpu max,pauth-impdef=on,sve=on \
+			-cpu max,pauth-impdef=on,sve=off \
 			-smp 4 \
+			-rtc base=utc,clock=host \
 			-device virtio-rng-device \
 			-netdev user,id=eth0 \
 			-device virtio-net-device,netdev=eth0 \
@@ -751,7 +750,7 @@ LABEL default
 	MENU LABEL default
 	LINUX ../Image
 	FDTDIR ../
-	APPEND earlycon=ns16550a,mmio32,0x02800000 console=ttyS2,115200n8 log_level=9 root=PARTUUID=$PARTUUID rw rootwait pcie_aspm=off
+	APPEND earlycon=ns16550a,mmio32,0x02800000 console=ttyS2,115200n8 log_level=9 root=PARTUUID=$PARTUUID rw rootwait pcie_aspm=off ath9k.use_msi=1
 EOF
 }
 ###################################################################################################################################

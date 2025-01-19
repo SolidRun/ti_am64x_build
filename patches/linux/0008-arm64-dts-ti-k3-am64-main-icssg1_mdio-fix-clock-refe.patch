@@ -1,7 +1,7 @@
-From ff7a20c7b3f697c2eef50810d4532b5071ade530 Mon Sep 17 00:00:00 2001
+From 93a9005fc52f71553eafd9835dc6ff897bb3af7d Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 27 Dec 2023 14:24:36 +0100
-Subject: [PATCH 7/9] arm64: dts: ti: k3-am64-main: icssg1_mdio: fix clock
+Subject: [PATCH 08/11] arm64: dts: ti: k3-am64-main: icssg1_mdio: fix clock
  reference
 
 icssg1_mdio should use the same clock that is used by icssg1 core.
@@ -20,10 +20,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
-index fd71284e7c7d..6f9c3ae07632 100644
+index e133df8b9af8..1ff8d251d688 100644
 --- a/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
 +++ b/arch/arm64/boot/dts/ti/k3-am64-main.dtsi
-@@ -1423,7 +1423,7 @@ icssg1_mdio: mdio@32400 {
+@@ -1569,7 +1569,7 @@ icssg1_mdio: mdio@32400 {
  			reg = <0x32400 0x100>;
  			#address-cells = <1>;
  			#size-cells = <0>;
@@ -33,5 +33,5 @@ index fd71284e7c7d..6f9c3ae07632 100644
  			bus_freq = <1000000>;
  			status = "disabled";
 -- 
-2.35.3
+2.43.0
 

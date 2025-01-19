@@ -1,0 +1,151 @@
+From e1a14ffd7e4e5d170096422870d2d998b10cabe0 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Mon, 19 Feb 2024 16:03:03 +0100
+Subject: [PATCH 03/11] arm64: dts: ti: hummingboard-t: add overlays for m.2
+ pci-e and usb-3
+
+HummingBoard-T features two M.2 connectors labeled "M1" and "M2".
+The single SerDes lane of the SoC can be routed to either M1 pci-e
+signals, or M2 usb-3 signals by a gpio-controlled mux.
+
+Add overlays for each configuration.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+Link: https://lore.kernel.org/r/20240219-add-am64-som-v7-4-0e6e95b0a05d@solid-run.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/Makefile               |  6 +++
+ .../dts/ti/k3-am642-hummingboard-t-pcie.dtso  | 45 +++++++++++++++++++
+ .../dts/ti/k3-am642-hummingboard-t-usb3.dtso  | 44 ++++++++++++++++++
+ 3 files changed, 95 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/ti/k3-am642-hummingboard-t-pcie.dtso
+ create mode 100644 arch/arm64/boot/dts/ti/k3-am642-hummingboard-t-usb3.dtso
+
+diff --git a/arch/arm64/boot/dts/ti/Makefile b/arch/arm64/boot/dts/ti/Makefile
+index d15832f59ff9..65c96c26cb77 100644
+--- a/arch/arm64/boot/dts/ti/Makefile
++++ b/arch/arm64/boot/dts/ti/Makefile
+@@ -77,6 +77,10 @@ dtb-$(CONFIG_ARCH_K3) += k3-am62x-sk-lpm-wkup-sources.dtbo
+ dtb-$(CONFIG_ARCH_K3) += k3-am62x-sk-pwm.dtbo
+ 
+ # Boards with AM64x SoC
++k3-am642-hummingboard-t-pcie-dtbs := \
++	k3-am642-hummingboard-t.dtb k3-am642-hummingboard-t-pcie.dtbo
++k3-am642-hummingboard-t-usb3-dtbs := \
++	k3-am642-hummingboard-t.dtb k3-am642-hummingboard-t-usb3.dtbo
+ dtb-$(CONFIG_ARCH_K3) += k3-am642-evm.dtb
+ dtb-$(CONFIG_ARCH_K3) += k3-am642-evm-nand.dtbo
+ dtb-$(CONFIG_ARCH_K3) += k3-am642-evm-icssg1-dualemac.dtbo
+@@ -84,6 +88,8 @@ dtb-$(CONFIG_ARCH_K3) += k3-am642-evm-icssg1-dualemac-mii.dtbo
+ dtb-$(CONFIG_ARCH_K3) += k3-am642-evm-pcie0-ep.dtbo
+ dtb-$(CONFIG_ARCH_K3) += k3-am642-evm-sk-cpsw3g-pps.dtbo
+ dtb-$(CONFIG_ARCH_K3) += k3-am642-hummingboard-t.dtb
++dtb-$(CONFIG_ARCH_K3) += k3-am642-hummingboard-t-pcie.dtb
++dtb-$(CONFIG_ARCH_K3) += k3-am642-hummingboard-t-usb3.dtb
+ dtb-$(CONFIG_ARCH_K3) += k3-am642-phyboard-electra-rdk.dtb
+ dtb-$(CONFIG_ARCH_K3) += k3-am642-sk.dtb
+ dtb-$(CONFIG_ARCH_K3) += k3-am642-sk-pwm.dtbo
+diff --git a/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t-pcie.dtso b/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t-pcie.dtso
+new file mode 100644
+index 000000000000..bd9a5caf20da
+--- /dev/null
++++ b/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t-pcie.dtso
+@@ -0,0 +1,45 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ * Overlay for SolidRun AM642 HummingBoard-T to enable PCI-E.
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/phy/phy.h>
++
++#include "k3-serdes.h"
++
++&pcie0_rc {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pcie0_default_pins>;
++	reset-gpios = <&main_gpio1 15 GPIO_ACTIVE_HIGH>;
++	phys = <&serdes0_link>;
++	phy-names = "pcie-phy";
++	num-lanes = <1>;
++	status = "okay";
++};
++
++&serdes0 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	serdes0_link: phy@0 {
++		reg = <0>;
++		cdns,num-lanes = <1>;
++		cdns,phy-type = <PHY_TYPE_PCIE>;
++		#phy-cells = <0>;
++		resets = <&serdes_wiz0 1>;
++	};
++};
++
++&serdes_ln_ctrl {
++	idle-states = <AM64_SERDES0_LANE0_PCIE0>;
++};
++
++&serdes_mux {
++	idle-state = <1>;
++};
+diff --git a/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t-usb3.dtso b/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t-usb3.dtso
+new file mode 100644
+index 000000000000..ffcc3bd3c7bc
+--- /dev/null
++++ b/arch/arm64/boot/dts/ti/k3-am642-hummingboard-t-usb3.dtso
+@@ -0,0 +1,44 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++ *
++ * Overlay for SolidRun AM642 HummingBoard-T to enable USB-3.1.
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/phy/phy.h>
++
++#include "k3-serdes.h"
++
++&serdes0 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	serdes0_link: phy@0 {
++		reg = <0>;
++		cdns,num-lanes = <1>;
++		cdns,phy-type = <PHY_TYPE_USB3>;
++		#phy-cells = <0>;
++		resets = <&serdes_wiz0 1>;
++	};
++};
++
++&serdes_ln_ctrl {
++	idle-states = <AM64_SERDES0_LANE0_USB>;
++};
++
++&serdes_mux {
++	idle-state = <0>;
++};
++
++&usbss0 {
++	/delete-property/ ti,usb2-only;
++};
++
++&usb0 {
++	maximum-speed = "super-speed";
++	phys = <&serdes0_link>;
++	phy-names = "cdns3,usb3-phy";
++};
+-- 
+2.43.0
+
