@@ -128,7 +128,7 @@ set -e
 
 ###################################################################################################################################
 #							CLONE K3 Firmware
-FIRMWARE_TAG=09.02.00.009
+FIRMWARE_TAG=10.01.08
 
 if [[ ! -d $BASE_DIR/build/ti-linux-firmware ]]; then
 	cd $BASE_DIR/build
@@ -141,11 +141,14 @@ fi
 
 ###################################################################################################################################
 #							CLONE ATF
-ATF_TAG=09.02.00.009
+ATF_BRANCH=master
+ATF_HEAD=58b25570c9
 
 if [[ ! -d $BASE_DIR/build/arm-trusted-firmware ]]; then
 	cd $BASE_DIR/build
-	git clone git://git.ti.com/atf/arm-trusted-firmware.git -b $ATF_TAG --depth=1
+	git clone https://review.trustedfirmware.org/TF-A/trusted-firmware-a.git -b $ATF_BRANCH arm-trusted-firmware
+	cd arm-trusted-firmware
+	git reset --hard $ATF_HEAD
 fi
 
 ###################################################################################################################################
@@ -156,7 +159,7 @@ fi
 ###################################################################################################################################
 #							CLONE OPTEE
 OPTEE_BRANCH=master
-OPTEE_HEAD=012cdca49d
+OPTEE_HEAD=8f645256ef
 
 if [[ ! -d $BASE_DIR/build/optee_os ]]; then
 	cd $BASE_DIR/build
@@ -203,7 +206,7 @@ fi
 ###################################################################################################################################
 #							CLONE k3conf Tool
 K3CONF_BRANCH=master
-K3CONF_HEAD=85a7433202
+K3CONF_HEAD=30a1d5b2d0
 
 if [[ ! -d $BASE_DIR/build/k3conf ]]; then
 	cd $BASE_DIR/build
