@@ -1,7 +1,7 @@
-From 47fc0b3e195a1c70142eb6c2d5090fae5bd037ab Mon Sep 17 00:00:00 2001
+From 703e6004a807a035b4063b3dee618f3ddfac1f71 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Sat, 14 Sep 2024 11:25:41 +0200
-Subject: [PATCH 18/19] board: solidrun: hummingboard-t: enable access to usb
+Subject: [PATCH 16/19] board: solidrun: hummingboard-t: enable access to usb
  drives
 
 HummingBoard-T has a USB-Hub connected to usb0 port, select host role

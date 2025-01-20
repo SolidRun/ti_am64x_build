@@ -1,0 +1,35 @@
+From 915eb72a11aa6c978e67c5c167c8ffeb976c5e94 Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Thu, 23 Jan 2025 13:06:20 +0100
+Subject: [PATCH 19/19] include: env: ti_common: bootcmd_ti_mmc: only boot if
+ loading succeeded
+
+bootcmd_ti_mmc is party of the standard boot order followed on failure
+by bootflow command.
+
+Change bootcmd_ti_mmc to only boot kernel if loading all required files
+succeeded.
+
+This avoids in particular situation where kernel is found but dtb is
+not, leading to kernel crash rather than fall-back to bootflow command
+which might succeed booting by another means.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ include/env/ti/ti_common.env | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/env/ti/ti_common.env b/include/env/ti/ti_common.env
+index 1c8642d8076..9ec41af7f0a 100644
+--- a/include/env/ti/ti_common.env
++++ b/include/env/ti/ti_common.env
+@@ -36,5 +36,5 @@ bootcmd_ti_mmc=
+ 	if test ${boot_fit} -eq 1;
+ 		then run get_fit_${boot}; run get_fit_overlaystring; run run_fit;
+ 	else;
+-		run get_kern_${boot}; run get_fdt_${boot}; run get_overlay_${boot}; run run_kern;
++		run get_kern_${boot} && run get_fdt_${boot} && run get_overlay_${boot} && run run_kern;
+ 	fi;
+-- 
+2.43.0
+

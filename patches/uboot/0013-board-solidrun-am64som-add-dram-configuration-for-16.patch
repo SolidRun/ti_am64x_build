@@ -1,7 +1,7 @@
-From f88e60360a7bfe259f1d30bf8b1cf1dc7daf3e25 Mon Sep 17 00:00:00 2001
+From b10375eabafe06c86a434edad0e5ce66a0031e75 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 15 May 2024 18:49:29 +0200
-Subject: [PATCH 14/14] board: solidrun: am64som: add dram configuration for
+Subject: [PATCH 13/19] board: solidrun: am64som: add dram configuration for
  16gbit version
 
 Signed-off-by: Josua Mayer <josua@solid-run.com>
@@ -12,7 +12,7 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
 
 diff --git a/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-16Gb-cl12.dtsi b/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-16Gb-cl12.dtsi
 new file mode 100644
-index 00000000..70c1498c
+index 00000000000..70c1498c9d4
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-16Gb-cl12.dtsi
 @@ -0,0 +1,2192 @@
@@ -2209,5 +2209,5 @@ index 00000000..70c1498c
 +#define DDRSS_PHY_1404_DATA 0x01990000
 +#define DDRSS_PHY_1405_DATA 0x20040004
 -- 
-2.35.3
+2.43.0
 

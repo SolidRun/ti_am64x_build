@@ -1,7 +1,7 @@
-From 7bec12b46cc40b2092b7859910ad22e03806a33f Mon Sep 17 00:00:00 2001
+From 79111d7c8c52c518d3f7fc0e75179de4d13c0417 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Sun, 15 Sep 2024 15:32:19 +0200
-Subject: [PATCH 19/19] board: solidrun: hummingboard-t: enable support for
+Subject: [PATCH 17/19] board: solidrun: hummingboard-t: enable support for
  legacy uboot image
 
 Enable support for booting with legacy "boot.scr", e.g. to support

@@ -1,7 +1,7 @@
-From a424ddcd52ff152b58bfd6fc0e12301172d52ae9 Mon Sep 17 00:00:00 2001
+From bebddf1bdfb0c8357d3099cbb3c5ea05e91a2e1d Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 27 Sep 2023 14:39:51 +0200
-Subject: [PATCH 05/12] arm: mach-k3: am642_init: support spl_boot_device in
+Subject: [PATCH 05/19] arm: mach-k3: am642_init: support spl_boot_device in
  u-boot proper
 
 The memory addresses for boot mode are still valid in full u-boot.
@@ -11,26 +11,26 @@ available any time.
 Signed-off-by: Josua Mayer <josua@solid-run.com>
 ---
  arch/arm/mach-k3/Makefile     | 2 ++
- arch/arm/mach-k3/am642_init.c | 5 +++++
- 2 files changed, 7 insertions(+)
+ arch/arm/mach-k3/am642_init.c | 3 +++
+ 2 files changed, 5 insertions(+)
 
 diff --git a/arch/arm/mach-k3/Makefile b/arch/arm/mach-k3/Makefile
-index 9a3c735327..263139d3a5 100644
+index 7e1314c142a..83e38550692 100644
 --- a/arch/arm/mach-k3/Makefile
 +++ b/arch/arm/mach-k3/Makefile
-@@ -24,5 +24,7 @@ obj-$(CONFIG_SOC_K3_J784S4) += j784s4_init.o
+@@ -27,5 +27,7 @@ obj-$(CONFIG_SOC_K3_AM62A7) += am62a7_init.o
+ obj-$(CONFIG_SOC_K3_J784S4) += j784s4_init.o
  obj-$(CONFIG_SOC_K3_AM62P5) += am62p5_init.o
  obj-$(CONFIG_SOC_K3_J722S) += j722s_init.o
- obj-$(CONFIG_K3_LOAD_SYSFW) += sysfw-loader.o
 +else
 +obj-$(CONFIG_SOC_K3_AM642) += am642_init.o
  endif
  obj-y += common.o security.o
 diff --git a/arch/arm/mach-k3/am642_init.c b/arch/arm/mach-k3/am642_init.c
-index 811f323ff0..53536cb202 100644
+index 80c3cb3479f..3df29dac5d1 100644
 --- a/arch/arm/mach-k3/am642_init.c
 +++ b/arch/arm/mach-k3/am642_init.c
-@@ -31,6 +31,7 @@
+@@ -28,6 +28,7 @@
  #define SW_POR_MCU                             BIT(24)
  #define SW_POR_MAIN                            BIT(25)
  
@@ -38,7 +38,7 @@ index 811f323ff0..53536cb202 100644
  static void ctrl_mmr_unlock(void)
  {
  	/* Unlock all PADCFG_MMR1 module registers */
-@@ -287,6 +288,7 @@ u32 spl_mmc_boot_mode(struct mmc *mmc, const u32 boot_device)
+@@ -284,6 +285,7 @@ u32 spl_mmc_boot_mode(struct mmc *mmc, const u32 boot_device)
  		return MMCSD_MODE_RAW;
  	}
  }
@@ -46,7 +46,7 @@ index 811f323ff0..53536cb202 100644
  
  static u32 __get_backup_bootmedia(u32 main_devstat)
  {
-@@ -376,12 +378,14 @@ static u32 __get_primary_bootmedia(u32 main_devstat)
+@@ -373,6 +375,7 @@ static u32 __get_primary_bootmedia(u32 main_devstat)
  u32 spl_boot_device(void)
  {
  	u32 devstat = readl(CTRLMMR_MAIN_DEVSTAT);
@@ -54,18 +54,6 @@ index 811f323ff0..53536cb202 100644
  
  	if (bootindex == K3_PRIMARY_BOOTMODE)
  		return __get_primary_bootmedia(devstat);
- 	else
- 		return __get_backup_bootmedia(devstat);
- }
-+#ifdef CONFIG_SPL_BUILD
- 
- #if defined(CONFIG_SYS_K3_SPL_ATF)
- 
-@@ -433,3 +437,4 @@ void release_resources_for_core_shutdown(void)
- 	}
- }
- #endif
-+#endif /* CONFIG_SPL_BUILD */
 -- 
-2.35.3
+2.43.0
 

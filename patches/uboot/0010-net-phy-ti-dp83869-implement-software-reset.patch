@@ -1,7 +1,7 @@
-From 4d03d7ce0bed7843c0a28d19dcf6b8333cbab231 Mon Sep 17 00:00:00 2001
+From d8478a1e509c9efcc3504af03e9598d383990329 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 10 Jan 2024 17:47:27 +0100
-Subject: [PATCH 10/12] net: phy: ti: dp83869: implement software reset
+Subject: [PATCH 10/19] net: phy: ti: dp83869: implement software reset
 
 DP83869 uses cotrol register @1F for full software reset. BMCR_RESET
 does not reset all state reliably.
@@ -14,7 +14,7 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  1 file changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/phy/dp83869.c b/drivers/net/phy/dp83869.c
-index 23dbf42b68..a64e462412 100644
+index f9d4782580e..4ed8a606aac 100644
 --- a/drivers/net/phy/dp83869.c
 +++ b/drivers/net/phy/dp83869.c
 @@ -7,6 +7,7 @@
@@ -33,7 +33,7 @@ index 23dbf42b68..a64e462412 100644
  #define DP83869_CFG4		0x1e
  
  /* Extended Registers */
-@@ -473,6 +475,16 @@ static int dp83869_probe(struct phy_device *phydev)
+@@ -484,6 +486,16 @@ static int dp83869_probe(struct phy_device *phydev)
  	return 0;
  }
  
@@ -47,10 +47,10 @@ index 23dbf42b68..a64e462412 100644
 +	return ret;
 +}
 +
- static struct phy_driver DP83869_driver = {
+ U_BOOT_PHY_DRIVER(dp83869) = {
  	.name = "TI DP83869",
  	.uid = 0x2000a0f1,
-@@ -483,7 +495,8 @@ static struct phy_driver DP83869_driver = {
+@@ -494,5 +506,6 @@ U_BOOT_PHY_DRIVER(dp83869) = {
  	.startup = &genphy_startup,
  	.shutdown = &genphy_shutdown,
  	.readext = dp83869_readext,
@@ -58,8 +58,6 @@ index 23dbf42b68..a64e462412 100644
 +	.writeext = dp83869_writeext,
 +	.soft_reset = dp83869_soft_reset
  };
- 
- int phy_dp83869_init(void)
 -- 
-2.35.3
+2.43.0
 

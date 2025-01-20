@@ -1,7 +1,7 @@
-From f951f24fc8b9b7264c96da30fdc461ae6aa1e190 Mon Sep 17 00:00:00 2001
+From 229e138b969667928322d89d918c9a49ea8b7e53 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Sun, 3 Dec 2023 17:18:54 +0100
-Subject: [PATCH 06/12] net: eth-uclass: add board-file function to retrieve
+Subject: [PATCH 06/19] net: eth-uclass: add board-file function to retrieve
  mac
 
 Some existing network interface drivers  such as nxp fec support calling
@@ -14,14 +14,14 @@ before invoking driver-specific read_rom_hwaddr function.
 
 Signed-off-by: Josua Mayer <josua@solid-run.com>
 ---
- net/eth-uclass.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ net/eth-uclass.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/net/eth-uclass.c b/net/eth-uclass.c
-index b01a910938..e1735e3030 100644
+index 3d0ec91dfa4..5deedbd33c6 100644
 --- a/net/eth-uclass.c
 +++ b/net/eth-uclass.c
-@@ -542,10 +542,15 @@ static bool eth_dev_get_mac_address(struct udevice *dev, u8 mac[ARP_HLEN])
+@@ -549,10 +549,15 @@ static bool eth_dev_get_mac_address(struct udevice *dev, u8 mac[ARP_HLEN])
  #endif
  }
  
@@ -37,23 +37,24 @@ index b01a910938..e1735e3030 100644
  	unsigned char env_enetaddr[ARP_HLEN];
  	char *source = "DT";
  
-@@ -582,8 +587,15 @@ static int eth_post_probe(struct udevice *dev)
+@@ -562,8 +567,16 @@ static int eth_post_probe(struct udevice *dev)
+ 	/* Check if the device has a valid MAC address in device tree */
  	if (!eth_dev_get_mac_address(dev, pdata->enetaddr) ||
  	    !is_valid_ethaddr(pdata->enetaddr)) {
- 		source = "ROM";
 +
 +		/* Check if the board-file has a valid MAC address */
 +		if (!board_get_mac_address(dev, board_enetaddr) &&
 +		    is_valid_ethaddr(board_enetaddr)) {
 +			memcpy(pdata->enetaddr, board_enetaddr, ARP_HLEN);
++			source = "BOARDFILE";
 +		}
 +
  		/* Check if the device has a MAC address in ROM */
--		if (eth_get_ops(dev)->read_rom_hwaddr)
-+		else if (eth_get_ops(dev)->read_rom_hwaddr)
- 			eth_get_ops(dev)->read_rom_hwaddr(dev);
- 	}
+-		if (eth_get_ops(dev)->read_rom_hwaddr) {
++		else if (eth_get_ops(dev)->read_rom_hwaddr) {
+ 			int ret;
  
+ 			ret = eth_get_ops(dev)->read_rom_hwaddr(dev);
 -- 
-2.35.3
+2.43.0
 

@@ -1,7 +1,7 @@
-From deb77a76d0155b45db12ce816989ecb7652c594f Mon Sep 17 00:00:00 2001
+From 2ab9de27e10c033077e5c39eb56f95922d5647e3 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Fri, 27 Oct 2023 16:58:16 +0200
-Subject: [PATCH 07/12] board: solidrun: add initial support for AM64 SoM
+Subject: [PATCH 07/19] board: solidrun: add initial support for AM64 SoM
 
 SolidRun has a System on Module based on TI AM6442 SoC,
 as well as a reference carrier board called "HummingBoard-T".
@@ -21,8 +21,8 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  arch/arm/dts/k3-am642-sr-som-u-boot.dtsi      |  174 ++
  arch/arm/dts/k3-am642-sr-som.dts              |   18 +
  arch/arm/dts/k3-am642-sr-som.dtsi             |  572 +++++
- arch/arm/mach-k3/Kconfig                      |    1 +
- board/solidrun/am64som/Kconfig                |   45 +
+ arch/arm/mach-k3/am64x/Kconfig                |   23 +
+ board/solidrun/am64som/Kconfig                |   17 +
  board/solidrun/am64som/Makefile               |    7 +
  board/solidrun/am64som/am64som.env            |   54 +
  board/solidrun/am64som/id-eeprom.c            |  241 ++
@@ -31,7 +31,7 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  configs/am64som_a53_defconfig                 |  198 ++
  configs/am64som_r5_defconfig                  |  194 ++
  include/configs/am64som.h                     |   21 +
- 21 files changed, 5178 insertions(+), 1 deletion(-)
+ 21 files changed, 5172 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dts
  create mode 100644 arch/arm/dts/k3-am642-hummingboard-t.dtsi
  create mode 100644 arch/arm/dts/k3-am642-r5-hummingboard-t.dts
@@ -53,10 +53,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  create mode 100644 include/configs/am64som.h
 
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index 4beef8cdb3..26e4b59cd2 100644
+index 4d03a0f5b30..1a244264f62 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -1287,7 +1287,11 @@ dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
+@@ -1438,7 +1438,11 @@ dtb-$(CONFIG_SOC_K3_AM642) += k3-am642-evm.dtb \
  			      k3-am642-r5-evm.dtb \
  			      k3-am642-sk.dtb \
  			      k3-am642-r5-sk.dtb \
@@ -71,7 +71,7 @@ index 4beef8cdb3..26e4b59cd2 100644
  			      k3-am625-r5-sk.dtb \
 diff --git a/arch/arm/dts/k3-am642-hummingboard-t.dts b/arch/arm/dts/k3-am642-hummingboard-t.dts
 new file mode 100644
-index 0000000000..8ed191d339
+index 00000000000..8ed191d3393
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-hummingboard-t.dts
 @@ -0,0 +1,19 @@
@@ -96,7 +96,7 @@ index 0000000000..8ed191d339
 +};
 diff --git a/arch/arm/dts/k3-am642-hummingboard-t.dtsi b/arch/arm/dts/k3-am642-hummingboard-t.dtsi
 new file mode 100644
-index 0000000000..d8712a915d
+index 00000000000..d8712a915d8
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-hummingboard-t.dtsi
 @@ -0,0 +1,319 @@
@@ -421,7 +421,7 @@ index 0000000000..d8712a915d
 +};
 diff --git a/arch/arm/dts/k3-am642-r5-hummingboard-t.dts b/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
 new file mode 100644
-index 0000000000..92646e405b
+index 00000000000..92646e405bc
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
 @@ -0,0 +1,23 @@
@@ -450,7 +450,7 @@ index 0000000000..92646e405b
 +};
 diff --git a/arch/arm/dts/k3-am642-r5-sr-som.dts b/arch/arm/dts/k3-am642-r5-sr-som.dts
 new file mode 100644
-index 0000000000..39bcdb3ac6
+index 00000000000..39bcdb3ac6a
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-r5-sr-som.dts
 @@ -0,0 +1,22 @@
@@ -478,7 +478,7 @@ index 0000000000..39bcdb3ac6
 +};
 diff --git a/arch/arm/dts/k3-am642-r5-sr-som.dtsi b/arch/arm/dts/k3-am642-r5-sr-som.dtsi
 new file mode 100644
-index 0000000000..a29886367b
+index 00000000000..a29886367ba
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-r5-sr-som.dtsi
 @@ -0,0 +1,195 @@
@@ -679,7 +679,7 @@ index 0000000000..a29886367b
 +};
 diff --git a/arch/arm/dts/k3-am642-sr-som-binman.dtsi b/arch/arm/dts/k3-am642-sr-som-binman.dtsi
 new file mode 100644
-index 0000000000..31fb95e2c6
+index 00000000000..31fb95e2c60
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-sr-som-binman.dtsi
 @@ -0,0 +1,513 @@
@@ -1198,7 +1198,7 @@ index 0000000000..31fb95e2c6
 +#endif
 diff --git a/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi b/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi
 new file mode 100644
-index 0000000000..fc99650943
+index 00000000000..fc99650943e
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi
 @@ -0,0 +1,2189 @@
@@ -3393,7 +3393,7 @@ index 0000000000..fc99650943
 +#define DDRSS_PHY_1405_DATA 0x20040001
 diff --git a/arch/arm/dts/k3-am642-sr-som-u-boot.dtsi b/arch/arm/dts/k3-am642-sr-som-u-boot.dtsi
 new file mode 100644
-index 0000000000..dfa8f8af28
+index 00000000000..dfa8f8af28f
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-sr-som-u-boot.dtsi
 @@ -0,0 +1,174 @@
@@ -3573,7 +3573,7 @@ index 0000000000..dfa8f8af28
 +};
 diff --git a/arch/arm/dts/k3-am642-sr-som.dts b/arch/arm/dts/k3-am642-sr-som.dts
 new file mode 100644
-index 0000000000..c9df215dd5
+index 00000000000..c9df215dd5a
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-sr-som.dts
 @@ -0,0 +1,18 @@
@@ -3597,7 +3597,7 @@ index 0000000000..c9df215dd5
 +};
 diff --git a/arch/arm/dts/k3-am642-sr-som.dtsi b/arch/arm/dts/k3-am642-sr-som.dtsi
 new file mode 100644
-index 0000000000..2a87304adb
+index 00000000000..2a87304adb5
 --- /dev/null
 +++ b/arch/arm/dts/k3-am642-sr-som.dtsi
 @@ -0,0 +1,572 @@
@@ -4173,33 +4173,14 @@ index 0000000000..2a87304adb
 +	ti,vbus-divider;
 +	ti,usb2-only;
 +};
-diff --git a/arch/arm/mach-k3/Kconfig b/arch/arm/mach-k3/Kconfig
-index c5c909919d..fda1045bba 100644
---- a/arch/arm/mach-k3/Kconfig
-+++ b/arch/arm/mach-k3/Kconfig
-@@ -205,6 +205,7 @@ config K3_X509_SWRV
- 	help
- 	  SWRV for X509 certificate used for boot images
+diff --git a/arch/arm/mach-k3/am64x/Kconfig b/arch/arm/mach-k3/am64x/Kconfig
+index 73e7e039471..09a170c05d3 100644
+--- a/arch/arm/mach-k3/am64x/Kconfig
++++ b/arch/arm/mach-k3/am64x/Kconfig
+@@ -30,8 +30,31 @@ config TARGET_AM642_R5_EVM
+ 	imply SYS_K3_SPL_ATF
+ 	imply TI_I2C_BOARD_DETECT
  
-+source "board/solidrun/am64som/Kconfig"
- source "board/ti/am65x/Kconfig"
- source "board/ti/am64x/Kconfig"
- source "board/ti/am62x/Kconfig"
-diff --git a/board/solidrun/am64som/Kconfig b/board/solidrun/am64som/Kconfig
-new file mode 100644
-index 0000000000..d0a2555fb5
---- /dev/null
-+++ b/board/solidrun/am64som/Kconfig
-@@ -0,0 +1,45 @@
-+# SPDX-License-Identifier: GPL-2.0+
-+#
-+# Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
-+#
-+
-+choice
-+	prompt "SolidRun AM64 based boards"
-+	optional
-+
 +config TARGET_AM64_SR_SOM_A53
 +	bool "SolidRun AM64 SoM running on A53"
 +	select ARM64
@@ -4222,7 +4203,22 @@ index 0000000000..d0a2555fb5
 +	select SPL_EEPROM_TLV_LIB
 +	imply SYS_K3_SPL_ATF
 +
-+endchoice
+ endchoice
+ 
++source "board/solidrun/am64som/Kconfig"
+ source "board/ti/am64x/Kconfig"
+ 
+ endif
+diff --git a/board/solidrun/am64som/Kconfig b/board/solidrun/am64som/Kconfig
+new file mode 100644
+index 00000000000..f182aee198b
+--- /dev/null
++++ b/board/solidrun/am64som/Kconfig
+@@ -0,0 +1,17 @@
++# SPDX-License-Identifier: GPL-2.0+
++#
++# Copyright (C) 2023 Josua Mayer <josua@solid-run.com>
++#
 +
 +if TARGET_AM64_SR_SOM_A53 || TARGET_AM64_SR_SOM_R5
 +
@@ -4238,7 +4234,7 @@ index 0000000000..d0a2555fb5
 +endif
 diff --git a/board/solidrun/am64som/Makefile b/board/solidrun/am64som/Makefile
 new file mode 100644
-index 0000000000..4e520ddc52
+index 00000000000..4e520ddc524
 --- /dev/null
 +++ b/board/solidrun/am64som/Makefile
 @@ -0,0 +1,7 @@
@@ -4251,7 +4247,7 @@ index 0000000000..4e520ddc52
 +obj-y	+= som.o
 diff --git a/board/solidrun/am64som/am64som.env b/board/solidrun/am64som/am64som.env
 new file mode 100644
-index 0000000000..a2d6327ce8
+index 00000000000..a2d6327ce80
 --- /dev/null
 +++ b/board/solidrun/am64som/am64som.env
 @@ -0,0 +1,54 @@
@@ -4311,7 +4307,7 @@ index 0000000000..a2d6327ce8
 +	run run_kern;
 diff --git a/board/solidrun/am64som/id-eeprom.c b/board/solidrun/am64som/id-eeprom.c
 new file mode 100644
-index 0000000000..708e0cef19
+index 00000000000..708e0cef199
 --- /dev/null
 +++ b/board/solidrun/am64som/id-eeprom.c
 @@ -0,0 +1,241 @@
@@ -4558,7 +4554,7 @@ index 0000000000..708e0cef19
 +}
 diff --git a/board/solidrun/am64som/id-eeprom.h b/board/solidrun/am64som/id-eeprom.h
 new file mode 100644
-index 0000000000..17c50c46ae
+index 00000000000..17c50c46ae8
 --- /dev/null
 +++ b/board/solidrun/am64som/id-eeprom.h
 @@ -0,0 +1,16 @@
@@ -4580,7 +4576,7 @@ index 0000000000..17c50c46ae
 +phys_size_t am64som_ram_size(void);
 diff --git a/board/solidrun/am64som/som.c b/board/solidrun/am64som/som.c
 new file mode 100644
-index 0000000000..fac5c7f555
+index 00000000000..fac5c7f555f
 --- /dev/null
 +++ b/board/solidrun/am64som/som.c
 @@ -0,0 +1,352 @@
@@ -4938,7 +4934,7 @@ index 0000000000..fac5c7f555
 +}
 diff --git a/configs/am64som_a53_defconfig b/configs/am64som_a53_defconfig
 new file mode 100644
-index 0000000000..3df1143580
+index 00000000000..3df1143580a
 --- /dev/null
 +++ b/configs/am64som_a53_defconfig
 @@ -0,0 +1,198 @@
@@ -5142,7 +5138,7 @@ index 0000000000..3df1143580
 +CONFIG_CMD_OPTEE_RPMB=y
 diff --git a/configs/am64som_r5_defconfig b/configs/am64som_r5_defconfig
 new file mode 100644
-index 0000000000..c8aa205513
+index 00000000000..c8aa2055130
 --- /dev/null
 +++ b/configs/am64som_r5_defconfig
 @@ -0,0 +1,194 @@
@@ -5342,7 +5338,7 @@ index 0000000000..c8aa205513
 +CONFIG_EEPROM_TLV_LIB=y
 diff --git a/include/configs/am64som.h b/include/configs/am64som.h
 new file mode 100644
-index 0000000000..93be93eb73
+index 00000000000..93be93eb732
 --- /dev/null
 +++ b/include/configs/am64som.h
 @@ -0,0 +1,21 @@
@@ -5368,5 +5364,5 @@ index 0000000000..93be93eb73
 +
 +#endif /* _CONFIG_AM64SOM_H */
 -- 
-2.35.3
+2.43.0
 

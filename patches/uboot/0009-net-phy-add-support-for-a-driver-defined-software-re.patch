@@ -1,7 +1,7 @@
-From 20c8836c15dfb512e3d5c885652d5078beb1f639 Mon Sep 17 00:00:00 2001
+From 5480eb36dcd3073a896a1d90a2b4934a177bf7b0 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 10 Jan 2024 17:35:44 +0100
-Subject: [PATCH 09/12] net: phy: add support for a driver-defined software
+Subject: [PATCH 09/19] net: phy: add support for a driver-defined software
  reset function
 
 Some ethernet PHYs don't fully reset from BMCR_RESET and require custom
@@ -17,10 +17,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  2 files changed, 7 insertions(+)
 
 diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
-index 80230b907c..abcdf40fd7 100644
+index 63b3e46f101..374bce86d2d 100644
 --- a/drivers/net/phy/phy.c
 +++ b/drivers/net/phy/phy.c
-@@ -855,6 +855,9 @@ int phy_reset(struct phy_device *phydev)
+@@ -716,6 +716,9 @@ int phy_reset(struct phy_device *phydev)
  	if (phydev->flags & PHY_FLAG_BROKEN_RESET)
  		return 0;
  
@@ -31,10 +31,10 @@ index 80230b907c..abcdf40fd7 100644
  	/* If it's 10G, we need to issue reset through one of the MMDs */
  	if (phydev->is_c45) {
 diff --git a/include/phy.h b/include/phy.h
-index 87aa86c2e7..9e51a7b9e8 100644
+index ae23814bbf3..902163b8410 100644
 --- a/include/phy.h
 +++ b/include/phy.h
-@@ -100,6 +100,10 @@ struct phy_driver {
+@@ -103,6 +103,10 @@ struct phy_driver {
  
  	u32 features;
  
@@ -46,5 +46,5 @@ index 87aa86c2e7..9e51a7b9e8 100644
  	/* Will be called during phy_connect */
  	int (*probe)(struct phy_device *phydev);
 -- 
-2.35.3
+2.43.0
 

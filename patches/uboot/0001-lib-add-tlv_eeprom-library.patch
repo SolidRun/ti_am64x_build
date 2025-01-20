@@ -1,7 +1,7 @@
-From d5723adc2a88d8dc32dbecfb2d79f77e00d9ebd7 Mon Sep 17 00:00:00 2001
+From 4f24ac79411c7c4d73514426b1a675012059be9c Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Tue, 16 May 2023 14:41:51 +0300
-Subject: [PATCH 01/12] lib: add tlv_eeprom library
+Subject: [PATCH 01/19] lib: add tlv_eeprom library
 
 Create a new tlv library by rewriting parts, and reusing other parts of
 the tlv_eeprom command. This library is intended to simplify reading tlv
@@ -15,22 +15,22 @@ Cc: Baruch Siach <baruch@tkos.co.il>
 Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>
 ---
  cmd/Kconfig          |   2 +
- include/tlv_eeprom.h | 248 +++++++++++++----
+ include/tlv_eeprom.h | 249 +++++++++++++----
  lib/Kconfig          |   2 +
  lib/Makefile         |   2 +
  lib/tlv/Kconfig      |  18 ++
  lib/tlv/Makefile     |   4 +
  lib/tlv/tlv_eeprom.c | 633 +++++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 851 insertions(+), 58 deletions(-)
+ 7 files changed, 851 insertions(+), 59 deletions(-)
  create mode 100644 lib/tlv/Kconfig
  create mode 100644 lib/tlv/Makefile
  create mode 100644 lib/tlv/tlv_eeprom.c
 
 diff --git a/cmd/Kconfig b/cmd/Kconfig
-index 2caa4af71c..2575911b8e 100644
+index a86b5705174..f844726bd2d 100644
 --- a/cmd/Kconfig
 +++ b/cmd/Kconfig
-@@ -191,6 +191,7 @@ config CMD_REGINFO
+@@ -213,6 +213,7 @@ config CMD_REGINFO
  config CMD_TLV_EEPROM
  	bool "tlv_eeprom"
  	depends on I2C_EEPROM
@@ -38,7 +38,7 @@ index 2caa4af71c..2575911b8e 100644
  	select CRC32
  	help
  	  Display and program the system EEPROM data block in ONIE Tlvinfo
-@@ -199,6 +200,7 @@ config CMD_TLV_EEPROM
+@@ -221,6 +222,7 @@ config CMD_TLV_EEPROM
  config SPL_CMD_TLV_EEPROM
  	bool "tlv_eeprom for SPL"
  	depends on SPL_I2C_EEPROM
@@ -47,10 +47,10 @@ index 2caa4af71c..2575911b8e 100644
  	select SPL_CRC32
  	help
 diff --git a/include/tlv_eeprom.h b/include/tlv_eeprom.h
-index a2c333e744..c1084a28b5 100644
+index 2b1e19b2bdd..8ebee122487 100644
 --- a/include/tlv_eeprom.h
 +++ b/include/tlv_eeprom.h
-@@ -12,6 +12,13 @@
+@@ -14,6 +14,13 @@
   *  github.com/onie
   */
  
@@ -64,7 +64,7 @@ index a2c333e744..c1084a28b5 100644
  /*
   * TlvInfo header: Layout of the header for the TlvInfo format
   *
-@@ -24,11 +31,11 @@ struct __attribute__ ((__packed__)) tlvinfo_header {
+@@ -26,11 +33,11 @@ struct __attribute__ ((__packed__)) tlvinfo_header {
  };
  
  // Header Field Constants
@@ -78,7 +78,7 @@ index a2c333e744..c1084a28b5 100644
  
  /*
   * TlvInfo TLV: Layout of a TLV field
-@@ -36,9 +43,10 @@ struct __attribute__ ((__packed__)) tlvinfo_header {
+@@ -38,9 +45,10 @@ struct __attribute__ ((__packed__)) tlvinfo_header {
  struct __attribute__ ((__packed__)) tlvinfo_tlv {
  	u8  type;
  	u8  length;
@@ -90,7 +90,7 @@ index a2c333e744..c1084a28b5 100644
  /* Maximum length of a TLV value in bytes */
  #define TLV_VALUE_MAX_LEN        255
  
-@@ -65,88 +73,212 @@ struct __attribute__ ((__packed__)) tlvinfo_tlv {
+@@ -67,89 +75,212 @@ struct __attribute__ ((__packed__)) tlvinfo_tlv {
  #define TLV_CODE_VENDOR_EXT     0xFD
  #define TLV_CODE_CRC_32         0xFE
  
@@ -146,6 +146,7 @@ index a2c333e744..c1084a28b5 100644
 - * write_tlv_eeprom - Write the entire EEPROM binary data to the hardware
 - * @eeprom: Pointer to buffer to hold the binary data
 - * @len   : Maximum size of buffer
+- * @dev   : EEPROM device to write
 + * Initialise new TLV structure.
   *
 - * Note: this routine does not validate the EEPROM data.
@@ -169,7 +170,7 @@ index a2c333e744..c1084a28b5 100644
 + * @size: Data size for this entry.
 + * @return: Pointer to TLV entry, or error pointer.
   */
--int write_tlv_eeprom(void *eeprom, int len);
+-int write_tlv_eeprom(void *eeprom, int len, int dev);
 +struct tlvinfo_tlv *const tlv_entry_add(struct tlvinfo_priv *const priv, struct tlvinfo_tlv *const offset, u8 code, u8 size);
  
  /**
@@ -359,20 +360,20 @@ index a2c333e744..c1084a28b5 100644
  
  #endif /* __TLV_EEPROM_H_ */
 diff --git a/lib/Kconfig b/lib/Kconfig
-index d81a88a982..0dd8875a31 100644
+index 37ac14f7bab..eeba534fd76 100644
 --- a/lib/Kconfig
 +++ b/lib/Kconfig
-@@ -1075,3 +1075,5 @@ menu "FWU Multi Bank Updates"
- source lib/fwu_updates/Kconfig
- 
+@@ -1149,3 +1149,5 @@ config PHANDLE_CHECK_SEQ
  endmenu
+ 
+ source lib/fwu_updates/Kconfig
 +
 +source lib/tlv/Kconfig
 diff --git a/lib/Makefile b/lib/Makefile
-index a282e40258..0f545425a6 100644
+index 2a76acf100d..4148bff3f83 100644
 --- a/lib/Makefile
 +++ b/lib/Makefile
-@@ -149,6 +149,8 @@ obj-$(CONFIG_LIB_ELF) += elf.o
+@@ -151,6 +151,8 @@ obj-$(CONFIG_LIB_ELF) += elf.o
  
  obj-$(CONFIG_$(SPL_TPL_)SEMIHOSTING) += semihosting.o
  
@@ -383,7 +384,7 @@ index a282e40258..0f545425a6 100644
  #
 diff --git a/lib/tlv/Kconfig b/lib/tlv/Kconfig
 new file mode 100644
-index 0000000000..688b0317a5
+index 00000000000..688b0317a5d
 --- /dev/null
 +++ b/lib/tlv/Kconfig
 @@ -0,0 +1,18 @@
@@ -407,7 +408,7 @@ index 0000000000..688b0317a5
 +	  TLV-encoded data from EEPROMs.
 diff --git a/lib/tlv/Makefile b/lib/tlv/Makefile
 new file mode 100644
-index 0000000000..93b8042d44
+index 00000000000..93b8042d449
 --- /dev/null
 +++ b/lib/tlv/Makefile
 @@ -0,0 +1,4 @@
@@ -417,7 +418,7 @@ index 0000000000..93b8042d44
 +obj-$(CONFIG_$(SPL_)EEPROM_TLV_LIB) += tlv_eeprom.o
 diff --git a/lib/tlv/tlv_eeprom.c b/lib/tlv/tlv_eeprom.c
 new file mode 100644
-index 0000000000..f1266b6e19
+index 00000000000..f1266b6e195
 --- /dev/null
 +++ b/lib/tlv/tlv_eeprom.c
 @@ -0,0 +1,633 @@
@@ -1055,5 +1056,5 @@ index 0000000000..f1266b6e19
 +	return tlv_entry_set_raw(entry, (uint8_t *)&raw, sizeof(raw));
 +}
 -- 
-2.35.3
+2.43.0
 

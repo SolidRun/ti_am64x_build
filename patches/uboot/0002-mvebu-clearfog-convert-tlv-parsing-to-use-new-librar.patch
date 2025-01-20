@@ -1,7 +1,7 @@
-From b49c4d9eda4964221b337cbc58a105f25710d15b Mon Sep 17 00:00:00 2001
+From c97c323a737117763f619bc19996ef7bb358b8aa Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Tue, 16 May 2023 14:41:52 +0300
-Subject: [PATCH 02/12] mvebu: clearfog: convert tlv parsing to use new library
+Subject: [PATCH 02/19] mvebu: clearfog: convert tlv parsing to use new library
 
 Update the existing code reading tlv data from eeprom to use the new tlv
 library functions rather than relying on tlv_eeprom command internals.
@@ -13,7 +13,7 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  2 files changed, 20 insertions(+), 30 deletions(-)
 
 diff --git a/board/solidrun/common/tlv_data.c b/board/solidrun/common/tlv_data.c
-index 11d6e4a138..31b4b473c7 100644
+index cf5824886c3..f8da4c7e4e1 100644
 --- a/board/solidrun/common/tlv_data.c
 +++ b/board/solidrun/common/tlv_data.c
 @@ -5,6 +5,7 @@
@@ -24,8 +24,8 @@ index 11d6e4a138..31b4b473c7 100644
  #include <tlv_eeprom.h>
  #include "tlv_data.h"
  
-@@ -50,44 +51,31 @@ static void parse_tlv_vendor_ext(struct tlvinfo_tlv *tlv_entry,
- 	td->ram_size = val[5];
+@@ -55,44 +56,31 @@ static void parse_tlv_vendor_ext(struct tlvinfo_tlv *tlv_entry,
+ 	}
  }
  
 -static void parse_tlv_data(u8 *eeprom, struct tlvinfo_header *hdr,
@@ -86,24 +86,24 @@ index 11d6e4a138..31b4b473c7 100644
  }
  
 diff --git a/configs/clearfog_defconfig b/configs/clearfog_defconfig
-index 8cd35f9f1a..05af0e3e62 100644
+index db2f2664c8d..3f7b8faa6bd 100644
 --- a/configs/clearfog_defconfig
 +++ b/configs/clearfog_defconfig
-@@ -35,7 +35,7 @@ CONFIG_SPL_SYS_MALLOC_SIMPLE=y
+@@ -36,7 +36,7 @@ CONFIG_SPL_SYS_MALLOC_SIMPLE=y
  CONFIG_SPL_I2C=y
  CONFIG_SYS_MAXARGS=32
  CONFIG_CMD_TLV_EEPROM=y
 -CONFIG_SPL_CMD_TLV_EEPROM=y
 +# CONFIG_SPL_CMD_TLV_EEPROM is not set
- # CONFIG_CMD_FLASH is not set
  CONFIG_CMD_GPIO=y
  CONFIG_CMD_I2C=y
-@@ -81,3 +81,5 @@ CONFIG_SYS_NS16550=y
+ CONFIG_CMD_MMC=y
+@@ -76,3 +76,5 @@ CONFIG_SYS_NS16550=y
  CONFIG_KIRKWOOD_SPI=y
  CONFIG_USB=y
  CONFIG_USB_XHCI_HCD=y
 +CONFIG_EEPROM_TLV_LIB=y
 +CONFIG_SPL_EEPROM_TLV_LIB=y
 -- 
-2.35.3
+2.43.0
 

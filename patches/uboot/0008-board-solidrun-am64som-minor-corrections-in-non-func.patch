@@ -1,7 +1,7 @@
-From c9043b3bea144bbc2a2d5b2ce9160852c32b484a Mon Sep 17 00:00:00 2001
+From 7ac787a1152c79bc33ac9127ff1e47cd2bea2cf4 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Sat, 30 Dec 2023 12:26:33 +0100
-Subject: [PATCH 08/12] board: solidrun: am64som: minor corrections in
+Subject: [PATCH 08/19] board: solidrun: am64som: minor corrections in
  non-functional code path
 
 correct comment in board file outlining reason for lock-up when enabling
@@ -14,7 +14,7 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm/dts/k3-am642-r5-hummingboard-t.dts b/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
-index 92646e405b..659377beb3 100644
+index 92646e405bc..659377beb35 100644
 --- a/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
 +++ b/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
 @@ -12,7 +12,7 @@
@@ -27,7 +27,7 @@ index 92646e405b..659377beb3 100644
  #include "k3-am642-r5-sr-som.dtsi"
  #include "k3-am642-hummingboard-t.dtsi"
 diff --git a/board/solidrun/am64som/som.c b/board/solidrun/am64som/som.c
-index fac5c7f555..4464fc94b6 100644
+index fac5c7f555f..4464fc94b60 100644
 --- a/board/solidrun/am64som/som.c
 +++ b/board/solidrun/am64som/som.c
 @@ -240,7 +240,7 @@ int board_fit_config_name_match(const char *name)
@@ -40,5 +40,5 @@ index fac5c7f555..4464fc94b6 100644
  	 * switch (am64som_carrier_type())
  	 * {
 -- 
-2.35.3
+2.43.0
 

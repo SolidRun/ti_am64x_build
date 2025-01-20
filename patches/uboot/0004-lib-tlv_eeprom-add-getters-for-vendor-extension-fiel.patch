@@ -1,7 +1,7 @@
-From 9e7a6148df5670fcbc9fcd581ed2922278b0f0ba Mon Sep 17 00:00:00 2001
+From c48fdd541beb5652bd32473522622b805d748cf1 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Sun, 19 Nov 2023 15:59:08 +0100
-Subject: [PATCH 04/12] lib: tlv_eeprom: add getters for vendor extension field
+Subject: [PATCH 04/19] lib: tlv_eeprom: add getters for vendor extension field
 
 Signed-off-by: Josua Mayer <josua@solid-run.com>
 ---
@@ -10,10 +10,10 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  2 files changed, 78 insertions(+)
 
 diff --git a/include/tlv_eeprom.h b/include/tlv_eeprom.h
-index c1084a28b5..92ad8690c3 100644
+index 8ebee122487..6b452bc2c77 100644
 --- a/include/tlv_eeprom.h
 +++ b/include/tlv_eeprom.h
-@@ -50,6 +50,19 @@ struct __attribute__ ((__packed__)) tlvinfo_tlv {
+@@ -52,6 +52,19 @@ struct __attribute__ ((__packed__)) tlvinfo_tlv {
  /* Maximum length of a TLV value in bytes */
  #define TLV_VALUE_MAX_LEN        255
  
@@ -33,7 +33,7 @@ index c1084a28b5..92ad8690c3 100644
  /**
   *  The TLV Types.
   *
-@@ -173,6 +186,29 @@ struct tlvinfo_tlv *const tlv_entry_next_by_code(struct tlvinfo_priv *const priv
+@@ -175,6 +188,29 @@ struct tlvinfo_tlv *const tlv_entry_next_by_code(struct tlvinfo_priv *const priv
   */
  int tlv_crc_update(struct tlvinfo_priv *const priv);
  
@@ -64,7 +64,7 @@ index c1084a28b5..92ad8690c3 100644
   * TLV data get/set API
   * (Convenience wrappers around struct tlvinfo_tlv)
 diff --git a/lib/tlv/tlv_eeprom.c b/lib/tlv/tlv_eeprom.c
-index 2f1d2708b7..b68f0f1136 100644
+index 2f1d2708b70..b68f0f11362 100644
 --- a/lib/tlv/tlv_eeprom.c
 +++ b/lib/tlv/tlv_eeprom.c
 @@ -466,6 +466,48 @@ struct tlvinfo_tlv *const tlv_entry_next_by_code(struct tlvinfo_priv *const priv
@@ -117,5 +117,5 @@ index 2f1d2708b7..b68f0f1136 100644
  {
  	struct tlvinfo_tlv *crc;
 -- 
-2.35.3
+2.43.0
 

@@ -1,7 +1,7 @@
-From d1c140f0f2a09e732c80204833a00b31d0fb9829 Mon Sep 17 00:00:00 2001
+From cadb14c9bb2666b10bc699bdc9349a794c2609a5 Mon Sep 17 00:00:00 2001
 From: Josua Mayer <josua@solid-run.com>
 Date: Wed, 15 May 2024 18:48:15 +0200
-Subject: [PATCH 13/14] board: solidrun: am64som: regenerate dram config with
+Subject: [PATCH 12/19] board: solidrun: am64som: regenerate dram config with
  last ti sysconfig
 
 Signed-off-by: Josua Mayer <josua@solid-run.com>
@@ -13,7 +13,7 @@ Signed-off-by: Josua Mayer <josua@solid-run.com>
  rename arch/arm/dts/{k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi => k3-am642-sr-som-ddr4-1600MTs-8Gb-cl11.dtsi} (97%)
 
 diff --git a/arch/arm/dts/k3-am642-r5-hummingboard-t.dts b/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
-index 659377be..0a084d6f 100644
+index 659377beb35..0a084d6f44d 100644
 --- a/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
 +++ b/arch/arm/dts/k3-am642-r5-hummingboard-t.dts
 @@ -10,7 +10,7 @@
@@ -26,7 +26,7 @@ index 659377be..0a084d6f 100644
  #include "k3-am642-sr-som-binman.dtsi"
  #include "k3-am642-sr-som.dtsi"
 diff --git a/arch/arm/dts/k3-am642-r5-sr-som.dts b/arch/arm/dts/k3-am642-r5-sr-som.dts
-index 39bcdb3a..6c9e9ba2 100644
+index 39bcdb3ac6a..6c9e9ba24dd 100644
 --- a/arch/arm/dts/k3-am642-r5-sr-som.dts
 +++ b/arch/arm/dts/k3-am642-r5-sr-som.dts
 @@ -10,7 +10,7 @@
@@ -42,7 +42,7 @@ diff --git a/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi b/arch/arm/dts/k
 similarity index 97%
 rename from arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi
 rename to arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb-cl11.dtsi
-index fc996509..b09fd0b7 100644
+index fc99650943e..b09fd0b7b86 100644
 --- a/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb.dtsi
 +++ b/arch/arm/dts/k3-am642-sr-som-ddr4-1600MTs-8Gb-cl11.dtsi
 @@ -1,17 +1,20 @@
@@ -311,5 +311,5 @@ index fc996509..b09fd0b7 100644
 -#define DDRSS_PHY_1405_DATA 0x20040001
 +#define DDRSS_PHY_1405_DATA 0x20040004
 -- 
-2.35.3
+2.43.0
 
