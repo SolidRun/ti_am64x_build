@@ -27,6 +27,12 @@ RUN set -e; \
 	apt-get --no-install-recommends -t bullseye-backports -y install qemu-system-arm; \
 	:
 
+# pre-configure Git Identity
+RUN set -e; \
+	GIT_DIR=/dev/null git config --system user.name "SolidRun AM64 Toolchain Container"; \
+	GIT_DIR=/dev/null git config --system user.email "support@solid-run.com"; \
+	:
+
 # build environment
 WORKDIR /ti_build
 COPY shflags /
