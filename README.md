@@ -1,7 +1,7 @@
 # SolidRun's TI AM64x based  build scripts
 
 Main intention of this repository is to produce a reference system for TI AM64x product evaluation.
-Automatic binary releases are available on [our website](https://images.solid-run.com/AM64X/ti_am64x_build) for download.
+~~Automatic binary releases are available on [our website](https://images.solid-run.com/AM64X/ti_am64x_build) for download.~~
 
 ## Get Started
 

@@ -1,0 +1,46 @@
+From 4dc974b5ada1bddae123740d8a670017a82b170e Mon Sep 17 00:00:00 2001
+From: Josua Mayer <josua@solid-run.com>
+Date: Mon, 27 Jan 2025 13:43:30 +0100
+Subject: [PATCH] fix platform_driver remove function return type for v6.10 and
+ later
+
+Since linux v6.10 platform_driver remove function returns void not int.
+Add a new function returning void wrapping around the original to fix
+the build.
+
+Signed-off-by: Josua Mayer <josua@solid-run.com>
+---
+ atemsys.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/atemsys.c b/atemsys.c
+index 9a64eef..991d32b 100644
+--- a/atemsys.c
++++ b/atemsys.c
+@@ -4615,6 +4615,11 @@ static int EthernetDriverRemove(struct platform_device* pPDev)
+     return 0;
+ }
+ 
++static void EthernetDriverRemove_void(struct platform_device* pPDev)
++{
++    EthernetDriverRemove(pPDev);
++}
++
+ static int CleanUpEthernetDriverOnRelease(ATEMSYS_T_DEVICE_DESC* pDevDesc)
+ {
+     ATEMSYS_T_DRV_DESC_PRIVATE* pDrvDescPrivate = NULL;
+@@ -4679,7 +4684,11 @@ static struct platform_driver mac_driver = {
+     },
+     .id_table  = mac_devtype,
+     .probe     = EthernetDriverProbe,
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,10,0)
++    .remove    = EthernetDriverRemove_void,
++#else
+     .remove    = EthernetDriverRemove,
++#endif
+ };
+ #endif /* INCLUDE_ATEMSYS_DT_DRIVER */
+ 
+-- 
+2.43.0
+

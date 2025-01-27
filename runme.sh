@@ -223,11 +223,11 @@ fi
 
 ###################################################################################################################################
 #							CLONE Linux Kernel
-KERNEL_TAG=10.01.10
+KERNEL_TAG=v6.13
 
 if [[ ! -d $BASE_DIR/build/ti-linux-kernel ]]; then
 	cd $BASE_DIR/build
-	git clone git://git.ti.com/ti-linux-kernel/ti-linux-kernel.git	-b $KERNEL_TAG --depth=1
+	git clone https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git ti-linux-kernel -b $KERNEL_TAG --depth=1
 	cd ti-linux-kernel
 	git am $BASE_DIR/patches/linux/*.patch
 fi
@@ -239,7 +239,7 @@ fi
 
 ###################################################################################################################################
 #							CLONE acontis atemsys module sources
-ATEMSYS_TAG=v1.4.29
+ATEMSYS_TAG=v1.4.32
 
 if [[ ! -d $BASE_DIR/build/atemsys ]]; then
 	cd $BASE_DIR/build
@@ -465,7 +465,7 @@ make DESTDIR=$BASE_DIR/tmp/k3conf install
 #							BUILD Linux
 build_kernel() {
 	cd $BASE_DIR/build/ti-linux-kernel
-	./scripts/kconfig/merge_config.sh -O "${BASE_DIR}/build/ti-linux-kernel" -m arch/arm64/configs/defconfig kernel/configs/ti_arm64_prune.config "${BASE_DIR}/configs/kernel.extra"
+	./scripts/kconfig/merge_config.sh -O "${BASE_DIR}/build/ti-linux-kernel" -m arch/arm64/configs/defconfig "${BASE_DIR}/configs/kernel.extra"
 	make olddefconfig
 	#make menuconfig
 	make savedefconfig
